@@ -19,7 +19,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Registry names must be lowercase; github.repository is "AndersTao/ytzero".
+  IMAGE_NAME: anderstao/ytzero
 
 jobs:
   prepare:
