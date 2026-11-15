@@ -24,6 +24,9 @@ Sådan hænger det sammen:
    30 s frem og Venstre 15 s tilbage, OK eller et klik i midten sætter pause, og
    Back går tilbage til Main. Afspilningen fortsætter, hvor man slap, og
    fremskridt gemmes.
+   Øverst står "Fortsæt med at se". Farveknapperne på fjernbetjeningen virker
+   på den valgte (eller den igangværende) video: Rød afviser, Grøn markerer som
+   set, og Blå opdaterer feedet.
 4. Back på forsiden lukker appen.
 
 Indhold:

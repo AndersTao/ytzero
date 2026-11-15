@@ -6,10 +6,12 @@
   <meta name="robots" content="noindex">
   <title>YT Zero</title>
   <!--
-    A view-only television page: the Main feed as a grid (thumbnail, channel,
-    title) and a full-screen player. Remote keys only:
-      grid    arrows move, OK plays, Back leaves the app
+    A view-only television page: "Continue watching" and the Main feed (thumbnail,
+    channel, title) and a full-screen player. Remote keys only:
+      browse  arrows move, OK plays, Back leaves the app
       player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
+      colour  Red rejects, Green marks as watched (the focused or playing video),
+              Blue refreshes the feed
     It talks to the same API as the web client, with the session cookie the TV
     login page (/tv-login.html) sets.
   -->
@@ -18,9 +20,24 @@
     html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: "LG Smart UI", "Museo Sans", system-ui, sans-serif; }
     body { overflow-x: hidden; }
     body.playing { overflow: hidden; }
+
+    #legend { display: flex; justify-content: flex-end; gap: 32px; padding: 28px 80px 0; font-size: 20px; color: #8a8a8a; }
+    #legend span::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; vertical-align: -1px; }
+    #legend .red::before { background: #e5484d; }
+    #legend .green::before { background: #30a46c; }
+    #legend .blue::before { background: #3e63dd; }
+
+    .section-title { margin: 8px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
+    .section-title[hidden], #continueRow[hidden] { display: none; }
+    #continueRow {
+      display: flex; gap: 40px; overflow-x: auto; scrollbar-width: none;
+      padding: 28px 80px 36px; scroll-padding: 0 80px;
+    }
+    #continueRow::-webkit-scrollbar { display: none; }
+    #continueRow .card { flex: 0 0 calc((1920px - 160px - 120px) / 4); }
     #grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 56px 40px;
-      padding: 64px 80px 120px;
+      padding: 28px 80px 120px;
     }
     .card { outline: none; border-radius: 18px; transition: transform .15s ease; }
     .thumb {
@@ -28,6 +45,8 @@
       box-shadow: 0 0 0 0 transparent; transition: box-shadow .15s ease;
     }
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.3); }
+    .progress div { height: 100%; background: #e5484d; }
     .card.focused { transform: scale(1.06); }
     .card.focused .thumb { box-shadow: 0 0 0 5px var(--accent); }
     .channel { margin: 16px 4px 4px; font-size: 22px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -35,8 +54,15 @@
       margin: 0 4px; font-size: 26px; line-height: 1.3; font-weight: 600;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    #message { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--muted); }
+    #message { padding: 160px 80px; text-align: center; font-size: 36px; color: var(--muted); }
     #message[hidden], #player[hidden] { display: none; }
+
+    #toast {
+      position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 20;
+      padding: 18px 40px; border-radius: 999px; background: rgba(40,40,40,.95); font-size: 28px;
+      opacity: 0; transition: opacity .25s ease; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
 
     #player { position: fixed; inset: 0; background: #000; z-index: 10; }
     #frame, #frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -65,8 +91,13 @@
   </style>
 </head>
 <body>
+  <div id="legend"><span class="red">Afvis</span><span class="green">Markér som set</span><span class="blue">Opdater</span></div>
+  <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
+  <div id="continueRow" role="list" hidden></div>
+  <div id="gridTitle" class="section-title" hidden>Main</div>
   <div id="grid" role="list"></div>
   <div id="message">Henter videoer…</div>
+  <div id="toast" role="status"></div>
 
   <div id="player" hidden>
     <div id="frame"></div>
@@ -90,21 +121,30 @@
     var SEEK_FORWARD = 30;
     var SEEK_BACK = 15;
     var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 461, ESC: 27, BACKSPACE: 8,
-                PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, FF: 417, RW: 412, STOP: 413 };
+                PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, FF: 417, RW: 412, STOP: 413,
+                RED: 403, GREEN: 404, YELLOW: 405, BLUE: 406 };
 
     var gridEl = document.getElementById("grid");
+    var continueEl = document.getElementById("continueRow");
     var messageEl = document.getElementById("message");
     var playerEl = document.getElementById("player");
     var overlayEl = document.getElementById("overlay");
     var flashEl = document.getElementById("flash");
+    var toastEl = document.getElementById("toast");
     var errorEl = document.getElementById("playerError");
 
-    var videos = [];
-    var cards = [];
-    var focusIndex = 0;
+    // Two sections; focus is a section plus an index into it.
+    var sections = {
+      cont: { el: continueEl, items: [], cards: [] },
+      grid: { el: gridEl, items: [], cards: [] }
+    };
+    var focus = { s: "grid", i: 0 };
     var page = 0;
     var hasMore = true;
     var loading = false;
+    var generation = 0; // bumps on refresh, so late answers from before it are dropped
+    // Rejected or watched here: kept out even if a list fetched later still has them.
+    var removed = {};
 
     // ---------- API ----------
 
@@ -117,18 +157,28 @@
         });
     }
 
+    function post(path) { return api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); }
+
     function thumbUrl(url) {
       if (!url) return "/nothumbnail.jpg";
       return /^https?:\/\//.test(url) ? "/api/img?u=" + encodeURIComponent(url) : url;
     }
 
     function playable(v) {
-      return v && v.video_id && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
+      return v && v.video_id && !removed[v.video_id] && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
     }
 
-    // ---------- Grid ----------
+    var toastTimer = null;
+    function toast(text, ms) {
+      toastEl.textContent = text;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      if (ms !== 0) toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, ms || 2200);
+    }
 
-    function makeCard(v, index) {
+    // ---------- Cards and sections ----------
+
+    function makeCard(v, sectionName) {
       var card = document.createElement("div");
       card.className = "card";
       card.setAttribute("role", "listitem");
@@ -140,6 +190,14 @@
       img.src = thumbUrl(v.thumbnail);
       img.onerror = function () { img.onerror = null; img.src = "/nothumbnail.jpg"; };
       thumb.appendChild(img);
+      if (sectionName === "cont" && v.watch_position && v.watch_duration) {
+        var bar = document.createElement("div");
+        bar.className = "progress";
+        var fill = document.createElement("div");
+        fill.style.width = Math.min(100, v.watch_position / v.watch_duration * 100) + "%";
+        bar.appendChild(fill);
+        thumb.appendChild(bar);
+      }
       var channel = document.createElement("div");
       channel.className = "channel";
       channel.textContent = v.channel_title || "";
@@ -149,68 +207,244 @@
       card.appendChild(thumb);
       card.appendChild(channel);
       card.appendChild(title);
-      card.addEventListener("click", function () { setFocus(index); openPlayer(index); });
-      card.addEventListener("mouseenter", function () { setFocus(index, true); });
+      // Look the index up when clicked: cards move as videos are removed.
+      card.addEventListener("click", function () {
+        var i = sections[sectionName].cards.indexOf(card);
+        if (i >= 0) { setFocus(sectionName, i); openPlayer(); }
+      });
+      card.addEventListener("mouseenter", function () {
+        var i = sections[sectionName].cards.indexOf(card);
+        if (i >= 0) setFocus(sectionName, i, true);
+      });
       return card;
+    }
+
+    function addItem(sectionName, v) {
+      var sec = sections[sectionName];
+      var card = makeCard(v, sectionName);
+      sec.items.push(v);
+      sec.cards.push(card);
+      sec.el.appendChild(card);
+    }
+
+    function clearSection(sectionName) {
+      var sec = sections[sectionName];
+      sec.items = [];
+      sec.cards = [];
+      sec.el.innerHTML = "";
+    }
+
+    function hasSection(name) { return sections[name].cards.length > 0; }
+
+    function updateChrome() {
+      var hasCont = hasSection("cont");
+      continueEl.hidden = !hasCont;
+      document.getElementById("continueTitle").hidden = !hasCont;
+      document.getElementById("gridTitle").hidden = !hasCont || !hasSection("grid");
+      if (!hasCont && !hasSection("grid") && !loading) {
+        messageEl.textContent = "Ingen nye videoer";
+        messageEl.hidden = false;
+      } else if (hasCont || hasSection("grid")) {
+        messageEl.hidden = true;
+      }
+    }
+
+    function continueIds() {
+      var ids = {};
+      sections.cont.items.forEach(function (v) { ids[v.video_id] = true; });
+      return ids;
+    }
+
+    // ---------- Loading ----------
+
+    function loadContinue() {
+      var gen = generation;
+      return api("/in-progress").then(function (data) {
+        if (gen !== generation) return;
+        var list = ((data && data.videos) || []).filter(function (v) { return playable(v) && !v.is_short; });
+        var focusedId = focusedVideo() && focusedVideo().video_id;
+        clearSection("cont");
+        list.forEach(function (v) { addItem("cont", v); });
+        // Like the web client: a video on the Continue shelf is not repeated below.
+        var ids = continueIds();
+        for (var i = sections.grid.items.length - 1; i >= 0; i--) {
+          if (ids[sections.grid.items[i].video_id]) removeAt("grid", i, true);
+        }
+        updateChrome();
+        restoreFocus(focusedId);
+      }).catch(function () {});
     }
 
     function loadMore() {
       if (loading || !hasMore) return Promise.resolve();
       loading = true;
+      var gen = generation;
       return api("/feed?page=" + page)
         .then(function (data) {
+          if (gen !== generation) return;
           var batch = (data && data.videos) || [];
           hasMore = batch.length === PAGE_SIZE;
           page += 1;
-          batch.filter(playable).forEach(function (v) {
-            var index = videos.length;
-            videos.push(v);
-            var card = makeCard(v, index);
-            cards.push(card);
-            gridEl.appendChild(card);
-          });
-          if (!videos.length) {
-            messageEl.textContent = "Ingen nye videoer";
-            messageEl.hidden = false;
-          } else {
-            messageEl.hidden = true;
-            if (page === 1) setFocus(0);
+          var ids = continueIds();
+          var first = page === 1;
+          batch.filter(playable).forEach(function (v) { if (!ids[v.video_id]) addItem("grid", v); });
+          loading = false;
+          updateChrome();
+          if (first && !current) {
+            if (hasSection("cont")) setFocus("cont", 0, true);
+            else if (hasSection("grid")) setFocus("grid", 0, true);
           }
         })
         .catch(function (error) {
-          if (String(error && error.message) === "unauthenticated") return;
-          if (!videos.length) {
+          loading = false;
+          if (String(error && error.message) === "unauthenticated" || gen !== generation) return;
+          if (!hasSection("grid") && !hasSection("cont")) {
             messageEl.textContent = "Kunne ikke hente videoer. Prøver igen…";
             messageEl.hidden = false;
           }
-          setTimeout(function () { loading = false; loadMore(); }, 10000);
-          throw error;
-        })
-        .then(function () { loading = false; }, function () {});
+          setTimeout(loadMore, 10000);
+        });
     }
 
-    function setFocus(index, fromPointer) {
-      if (!cards.length) return;
-      index = Math.max(0, Math.min(cards.length - 1, index));
-      if (cards[focusIndex]) cards[focusIndex].classList.remove("focused");
-      focusIndex = index;
-      var card = cards[index];
+    function reloadAll() {
+      generation += 1;
+      clearSection("grid");
+      page = 0;
+      hasMore = true;
+      loading = false;
+      focus = { s: "grid", i: 0 };
+      window.scrollTo(0, 0);
+      return loadContinue().then(loadMore);
+    }
+
+    // ---------- Focus ----------
+
+    function focusedVideo() {
+      var sec = sections[focus.s];
+      return sec && sec.items[focus.i];
+    }
+
+    function setFocus(sectionName, index, quiet) {
+      var sec = sections[sectionName];
+      if (!sec.cards.length) return;
+      index = Math.max(0, Math.min(sec.cards.length - 1, index));
+      var old = sections[focus.s] && sections[focus.s].cards[focus.i];
+      if (old) old.classList.remove("focused");
+      focus = { s: sectionName, i: index };
+      var card = sec.cards[index];
       card.classList.add("focused");
-      if (!fromPointer) card.scrollIntoView({ block: "center", behavior: "smooth" });
+      if (!quiet) {
+        if (sectionName === "cont" && index < COLUMNS) window.scrollTo({ top: 0, behavior: "smooth" });
+        card.scrollIntoView({ block: sectionName === "cont" ? "nearest" : "center", inline: "nearest", behavior: "smooth" });
+      }
       // Fetch the next page while two rows remain below the focus.
-      if (index >= cards.length - COLUMNS * 2) loadMore();
+      if (sectionName === "grid" && index >= sec.cards.length - COLUMNS * 2) loadMore();
     }
 
-    function gridKey(code) {
+    function restoreFocus(videoId) {
+      if (videoId) {
+        for (var name in sections) {
+          var i = sections[name].items.findIndex(function (v) { return v.video_id === videoId; });
+          if (i >= 0) { setFocus(name, i, true); return; }
+        }
+      }
+      if (sections[focus.s].cards.length) setFocus(focus.s, focus.i, true);
+      else if (hasSection("cont")) setFocus("cont", 0, true);
+      else if (hasSection("grid")) setFocus("grid", 0, true);
+    }
+
+    function removeAt(sectionName, index, quiet) {
+      var sec = sections[sectionName];
+      var card = sec.cards[index];
+      if (!card) return;
+      card.remove();
+      sec.cards.splice(index, 1);
+      sec.items.splice(index, 1);
+      if (focus.s === sectionName && focus.i > index) focus.i -= 1;
+      if (!quiet) restoreFocus(null);
+    }
+
+    function removeVideo(videoId) {
+      removed[videoId] = true;
+      ["cont", "grid"].forEach(function (name) {
+        var i = sections[name].items.findIndex(function (v) { return v.video_id === videoId; });
+        if (i >= 0) removeAt(name, i, true);
+      });
+      if (!sections[focus.s].cards.length) focus = { s: hasSection("grid") ? "grid" : "cont", i: 0 };
+      updateChrome();
+      restoreFocus(null);
+    }
+
+    function browseKey(code) {
+      var i = focus.i;
+      if (focus.s === "cont") {
+        switch (code) {
+          case KEY.LEFT: setFocus("cont", i - 1); return true;
+          case KEY.RIGHT: setFocus("cont", i + 1); return true;
+          case KEY.UP: window.scrollTo({ top: 0, behavior: "smooth" }); return true;
+          case KEY.DOWN: if (hasSection("grid")) setFocus("grid", Math.min(i, COLUMNS - 1)); return true;
+        }
+      } else {
+        var n = sections.grid.cards.length;
+        switch (code) {
+          case KEY.LEFT: if (i % COLUMNS > 0) setFocus("grid", i - 1); return true;
+          case KEY.RIGHT: if (i % COLUMNS < COLUMNS - 1 && i + 1 < n) setFocus("grid", i + 1); return true;
+          case KEY.UP:
+            if (i >= COLUMNS) setFocus("grid", i - COLUMNS);
+            else if (hasSection("cont")) setFocus("cont", Math.min(i, sections.cont.cards.length - 1));
+            else window.scrollTo({ top: 0, behavior: "smooth" });
+            return true;
+          case KEY.DOWN:
+            if (i + COLUMNS < n) setFocus("grid", i + COLUMNS);
+            else if (Math.floor(i / COLUMNS) < Math.floor((n - 1) / COLUMNS)) setFocus("grid", n - 1);
+            return true;
+        }
+      }
+      if (code === KEY.ENTER || code === KEY.PLAY || code === KEY.PLAY_PAUSE) { openPlayer(); return true; }
+      return false;
+    }
+
+    // ---------- Colour keys ----------
+
+    var busy = false;
+
+    function actOn(kind) {
+      var v = current || focusedVideo();
+      if (!v || busy) return;
+      busy = true;
+      var path = "/videos/" + encodeURIComponent(v.video_id) + (kind === "reject" ? "/archive" : "/complete");
+      post(path).then(function () {
+        toast(kind === "reject" ? "Afvist" : "Markeret som set");
+        if (current === v) history.back(); // close the player; the video leaves the lists below
+        removeVideo(v.video_id);
+      }).catch(function (error) {
+        if (String(error && error.message) !== "unauthenticated") toast("Det lykkedes ikke – prøv igen");
+      }).then(function () { busy = false; });
+    }
+
+    var refreshing = false;
+    function refresh() {
+      if (refreshing || current) return;
+      refreshing = true;
+      toast("Opdaterer…", 0);
+      // Ask the server to check the subscriptions first, then reload what is shown.
+      post("/refresh").then(function (r) {
+        return reloadAll().then(function () {
+          var added = r && typeof r.added === "number" ? r.added : 0;
+          toast(added ? "Opdateret · " + added + (added === 1 ? " ny video" : " nye videoer") : "Opdateret · ingen nye videoer");
+        });
+      }).catch(function (error) {
+        if (String(error && error.message) === "unauthenticated") return;
+        // The check failed, but the lists can still be refreshed.
+        return reloadAll().then(function () { toast("Opdateret"); });
+      }).then(function () { refreshing = false; });
+    }
+
+    function colourKey(code) {
       switch (code) {
-        case KEY.LEFT: if (focusIndex % COLUMNS > 0) setFocus(focusIndex - 1); return true;
-        case KEY.RIGHT: if (focusIndex % COLUMNS < COLUMNS - 1 && focusIndex + 1 < cards.length) setFocus(focusIndex + 1); return true;
-        case KEY.UP: if (focusIndex >= COLUMNS) setFocus(focusIndex - COLUMNS); else window.scrollTo({ top: 0, behavior: "smooth" }); return true;
-        case KEY.DOWN:
-          if (focusIndex + COLUMNS < cards.length) setFocus(focusIndex + COLUMNS);
-          else if (Math.floor(focusIndex / COLUMNS) < Math.floor((cards.length - 1) / COLUMNS)) setFocus(cards.length - 1);
-          return true;
-        case KEY.ENTER: case KEY.PLAY: case KEY.PLAY_PAUSE: openPlayer(focusIndex); return true;
+        case KEY.RED: actOn("reject"); return true;
+        case KEY.GREEN: actOn("watched"); return true;
+        case KEY.BLUE: refresh(); return true;
       }
       return false;
     }
@@ -277,19 +511,21 @@
     }
 
     function saveProgress(keepalive) {
-      if (!current || !player) return;
+      if (!current || !player) return Promise.resolve();
       var p = position(), d = duration();
-      if (!d || p < 1) return;
+      if (!d || p < 1) return Promise.resolve();
       lastSaved = p;
-      fetch("/api/videos/" + encodeURIComponent(current.video_id) + "/progress", {
+      current.watch_position = p;
+      current.watch_duration = d;
+      return fetch("/api/videos/" + encodeURIComponent(current.video_id) + "/progress", {
         method: "PUT", credentials: "same-origin", keepalive: !!keepalive,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ position: p, duration: d })
       }).catch(function () {});
     }
 
-    function openPlayer(index) {
-      var v = videos[index];
+    function openPlayer() {
+      var v = focusedVideo();
       if (!v || current) return;
       current = v;
       captionsStarted = false;
@@ -302,6 +538,8 @@
       // Back closes the player through history, which is what the LG remote's
       // Back button does in a webOS web app.
       history.pushState({ tvPlayer: true }, "");
+      // A history row is what puts the video on the "Continue watching" shelf.
+      post("/videos/" + encodeURIComponent(v.video_id) + "/watch").catch(function () {});
 
       var start = 0;
       if (v.watch_position && v.watch_duration && v.watch_position > 10 && v.watch_position < v.watch_duration - 30) {
@@ -331,7 +569,8 @@
               } else if (e.data === 2) {
                 showOverlay(true);
               } else if (e.data === 0) {
-                api("/videos/" + encodeURIComponent(v.video_id) + "/complete", { method: "POST" }).catch(function () {});
+                post("/videos/" + encodeURIComponent(v.video_id) + "/complete").catch(function () {});
+                finished = v.video_id;
                 history.back();
               }
             },
@@ -348,9 +587,13 @@
       });
     }
 
+    var finished = null;
+
     function closePlayer() {
       if (!current) return;
-      saveProgress(true);
+      // A video just marked watched, rejected or played to the end must not get
+      // a fresh position, or it would land on the Continue shelf again.
+      var saved = !removed[current.video_id] && finished !== current.video_id ? saveProgress(true) : Promise.resolve();
       clearInterval(tickTimer);
       clearTimeout(overlayTimer);
       try { player && player.destroy(); } catch (e) {}
@@ -361,7 +604,11 @@
       overlayEl.classList.remove("show");
       playerEl.hidden = true;
       document.body.classList.remove("playing");
-      setFocus(focusIndex);
+      if (finished) { removeVideo(finished); finished = null; }
+      restoreFocus(null);
+      // What was just watched now belongs on (or moves within) the Continue shelf,
+      // once its new position is stored.
+      saved.then(loadContinue);
     }
 
     function togglePlay() {
@@ -379,6 +626,8 @@
       flash(delta > 0 ? "+" + delta + " s" : "−" + Math.abs(delta) + " s");
       showOverlay(!isPlaying());
     }
+
+    var backTimer = null;
 
     function playerKey(code) {
       switch (code) {
@@ -400,17 +649,16 @@
     }
 
     document.getElementById("clickLayer").addEventListener("click", togglePlay);
-    var backTimer = null;
     window.addEventListener("popstate", function () { clearTimeout(backTimer); closePlayer(); });
 
     document.addEventListener("keydown", function (e) {
-      var handled = current ? playerKey(e.keyCode) : gridKey(e.keyCode);
+      var handled = colourKey(e.keyCode) || (current ? playerKey(e.keyCode) : browseKey(e.keyCode));
       if (handled) e.preventDefault();
     });
 
     window.addEventListener("pagehide", function () { saveProgress(true); });
 
-    loadMore();
+    loadContinue().then(loadMore);
   })();
   </script>
 </body>
