@@ -69,7 +69,8 @@
         });
       }
 
-      function goHome() { window.location.replace("/"); }
+      // The TV has its own simple, view-only page (tv.html).
+      function goHome() { window.location.replace("/tv.html"); }
 
       function formatCode(code) {
         var c = String(code).replace(/[^0-9A-Za-z]/g, "").toUpperCase();
