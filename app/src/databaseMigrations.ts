@@ -143,7 +143,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 7,
+    version: 201,
     name: "related-video-panel",
     schemaHashes: {
       "app/src/schema.sql": "ba49323d51e8391889173a4851aea0b8d536a714e5d048b63981b5be851f4bae",
@@ -158,7 +158,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 8,
+    version: 202,
     name: "related-video-panel-per-profile",
     schemaHashes: {
       "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
@@ -180,7 +180,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 9,
+    version: 203,
     name: "video-embeddable",
     schemaHashes: {
       "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
@@ -198,7 +198,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
 {
-    version: 10,
+    version: 204,
     name: "dailymotion-follows-and-progress",
     schemaHashes: {
       "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
@@ -232,7 +232,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 11,
+    version: 205,
     name: "invidious-client-tokens",
     schemaHashes: {
       "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
@@ -263,7 +263,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 12,
+    version: 206,
     name: "video-original-titles",
     schemaHashes: {
       "app/src/schema.sql": "7464674b4e1c8370f630374603552b9929cb2b09031353cf3da3b1cf02c4df8f",
@@ -295,7 +295,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 13,
+    version: 7,
     name: "profile-video-bookmarks",
     /*
      * Upstream's, arriving late and therefore last.
@@ -326,7 +326,7 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 14,
+    version: 8,
     name: "shorts-classification-retry",
     /*
      * Upstream's, arriving after this fork had already used the number it was
