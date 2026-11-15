@@ -18,12 +18,13 @@ Sådan hænger det sammen:
    - Siden spørger `/api/auth/device/token` med `set_cookie: true`, og serveren
      sætter selv sessionen som den sædvanlige `HttpOnly`-cookie
      `ytzero_session`. Derefter åbner YT Zero som normalt.
-3. På TV'et slår webklienten TV-tilstand til (`ui/src/tvNavigation.ts`):
-   piletasterne flytter fokus og ruller siden, og OK aktiverer. På watch-siden
-   spoler Venstre/Højre i afspilleren. TV-tilstand kan tvinges til eller fra med
-   `?tv=1` eller `?tv=0`.
-4. Tilbage-knappen på fjernbetjeningen går tilbage i YT Zero. Fra forsiden
-   lukker den appen.
+3. Efter login åbner TV'et `/tv.html` (`ui/public/tv.html`): en enkel side, der
+   kun kan bruges til at se videoer. Den viser Main-feedet som et grid med
+   thumbnail, kanalnavn og titel. OK starter videoen i fuld skærm, Højre spoler
+   30 s frem og Venstre 15 s tilbage, OK eller et klik i midten sætter pause, og
+   Back går tilbage til Main. Afspilningen fortsætter, hvor man slap, og
+   fremskridt gemmes.
+4. Back på forsiden lukker appen.
 
 Indhold:
 

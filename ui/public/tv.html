@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <meta name="robots" content="noindex">
+  <title>YT Zero</title>
+  <!--
+    A view-only television page: the Main feed as a grid (thumbnail, channel,
+    title) and a full-screen player. Remote keys only:
+      grid    arrows move, OK plays, Back leaves the app
+      player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
+    It talks to the same API as the web client, with the session cookie the TV
+    login page (/tv-login.html) sets.
+  -->
+  <style>
+    :root { --bg: #0f0f0f; --fg: #f1f1f1; --muted: #a9a9a9; --accent: #3ea6ff; }
+    html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: "LG Smart UI", "Museo Sans", system-ui, sans-serif; }
+    body { overflow-x: hidden; }
+    body.playing { overflow: hidden; }
+    #grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 56px 40px;
+      padding: 64px 80px 120px;
+    }
+    .card { outline: none; border-radius: 18px; transition: transform .15s ease; }
+    .thumb {
+      position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #1c1c1c;
+      box-shadow: 0 0 0 0 transparent; transition: box-shadow .15s ease;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card.focused { transform: scale(1.06); }
+    .card.focused .thumb { box-shadow: 0 0 0 5px var(--accent); }
+    .channel { margin: 16px 4px 4px; font-size: 22px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .title {
+      margin: 0 4px; font-size: 26px; line-height: 1.3; font-weight: 600;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    #message { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--muted); }
+    #message[hidden], #player[hidden] { display: none; }
+
+    #player { position: fixed; inset: 0; background: #000; z-index: 10; }
+    #frame, #frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    /* The iframe never takes focus or clicks, so the remote's keys stay with this page. */
+    #frame { pointer-events: none; }
+    #clickLayer { position: absolute; inset: 0; cursor: pointer; }
+    #overlay {
+      position: absolute; left: 0; right: 0; bottom: 0; padding: 120px 96px 72px;
+      background: linear-gradient(transparent, rgba(0,0,0,.85));
+      opacity: 0; transition: opacity .3s ease; pointer-events: none;
+    }
+    #overlay.show { opacity: 1; }
+    #ovChannel { font-size: 26px; color: #d0d0d0; }
+    #ovTitle { font-size: 40px; font-weight: 600; margin: 6px 0 28px; }
+    #bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.25); overflow: hidden; }
+    #barFill { height: 100%; width: 0; background: var(--accent); }
+    #time { margin-top: 14px; font-size: 26px; color: #d0d0d0; font-variant-numeric: tabular-nums; }
+    #flash {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      padding: 22px 44px; border-radius: 20px; background: rgba(0,0,0,.6);
+      font-size: 48px; font-weight: 700; opacity: 0; transition: opacity .25s ease; pointer-events: none;
+    }
+    #flash.show { opacity: 1; }
+    #playerError { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 36px; padding: 0 200px; }
+    #playerError[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="grid" role="list"></div>
+  <div id="message">Henter videoer…</div>
+
+  <div id="player" hidden>
+    <div id="frame"></div>
+    <div id="clickLayer"></div>
+    <div id="overlay">
+      <div id="ovChannel"></div>
+      <div id="ovTitle"></div>
+      <div id="bar"><div id="barFill"></div></div>
+      <div id="time"></div>
+    </div>
+    <div id="flash"></div>
+    <div id="playerError" hidden></div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var COLUMNS = 4;
+    var PAGE_SIZE = 40;
+    var SEEK_FORWARD = 30;
+    var SEEK_BACK = 15;
+    var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 461, ESC: 27, BACKSPACE: 8,
+                PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, FF: 417, RW: 412, STOP: 413 };
+
+    var gridEl = document.getElementById("grid");
+    var messageEl = document.getElementById("message");
+    var playerEl = document.getElementById("player");
+    var overlayEl = document.getElementById("overlay");
+    var flashEl = document.getElementById("flash");
+    var errorEl = document.getElementById("playerError");
+
+    var videos = [];
+    var cards = [];
+    var focusIndex = 0;
+    var page = 0;
+    var hasMore = true;
+    var loading = false;
+
+    // ---------- API ----------
+
+    function api(path, options) {
+      return fetch("/api" + path, Object.assign({ credentials: "same-origin", cache: "no-store" }, options || {}))
+        .then(function (r) {
+          if (r.status === 401) { window.location.replace("/tv-login.html"); throw new Error("unauthenticated"); }
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.status === 204 ? null : r.json().catch(function () { return null; });
+        });
+    }
+
+    function thumbUrl(url) {
+      if (!url) return "/nothumbnail.jpg";
+      return /^https?:\/\//.test(url) ? "/api/img?u=" + encodeURIComponent(url) : url;
+    }
+
+    function playable(v) {
+      return v && v.video_id && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
+    }
+
+    // ---------- Grid ----------
+
+    function makeCard(v, index) {
+      var card = document.createElement("div");
+      card.className = "card";
+      card.setAttribute("role", "listitem");
+      var thumb = document.createElement("div");
+      thumb.className = "thumb";
+      var img = document.createElement("img");
+      img.loading = "lazy";
+      img.alt = "";
+      img.src = thumbUrl(v.thumbnail);
+      img.onerror = function () { img.onerror = null; img.src = "/nothumbnail.jpg"; };
+      thumb.appendChild(img);
+      var channel = document.createElement("div");
+      channel.className = "channel";
+      channel.textContent = v.channel_title || "";
+      var title = document.createElement("div");
+      title.className = "title";
+      title.textContent = v.title || "";
+      card.appendChild(thumb);
+      card.appendChild(channel);
+      card.appendChild(title);
+      card.addEventListener("click", function () { setFocus(index); openPlayer(index); });
+      card.addEventListener("mouseenter", function () { setFocus(index, true); });
+      return card;
+    }
+
+    function loadMore() {
+      if (loading || !hasMore) return Promise.resolve();
+      loading = true;
+      return api("/feed?page=" + page)
+        .then(function (data) {
+          var batch = (data && data.videos) || [];
+          hasMore = batch.length === PAGE_SIZE;
+          page += 1;
+          batch.filter(playable).forEach(function (v) {
+            var index = videos.length;
+            videos.push(v);
+            var card = makeCard(v, index);
+            cards.push(card);
+            gridEl.appendChild(card);
+          });
+          if (!videos.length) {
+            messageEl.textContent = "Ingen nye videoer";
+            messageEl.hidden = false;
+          } else {
+            messageEl.hidden = true;
+            if (page === 1) setFocus(0);
+          }
+        })
+        .catch(function (error) {
+          if (String(error && error.message) === "unauthenticated") return;
+          if (!videos.length) {
+            messageEl.textContent = "Kunne ikke hente videoer. Prøver igen…";
+            messageEl.hidden = false;
+          }
+          setTimeout(function () { loading = false; loadMore(); }, 10000);
+          throw error;
+        })
+        .then(function () { loading = false; }, function () {});
+    }
+
+    function setFocus(index, fromPointer) {
+      if (!cards.length) return;
+      index = Math.max(0, Math.min(cards.length - 1, index));
+      if (cards[focusIndex]) cards[focusIndex].classList.remove("focused");
+      focusIndex = index;
+      var card = cards[index];
+      card.classList.add("focused");
+      if (!fromPointer) card.scrollIntoView({ block: "center", behavior: "smooth" });
+      // Fetch the next page while two rows remain below the focus.
+      if (index >= cards.length - COLUMNS * 2) loadMore();
+    }
+
+    function gridKey(code) {
+      switch (code) {
+        case KEY.LEFT: if (focusIndex % COLUMNS > 0) setFocus(focusIndex - 1); return true;
+        case KEY.RIGHT: if (focusIndex % COLUMNS < COLUMNS - 1 && focusIndex + 1 < cards.length) setFocus(focusIndex + 1); return true;
+        case KEY.UP: if (focusIndex >= COLUMNS) setFocus(focusIndex - COLUMNS); else window.scrollTo({ top: 0, behavior: "smooth" }); return true;
+        case KEY.DOWN:
+          if (focusIndex + COLUMNS < cards.length) setFocus(focusIndex + COLUMNS);
+          else if (Math.floor(focusIndex / COLUMNS) < Math.floor((cards.length - 1) / COLUMNS)) setFocus(cards.length - 1);
+          return true;
+        case KEY.ENTER: case KEY.PLAY: case KEY.PLAY_PAUSE: openPlayer(focusIndex); return true;
+      }
+      return false;
+    }
+
+    // ---------- Player ----------
+
+    var player = null;
+    var current = null;
+    var overlayTimer = null;
+    var flashTimer = null;
+    var tickTimer = null;
+    var lastSaved = 0;
+    var captionsStarted = false;
+
+    var ytReady = null;
+    function loadYouTube() {
+      if (ytReady) return ytReady;
+      ytReady = new Promise(function (resolve) {
+        if (window.YT && window.YT.Player) return resolve();
+        window.onYouTubeIframeAPIReady = function () { resolve(); };
+        var s = document.createElement("script");
+        s.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(s);
+      });
+      return ytReady;
+    }
+
+    function fmt(seconds) {
+      seconds = Math.max(0, Math.floor(seconds || 0));
+      var h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
+      var mm = h ? String(m).padStart(2, "0") : String(m);
+      return (h ? h + ":" : "") + mm + ":" + String(s).padStart(2, "0");
+    }
+
+    function position() { try { return player.getCurrentTime() || 0; } catch (e) { return 0; } }
+    function duration() { try { return player.getDuration() || 0; } catch (e) { return 0; } }
+    function isPlaying() { try { return player.getPlayerState() === 1; } catch (e) { return false; } }
+
+    function updateOverlay() {
+      var d = duration(), p = position();
+      document.getElementById("barFill").style.width = d ? Math.min(100, p / d * 100) + "%" : "0";
+      document.getElementById("time").textContent = fmt(p) + " / " + fmt(d);
+    }
+
+    function showOverlay(stay) {
+      updateOverlay();
+      overlayEl.classList.add("show");
+      clearTimeout(overlayTimer);
+      if (!stay) overlayTimer = setTimeout(function () { if (isPlaying()) overlayEl.classList.remove("show"); }, 3500);
+    }
+
+    function flash(text) {
+      flashEl.textContent = text;
+      flashEl.classList.add("show");
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(function () { flashEl.classList.remove("show"); }, 900);
+    }
+
+    // cc_load_policy=0 is not "off": YouTube restores a remembered caption track,
+    // so the captions module is unloaded on ready, on first play and once after.
+    function captionsOff() {
+      try { player.unloadModule("captions"); } catch (e) {}
+      try { player.unloadModule("cc"); } catch (e) {}
+    }
+
+    function saveProgress(keepalive) {
+      if (!current || !player) return;
+      var p = position(), d = duration();
+      if (!d || p < 1) return;
+      lastSaved = p;
+      fetch("/api/videos/" + encodeURIComponent(current.video_id) + "/progress", {
+        method: "PUT", credentials: "same-origin", keepalive: !!keepalive,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ position: p, duration: d })
+      }).catch(function () {});
+    }
+
+    function openPlayer(index) {
+      var v = videos[index];
+      if (!v || current) return;
+      current = v;
+      captionsStarted = false;
+      errorEl.hidden = true;
+      document.getElementById("ovChannel").textContent = v.channel_title || "";
+      document.getElementById("ovTitle").textContent = v.title || "";
+      playerEl.hidden = false;
+      document.body.classList.add("playing");
+      showOverlay(true);
+      // Back closes the player through history, which is what the LG remote's
+      // Back button does in a webOS web app.
+      history.pushState({ tvPlayer: true }, "");
+
+      var start = 0;
+      if (v.watch_position && v.watch_duration && v.watch_position > 10 && v.watch_position < v.watch_duration - 30) {
+        start = Math.floor(v.watch_position);
+      }
+
+      loadYouTube().then(function () {
+        if (current !== v) return;
+        var mount = document.createElement("div");
+        document.getElementById("frame").appendChild(mount);
+        player = new YT.Player(mount, {
+          host: "https://www.youtube-nocookie.com",
+          videoId: v.video_id,
+          width: "100%", height: "100%",
+          playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3,
+                        cc_load_policy: 0, playsinline: 1, start: start, origin: location.origin },
+          events: {
+            onReady: function (e) {
+              try { e.target.getIframe().setAttribute("tabindex", "-1"); } catch (err) {}
+              captionsOff();
+              e.target.playVideo();
+            },
+            onStateChange: function (e) {
+              if (e.data === 1) {
+                if (!captionsStarted) { captionsStarted = true; captionsOff(); setTimeout(captionsOff, 1500); }
+                showOverlay(false);
+              } else if (e.data === 2) {
+                showOverlay(true);
+              } else if (e.data === 0) {
+                api("/videos/" + encodeURIComponent(v.video_id) + "/complete", { method: "POST" }).catch(function () {});
+                history.back();
+              }
+            },
+            onError: function () {
+              errorEl.textContent = "Videoen kan ikke afspilles her. Tryk Back for at gå tilbage.";
+              errorEl.hidden = false;
+            }
+          }
+        });
+        tickTimer = setInterval(function () {
+          if (overlayEl.classList.contains("show")) updateOverlay();
+          if (isPlaying() && Math.abs(position() - lastSaved) >= 15) saveProgress(false);
+        }, 1000);
+      });
+    }
+
+    function closePlayer() {
+      if (!current) return;
+      saveProgress(true);
+      clearInterval(tickTimer);
+      clearTimeout(overlayTimer);
+      try { player && player.destroy(); } catch (e) {}
+      player = null;
+      current = null;
+      lastSaved = 0;
+      document.getElementById("frame").innerHTML = "";
+      overlayEl.classList.remove("show");
+      playerEl.hidden = true;
+      document.body.classList.remove("playing");
+      setFocus(focusIndex);
+    }
+
+    function togglePlay() {
+      if (!player) return;
+      if (isPlaying()) { player.pauseVideo(); flash("❚❚"); }
+      else { player.playVideo(); flash("▶"); }
+    }
+
+    function seek(delta) {
+      if (!player) return;
+      var d = duration();
+      var target = Math.max(0, position() + delta);
+      if (d) target = Math.min(target, Math.max(0, d - 1));
+      player.seekTo(target, true);
+      flash(delta > 0 ? "+" + delta + " s" : "−" + Math.abs(delta) + " s");
+      showOverlay(!isPlaying());
+    }
+
+    function playerKey(code) {
+      switch (code) {
+        case KEY.RIGHT: case KEY.FF: seek(SEEK_FORWARD); return true;
+        case KEY.LEFT: case KEY.RW: seek(-SEEK_BACK); return true;
+        case KEY.ENTER: case KEY.PLAY_PAUSE: togglePlay(); return true;
+        case KEY.PLAY: if (!isPlaying()) togglePlay(); return true;
+        case KEY.PAUSE: if (isPlaying()) togglePlay(); return true;
+        case KEY.UP: case KEY.DOWN: showOverlay(false); return true;
+        case KEY.BACK:
+          // webOS may already turn Back into history.back() itself; only step
+          // back here if that did not happen, or Back would leave the app.
+          clearTimeout(backTimer);
+          backTimer = setTimeout(function () { if (current) history.back(); }, 300);
+          return true;
+        case KEY.ESC: case KEY.BACKSPACE: case KEY.STOP: history.back(); return true;
+      }
+      return false;
+    }
+
+    document.getElementById("clickLayer").addEventListener("click", togglePlay);
+    var backTimer = null;
+    window.addEventListener("popstate", function () { clearTimeout(backTimer); closePlayer(); });
+
+    document.addEventListener("keydown", function (e) {
+      var handled = current ? playerKey(e.keyCode) : gridKey(e.keyCode);
+      if (handled) e.preventDefault();
+    });
+
+    window.addEventListener("pagehide", function () { saveProgress(true); });
+
+    loadMore();
+  })();
+  </script>
+</body>
+</html>
