@@ -37,3 +37,41 @@ export function resolveWatchCaptions(sources: WatchCaptionSources): WatchCaption
 export function captionPlayerVars(defaultOn: boolean, language: string): { cc_load_policy: number; cc_lang_pref?: string } {
   return defaultOn ? { cc_load_policy: 1, cc_lang_pref: language } : { cc_load_policy: 0 };
 }
+
+interface CaptionModulePlayer {
+  unloadModule?: (module: string) => void;
+}
+
+/** Remove the caption track from a YouTube embed ("cc" is the module's older name). */
+export function unloadCaptions(player: CaptionModulePlayer | null | undefined): void {
+  try { player?.unloadModule?.("captions"); } catch {}
+  try { player?.unloadModule?.("cc"); } catch {}
+}
+
+/**
+ * cc_load_policy=0 is not "off": YouTube reads it as "no preference" and still
+ * shows the track the embed remembers, or the one the creator marked as default.
+ * Unloading the captions module is the switch that holds. YouTube loads the
+ * module again when playback starts, so it is unloaded when the player is ready,
+ * when it first plays, and once more shortly after. From then on the viewer's own
+ * CC button decides.
+ */
+export function createCaptionsOffGuard(keepOff: boolean, lateMs = 1500) {
+  let started = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const unload = unloadCaptions;
+  return {
+    ready(player: CaptionModulePlayer | null | undefined) {
+      if (keepOff && !started) unload(player);
+    },
+    playing(player: CaptionModulePlayer | null | undefined) {
+      if (!keepOff || started) return;
+      started = true;
+      unload(player);
+      timer = setTimeout(() => unload(player), lateMs);
+    },
+    dispose() {
+      if (timer) clearTimeout(timer);
+    },
+  };
+}

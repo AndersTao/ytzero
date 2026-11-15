@@ -6,6 +6,7 @@ import { api, type Video } from "../api";
 import { useI18n } from "../i18n";
 import { img } from "../img";
 import { isIncognitoMode } from "../incognitoMode";
+import { unloadCaptions } from "../pages/watchCaptions";
 
 let ytApiReady: Promise<void> | null = null;
 function loadYouTubeApi(): Promise<void> {
@@ -138,7 +139,11 @@ export default function ShortsPlayer({
           origin: window.location.origin,
         },
         events: {
+          onReady: (event: any) => unloadCaptions(event.target),
           onStateChange: (event: any) => {
+            // Shorts have no caption button, and cc_load_policy=0 alone lets
+            // YouTube bring back a remembered track, so drop it on every start.
+            if (event.data === 1 /* PLAYING */) unloadCaptions(event.target);
             // Pause any slot that starts playing while it's not the active one
             if (event.data === 1 /* PLAYING */ && s !== currentSlotRef.current) {
               event.target.pauseVideo();

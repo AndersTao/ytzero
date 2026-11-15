@@ -162,3 +162,40 @@ if (
   || logout.status !== 200
   || revoked.status !== 401
 ) throw new Error("TV device authorization assertion failed");
+
+// Cookie mode: the TV login page on the instance's own origin asks the server to
+// set the session as the usual HttpOnly cookie instead of handing out a token.
+// A second password login is deliberately slowed down, so approve with a session made directly.
+const approverCookie = `ytzero_session=${await createSession(1, "account")}`;
+const cookieBegin = await api.request("http://localhost/auth/device/code", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ device_name: "LG TV" }),
+});
+const cookieAuthorization = await cookieBegin.json() as any;
+const cookieApproval = await api.request("http://localhost/auth/device/authorize", {
+  method: "POST",
+  headers: { Cookie: approverCookie, "Content-Type": "application/json" },
+  body: JSON.stringify({ user_code: cookieAuthorization.user_code }),
+});
+const cookieToken = await api.request("http://localhost/auth/device/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ device_code: cookieAuthorization.device_code, set_cookie: true }),
+});
+const cookieTokenBody = await cookieToken.json() as any;
+const setCookie = cookieToken.headers.get("set-cookie") ?? "";
+const tvCookie = setCookie.split(";", 1)[0];
+const tvStatus = await api.request("http://localhost/auth/status", { headers: { Cookie: tvCookie } });
+const tvStatusBody = await tvStatus.json() as any;
+
+if (
+  cookieApproval.status !== 200
+  || cookieToken.status !== 200
+  || "access_token" in cookieTokenBody
+  || cookieTokenBody.token_type !== "cookie"
+  || !tvCookie.startsWith("ytzero_session=")
+  || !/;\s*HttpOnly/i.test(setCookie)
+  || tvStatus.status !== 200
+  || tvStatusBody.authenticated !== true
+) throw new Error("TV device authorization cookie-mode assertion failed");

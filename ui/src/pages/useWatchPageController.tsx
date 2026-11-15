@@ -25,7 +25,7 @@ import { isContinuousPlaylistQueue, playbackEndAction } from "../playlistPlaybac
 import type { NeighbouringTrack as Track } from "../components/AudioModePlayer";
 import { restoreSidebarVisibility } from "../app-shell/sidebarVisibility";
 import { canAutoArchiveVideo, isMissingVideoError, loadYouTubeApi, resolveShareTimestamp, resolveWatchPlayerTarget, resolveWatchRoutePreview } from "./watchRuntime";
-import { captionPlayerVars, resolveWatchCaptions } from "./watchCaptions";
+import { captionPlayerVars, createCaptionsOffGuard, resolveWatchCaptions } from "./watchCaptions";
 import { useWatchTogetherPlayback } from "./useWatchTogetherPlayback";
 import { useYouTubeKeyboardShortcuts, type WatchShortcutKind } from "./useYouTubeKeyboardShortcuts";
 import { useUpNextQueue } from "./useUpNextQueue";
@@ -1184,6 +1184,7 @@ export function useWatchPageController(audioModeRequested: boolean = false) {
     let pollInterval: ReturnType<typeof setInterval>;
     let destroyed = false;
     let youtubePlayer: WatchPlayerHandle | null = null;
+    const captionsOff = createCaptionsOffGuard(channelCaptionsOff || !captionsDefaultOn); // see watchCaptions.ts
     // YT resets the rate to 1× on load, so apply the desired speed once the
     // player is ready and again on the first PLAYING event to make it stick.
     let speedApplied = false;
@@ -1216,9 +1217,7 @@ export function useWatchPageController(audioModeRequested: boolean = false) {
             if (watchTogetherTransportLockedRef.current) {
               if (iframe) iframe.tabIndex = -1;
             }
-            if (channelCaptionsOff) {
-              try { e.target.unloadModule?.("captions"); } catch {}
-            }
+            captionsOff.ready(e.target);
             if (!watchTogetherRoomId) requestYouTubePlayback();
           },
           onAutoplayBlocked: () => {
@@ -1227,6 +1226,7 @@ export function useWatchPageController(audioModeRequested: boolean = false) {
           onStateChange: (e: any) => {
             // 1 === playing: apply the desired speed once (YT resets on load).
             if (e?.data === 1) {
+              captionsOff.playing(e.target);
               try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } catch {}
               if (!speedApplied) {
                 speedApplied = true;
@@ -1259,7 +1259,7 @@ export function useWatchPageController(audioModeRequested: boolean = false) {
 
     return () => {
       destroyed = true;
-      clearInterval(pollInterval);
+      captionsOff.dispose(); clearInterval(pollInterval);
       saveOnExit();
       if (youtubePlayer) {
         try { youtubePlayer.destroy(); } catch {}

@@ -10,53 +10,39 @@ Sådan hænger det sammen:
 1. Appen (`app/index.html`) tjekker, at serveren svarer. Derefter åbner den
    `https://ytzero.example.com/tv-login.html`. Svarer serveren ikke, viser
    den en fejlside og prøver igen automatisk.
-2. Login-siden (`server/tv-login.html`) ligger på din YT Zero-server.
+2. Login-siden (`/tv-login.html`) følger med YT Zero-imaget fra `ui/public`.
    - Er TV'et allerede logget ind, sender den straks videre til forsiden.
    - Ellers henter den en kode fra `/api/auth/device/code` og viser kode og
      QR-kode.
    - Scan QR-koden, log ind på telefonen og godkend "LG TV" på `/tv/pair`.
-   - Siden spørger `/api/auth/device/token` og gemmer den udstedte session i
-     cookien `ytzero_session`. Derefter åbner YT Zero som normalt.
-3. Tilbage-knappen på fjernbetjeningen går tilbage i YT Zero. Fra forsiden
+   - Siden spørger `/api/auth/device/token` med `set_cookie: true`, og serveren
+     sætter selv sessionen som den sædvanlige `HttpOnly`-cookie
+     `ytzero_session`. Derefter åbner YT Zero som normalt.
+3. På TV'et slår webklienten TV-tilstand til (`ui/src/tvNavigation.ts`):
+   piletasterne flytter fokus og ruller siden, og OK aktiverer. På watch-siden
+   spoler Venstre/Højre i afspilleren. TV-tilstand kan tvinges til eller fra med
+   `?tv=1` eller `?tv=0`.
+4. Tilbage-knappen på fjernbetjeningen går tilbage i YT Zero. Fra forsiden
    lukker den appen.
 
 Indhold:
 
 - `app/` er selve webOS-appen. Instansens adresse står i `INSTANCE_URL`
   i `index.html`.
-- `server/tv-login.src.html` er kilden til login-siden.
-- `server/tv-login.html` er den færdige login-side med QR-biblioteket
-  (qrcode-generator, MIT) indbygget. Det er den fil, der skal på serveren.
+- `server/tv-login.src.html` er kilden til login-siden. `build.sh` indlejrer
+  QR-biblioteket (qrcode-generator, MIT) og skriver resultatet til
+  `ui/public/tv-login.html`, som committes.
 - `dist/app.ytzero.webos_1.0.0_all.ipk` er den færdige pakke.
 - `build.sh` bygger både login-siden og IPK-pakken igen.
 
-## 1. Læg login-siden på serveren
+## 1. Tjek at serveren leverer login-siden
 
-YT Zero serverer selv statiske filer fra `/app/public` i containeren. Mount
-`tv-login.html` ind der i `docker-compose.yml`:
-
-```yaml
-services:
-  ytzero:
-    volumes:
-      - ./tv-login.html:/app/public/tv-login.html:ro
-```
-
-Kopiér `server/tv-login.html` til mappen ved siden af `docker-compose.yml`, og
-genstart derefter containeren:
-
-```bash
-docker compose up -d
-```
-
-Tjek at siden bliver serveret. Kommandoen skal skrive `1`:
+Login-siden følger med imaget, så der skal ikke mountes noget. Kommandoen skal
+skrive `1`:
 
 ```bash
 curl -s https://ytzero.example.com/tv-login.html | grep -c "Log ind på YT Zero"
 ```
-
-Skriver den `0`, får du YT Zeros forside i stedet, og så er mounten ikke slået
-igennem.
 
 ## 2. Installér appen på TV'et
 

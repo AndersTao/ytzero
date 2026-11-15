@@ -7,3 +7,10 @@
 @import "./styles/typography.css" layer(base);
 @import "./styles/scrollbars.css" layer(base);
 @import "./styles/utilities.css" layer(utilities);
+
+/* TV mode (see tvNavigation.ts): the remote moves focus, so focus must always show. */
+html.tv-mode :focus-visible,
+html.tv-mode :focus:not(iframe):not(body):not([tabindex="-1"]) {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 3px !important;
+}

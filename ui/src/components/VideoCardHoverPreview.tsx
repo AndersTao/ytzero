@@ -3,6 +3,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import { api } from "../api";
 import { enforceLocalPlayerVolume } from "../localPlayerVolume";
 import { loadYouTubeApi } from "../pages/watchRuntime";
+import { createCaptionsOffGuard } from "../pages/watchCaptions";
 import { IconButton, Slider } from "./ui";
 import "./VideoCardHoverPreview.css";
 
@@ -63,6 +64,7 @@ export function VideoCardHoverPreview({
 
     let destroyed = false;
     let player: any = null;
+    let disposeCaptions: (() => void) | undefined;
     const inner = document.createElement("div");
     wrap.appendChild(inner);
 
@@ -73,6 +75,9 @@ export function VideoCardHoverPreview({
         onUnavailable();
         return;
       }
+      // A muted preview never wants captions over the picture.
+      const captionsOff = createCaptionsOffGuard(true);
+      disposeCaptions = captionsOff.dispose;
       player = new target.YT.Player(inner, {
         host: "https://www.youtube-nocookie.com",
         videoId,
@@ -82,11 +87,15 @@ export function VideoCardHoverPreview({
         events: {
           onReady: (event: any) => {
             if (destroyed) return;
+            captionsOff.ready(event.target);
             try {
               event.target?.mute?.();
               event.target?.playVideo?.();
             } catch {}
             setReady(true);
+          },
+          onStateChange: (event: any) => {
+            if (event?.data === 1) captionsOff.playing(event.target);
           },
           onError: () => {
             if (!destroyed) onUnavailable();
@@ -99,6 +108,7 @@ export function VideoCardHoverPreview({
 
     return () => {
       destroyed = true;
+      disposeCaptions?.();
       try { player?.destroy?.(); } catch {}
       while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
     };
