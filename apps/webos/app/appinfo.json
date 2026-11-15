@@ -1,0 +1,16 @@
+{
+  "id": "app.ytzero.webos",
+  "version": "1.0.0",
+  "vendor": "YT Zero",
+  "type": "web",
+  "main": "index.html",
+  "title": "YT Zero",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "splashBackground": "splash.png",
+  "bgColor": "#0f0f0f",
+  "iconColor": "#0f0f0f",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": false,
+  "requiredACG": []
+}

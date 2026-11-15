@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <meta name="robots" content="noindex">
+  <title>YT Zero · Log ind på TV</title>
+  <style>
+    html, body {
+      margin: 0; height: 100%;
+      background: #0f0f0f; color: #f1f1f1;
+      font-family: "LG Smart UI", "Museo Sans", system-ui, sans-serif;
+    }
+    body { display: flex; align-items: center; justify-content: center; }
+    main { display: flex; align-items: center; gap: 96px; }
+    #qr {
+      width: 440px; height: 440px; border-radius: 24px; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #qr svg { width: 400px; height: 400px; display: block; }
+    #qr.empty { background: #1c1c1c; }
+    .text { max-width: 820px; }
+    h1 { font-size: 56px; margin: 0 0 28px; font-weight: 600; }
+    p { font-size: 32px; line-height: 1.4; margin: 0 0 20px; opacity: .8; }
+    #url { font-size: 30px; opacity: .65; word-break: break-all; }
+    #code {
+      font-size: 88px; font-weight: 700; letter-spacing: .12em; margin: 28px 0 32px;
+      font-variant-numeric: tabular-nums;
+    }
+    #status { font-size: 28px; opacity: .55; min-height: 1.4em; }
+    #status.error { color: #ff6b6b; opacity: .9; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="qr" class="empty"></div>
+    <div class="text">
+      <h1>Log ind på YT Zero</h1>
+      <p>Scan QR-koden med telefonen, log ind og godkend TV'et.</p>
+      <p id="url"></p>
+      <div id="code">····-····</div>
+      <div id="status">Henter kode…</div>
+    </div>
+  </main>
+
+  <script>/*QRCODE_LIB*/</script>
+  <script>
+    (function () {
+      var DEVICE_NAME = "LG TV";
+      var COOKIE = "ytzero_session";
+
+      var qrEl = document.getElementById("qr");
+      var codeEl = document.getElementById("code");
+      var urlEl = document.getElementById("url");
+      var statusEl = document.getElementById("status");
+      var pollTimer = null, expireTimer = null;
+
+      function setStatus(text, isError) {
+        statusEl.textContent = text;
+        statusEl.className = isError ? "error" : "";
+      }
+
+      function post(path, body) {
+        return fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+      }
+
+      function goHome() { window.location.replace("/"); }
+
+      function formatCode(code) {
+        var c = String(code).replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+        return c.length === 8 ? c.slice(0, 4) + "-" + c.slice(4) : String(code).toUpperCase();
+      }
+
+      function drawQr(text) {
+        var qr = qrcode(0, "M");
+        qr.addData(text);
+        qr.make();
+        qrEl.innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+        qrEl.className = "";
+      }
+
+      function stopTimers() { clearTimeout(pollTimer); clearTimeout(expireTimer); }
+
+      function start() {
+        stopTimers();
+        setStatus("Henter kode…");
+        post("/api/auth/device/code", { device_name: DEVICE_NAME })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+          .then(function (d) {
+            codeEl.textContent = formatCode(d.user_code);
+            urlEl.textContent = "Eller gå til " + d.verification_uri;
+            drawQr(d.verification_uri_complete || d.verification_uri);
+            setStatus("Venter på godkendelse…");
+            var interval = Math.max(2, Number(d.interval) || 5) * 1000;
+            expireTimer = setTimeout(start, Math.max(30, Number(d.expires_in) || 600) * 1000);
+            poll(d.device_code, interval);
+          })
+          .catch(function () {
+            setStatus("Kunne ikke hente en kode. Prøver igen…", true);
+            pollTimer = setTimeout(start, 10000);
+          });
+      }
+
+      function poll(deviceCode, interval) {
+        pollTimer = setTimeout(function () {
+          post("/api/auth/device/token", { device_code: deviceCode })
+            .then(function (r) {
+              if (r.status === 428) return poll(deviceCode, interval);   // venter stadig
+              if (r.status === 400) return start();                      // koden er udløbet
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              return r.json().then(function (t) {
+                stopTimers();
+                var maxAge = Number(t.expires_in) || 30 * 24 * 60 * 60;
+                var secure = location.protocol === "https:" ? "; Secure" : "";
+                document.cookie = COOKIE + "=" + encodeURIComponent(t.access_token) +
+                  "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax" + secure;
+                setStatus("Godkendt – åbner YT Zero…");
+                goHome();
+              });
+            })
+            .catch(function () {
+              setStatus("Mistede forbindelsen. Prøver igen…", true);
+              poll(deviceCode, interval * 2);
+            });
+        }, interval);
+      }
+
+      // Allerede logget ind? Så direkte videre.
+      fetch("/api/auth/status", { credentials: "same-origin", cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (s) { if (s && s.authenticated) goHome(); else start(); })
+        .catch(start);
+    })();
+  </script>
+</body>
+</html>

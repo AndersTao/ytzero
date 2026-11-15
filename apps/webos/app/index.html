@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>YT Zero</title>
+  <style>
+    html, body {
+      margin: 0; height: 100%;
+      background: #0f0f0f; color: #f1f1f1;
+      font-family: "LG Smart UI", "Museo Sans", system-ui, sans-serif;
+    }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; }
+    img { width: 220px; height: 220px; }
+    #status { font-size: 40px; opacity: .85; text-align: center; max-width: 1400px; }
+    #detail { font-size: 28px; opacity: .55; min-height: 1em; }
+    button {
+      font: inherit; font-size: 34px; padding: 18px 56px; border-radius: 16px;
+      border: 3px solid transparent; background: #272727; color: #f1f1f1; cursor: pointer;
+    }
+    button:focus, button:hover { background: #f1f1f1; color: #0f0f0f; outline: none; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <img src="largeIcon.png" alt="">
+  <div id="status">Forbinder til YT Zero…</div>
+  <div id="detail"></div>
+  <button id="retry" hidden>Prøv igen</button>
+
+  <script>
+    // Adressen på din YT Zero-instans.
+    var INSTANCE_URL = "https://ytzero.example.com/";
+    // Login-siden (server/tv-login.html) sender straks videre til forsiden, hvis TV'et
+    // allerede er logget ind; ellers viser den QR-kode til pairing.
+    var START_PATH = "tv-login.html";
+    var TIMEOUT_MS = 8000;
+    var AUTO_RETRY_MS = 15000;
+
+    var statusEl = document.getElementById("status");
+    var detailEl = document.getElementById("detail");
+    var retryBtn = document.getElementById("retry");
+    var retryTimer = null;
+
+    function reachable(url, timeoutMs) {
+      // no-cors: vi kan ikke læse svaret, men et opaque svar betyder at serveren svarer;
+      // en netværksfejl eller timeout betyder at den ikke kan nås.
+      return new Promise(function (resolve) {
+        var done = false;
+        var timer = setTimeout(function () { if (!done) { done = true; resolve(false); } }, timeoutMs);
+        fetch(url + "api/health?_=" + Date.now(), { mode: "no-cors", cache: "no-store" })
+          .then(function () { if (!done) { done = true; clearTimeout(timer); resolve(true); } })
+          .catch(function () { if (!done) { done = true; clearTimeout(timer); resolve(false); } });
+      });
+    }
+
+    function connect() {
+      clearTimeout(retryTimer);
+      retryBtn.hidden = true;
+      statusEl.textContent = "Forbinder til YT Zero…";
+      detailEl.textContent = "";
+      reachable(INSTANCE_URL, TIMEOUT_MS).then(function (ok) {
+        if (ok) {
+          // replace() så denne side ikke ligger i historikken: Tilbage på fjernbetjeningen
+          // går så tilbage i YT Zero og lukker appen fra forsiden.
+          window.location.replace(INSTANCE_URL + START_PATH);
+        } else {
+          statusEl.textContent = "Kan ikke nå YT Zero lige nu";
+          detailEl.textContent = INSTANCE_URL.replace(/\/$/, "") + " · prøver igen automatisk";
+          retryBtn.hidden = false;
+          retryBtn.focus();
+          retryTimer = setTimeout(connect, AUTO_RETRY_MS);
+        }
+      });
+    }
+
+    retryBtn.addEventListener("click", connect);
+    document.addEventListener("keydown", function (e) {
+      // 13 = OK på fjernbetjeningen
+      if (e.keyCode === 13 && !retryBtn.hidden) { e.preventDefault(); connect(); }
+    });
+
+    connect();
+  </script>
+</body>
+</html>
