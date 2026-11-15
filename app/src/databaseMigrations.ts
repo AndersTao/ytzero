@@ -143,158 +143,6 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
     ],
   },
   {
-    version: 201,
-    name: "related-video-panel",
-    schemaHashes: {
-      "app/src/schema.sql": "ba49323d51e8391889173a4851aea0b8d536a714e5d048b63981b5be851f4bae",
-      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
-      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
-    },
-    sqlite: [
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS video_related (video_id TEXT PRIMARY KEY REFERENCES videos(video_id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT (datetime('now')))` },
-    ],
-    postgres: [
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS video_related (video_id TEXT PRIMARY KEY REFERENCES videos(video_id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'))` },
-    ],
-  },
-  {
-    version: 202,
-    name: "related-video-panel-per-profile",
-    schemaHashes: {
-      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
-      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
-      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
-    },
-    // The rows already stored have no profile that could be recovered: each was
-    // fetched by whoever opened the video first, under whatever credentials
-    // were reachable then. Carrying them over would attribute one person's
-    // recommendations to everybody, which is the defect. They are dropped, and
-    // the next open fetches a panel that belongs to the reader.
-    sqlite: [
-      { kind: "sql", statement: `DROP TABLE IF EXISTS video_related` },
-      { kind: "sql", statement: `CREATE TABLE video_related (video_id TEXT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (video_id, user_id))` },
-    ],
-    postgres: [
-      { kind: "sql", statement: `DROP TABLE IF EXISTS video_related` },
-      { kind: "sql", statement: `CREATE TABLE video_related (video_id TEXT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'), PRIMARY KEY (video_id, user_id))` },
-    ],
-  },
-  {
-    version: 203,
-    name: "video-embeddable",
-    schemaHashes: {
-      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
-      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
-      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
-    },
-    // NULL until a watch page says otherwise: the InnerTube and embed
-    // fallbacks do not carry the answer, and an unknown must never be mistaken
-    // for a refusal — that would send every video the long way round.
-    sqlite: [
-      { kind: "add-column", table: "videos", column: "embeddable", definition: "INTEGER" },
-    ],
-    postgres: [
-      { kind: "add-column", table: "videos", column: "embeddable", definition: "INTEGER" },
-    ],
-  },
-{
-    version: 204,
-    name: "dailymotion-follows-and-progress",
-    schemaHashes: {
-      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
-      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
-      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
-      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
-    },
-    /*
-     * Two tables of its own, referencing nothing.
-     *
-     * The id spaces are deliberately unshared: a Dailymotion id in a YouTube
-     * column would be a claim about whichever video happens to spell the same.
-     * So there are no foreign keys here, and no row of theirs anywhere else —
-     * which is also what makes the feature removable by dropping these two.
-     *
-     * What is kept is the reader's relationship to a video, never the video: a
-     * position, and the instant a channel has been seen through. Titles and
-     * thumbnails stay Dailymotion's, asked for when they are needed.
-     */
-    sqlite: [
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_follows (user_id INTEGER NOT NULL, channel_id TEXT NOT NULL, screenname TEXT NOT NULL DEFAULT '', avatar TEXT NOT NULL DEFAULT '', added_at TEXT NOT NULL DEFAULT (datetime('now')), seen_through INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, channel_id))` },
-      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_follows_user ON dailymotion_follows(user_id, added_at DESC)` },
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_progress (user_id INTEGER NOT NULL, video_id TEXT NOT NULL, position_seconds REAL NOT NULL DEFAULT 0, duration_seconds REAL, watched INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (user_id, video_id))` },
-      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_progress_user ON dailymotion_progress(user_id, updated_at DESC)` },
-    ],
-    postgres: [
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_follows (user_id INTEGER NOT NULL, channel_id TEXT NOT NULL, screenname TEXT NOT NULL DEFAULT '', avatar TEXT NOT NULL DEFAULT '', added_at TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')), seen_through INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, channel_id))` },
-      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_follows_user ON dailymotion_follows(user_id, added_at DESC)` },
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_progress (user_id INTEGER NOT NULL, video_id TEXT NOT NULL, position_seconds REAL NOT NULL DEFAULT 0, duration_seconds REAL, watched INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')), PRIMARY KEY (user_id, video_id))` },
-      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_progress_user ON dailymotion_progress(user_id, updated_at DESC)` },
-    ],
-  },
-  {
-    version: 205,
-    name: "invidious-client-tokens",
-    schemaHashes: {
-      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
-      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
-      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
-      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
-      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
-    },
-    /*
-     * One table, referencing nothing.
-     *
-     * A client speaking the Invidious dialect authenticates by presenting a
-     * token, and what is kept is a keyed hash of it: enough to recognise it on
-     * sight, not enough to reconstruct it. One per profile, so minting a second
-     * replaces the first — which is what revocation is here, and why the row is
-     * keyed by the profile rather than by the token.
-     *
-     * No foreign key to users, for the same reason the Dailymotion tables have
-     * none: the feature has to be removable by dropping this table alone.
-     */
-    sqlite: [
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS invidious_tokens (user_id INTEGER NOT NULL PRIMARY KEY, token_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_used_at TEXT)` },
-      { kind: "sql", statement: `CREATE UNIQUE INDEX IF NOT EXISTS idx_invidious_tokens_hash ON invidious_tokens(token_hash)` },
-    ],
-    postgres: [
-      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS invidious_tokens (user_id INTEGER NOT NULL PRIMARY KEY, token_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')), last_used_at TEXT)` },
-      { kind: "sql", statement: `CREATE UNIQUE INDEX IF NOT EXISTS idx_invidious_tokens_hash ON invidious_tokens(token_hash)` },
-    ],
-  },
-  {
-    version: 206,
-    name: "video-original-titles",
-    schemaHashes: {
-      "app/src/schema.sql": "7464674b4e1c8370f630374603552b9929cb2b09031353cf3da3b1cf02c4df8f",
-      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
-      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
-      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
-      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
-    },
-    /*
-     * One column, and it is never shown to anybody.
-     *
-     * `title` is what a reader here sees, and YouTube translates a title into
-     * whatever language the request asks for — so on a French instance a
-     * Japanese video can and should be listed under its French title. The
-     * trouble is that the sources which do not translate keep writing over it:
-     * the channel feed and oEmbed both hand back what the uploader wrote, and
-     * neither can tell "this upload was renamed" from "this title was
-     * translated here".
-     *
-     * Remembering the untranslated title answers that question without asking
-     * anybody anything: the feed's title against this one is a rename, and the
-     * feed's title against `title` is nothing at all.
-     */
-    sqlite: [
-      { kind: "add-column", table: "videos", column: "title_original", definition: "TEXT" },
-    ],
-    postgres: [
-      { kind: "add-column", table: "videos", column: "title_original", definition: "TEXT" },
-    ],
-  },
-  {
     version: 7,
     name: "profile-video-bookmarks",
     /*
@@ -726,6 +574,158 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       { kind: "sql", statement: "CREATE TABLE IF NOT EXISTS child_download_requests (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, video_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', auto INTEGER NOT NULL DEFAULT 0, resolved_by INTEGER REFERENCES users(id) ON DELETE SET NULL, created_at TEXT NOT NULL DEFAULT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'), resolved_at TEXT)" },
       { kind: "sql", statement: "CREATE INDEX IF NOT EXISTS idx_child_download_requests_status ON child_download_requests(status, created_at)" },
       { kind: "sql", statement: "CREATE INDEX IF NOT EXISTS idx_child_download_requests_user ON child_download_requests(user_id, created_at)" },
+    ],
+  },
+  {
+    version: 201,
+    name: "related-video-panel",
+    schemaHashes: {
+      "app/src/schema.sql": "ba49323d51e8391889173a4851aea0b8d536a714e5d048b63981b5be851f4bae",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
+    },
+    sqlite: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS video_related (video_id TEXT PRIMARY KEY REFERENCES videos(video_id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT (datetime('now')))` },
+    ],
+    postgres: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS video_related (video_id TEXT PRIMARY KEY REFERENCES videos(video_id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'))` },
+    ],
+  },
+  {
+    version: 202,
+    name: "related-video-panel-per-profile",
+    schemaHashes: {
+      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
+    },
+    // The rows already stored have no profile that could be recovered: each was
+    // fetched by whoever opened the video first, under whatever credentials
+    // were reachable then. Carrying them over would attribute one person's
+    // recommendations to everybody, which is the defect. They are dropped, and
+    // the next open fetches a panel that belongs to the reader.
+    sqlite: [
+      { kind: "sql", statement: `DROP TABLE IF EXISTS video_related` },
+      { kind: "sql", statement: `CREATE TABLE video_related (video_id TEXT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (video_id, user_id))` },
+    ],
+    postgres: [
+      { kind: "sql", statement: `DROP TABLE IF EXISTS video_related` },
+      { kind: "sql", statement: `CREATE TABLE video_related (video_id TEXT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, payload TEXT NOT NULL, fetched_at TEXT NOT NULL DEFAULT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'), PRIMARY KEY (video_id, user_id))` },
+    ],
+  },
+  {
+    version: 203,
+    name: "video-embeddable",
+    schemaHashes: {
+      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
+    },
+    // NULL until a watch page says otherwise: the InnerTube and embed
+    // fallbacks do not carry the answer, and an unknown must never be mistaken
+    // for a refusal — that would send every video the long way round.
+    sqlite: [
+      { kind: "add-column", table: "videos", column: "embeddable", definition: "INTEGER" },
+    ],
+    postgres: [
+      { kind: "add-column", table: "videos", column: "embeddable", definition: "INTEGER" },
+    ],
+  },
+{
+    version: 204,
+    name: "dailymotion-follows-and-progress",
+    schemaHashes: {
+      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
+      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
+    },
+    /*
+     * Two tables of its own, referencing nothing.
+     *
+     * The id spaces are deliberately unshared: a Dailymotion id in a YouTube
+     * column would be a claim about whichever video happens to spell the same.
+     * So there are no foreign keys here, and no row of theirs anywhere else —
+     * which is also what makes the feature removable by dropping these two.
+     *
+     * What is kept is the reader's relationship to a video, never the video: a
+     * position, and the instant a channel has been seen through. Titles and
+     * thumbnails stay Dailymotion's, asked for when they are needed.
+     */
+    sqlite: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_follows (user_id INTEGER NOT NULL, channel_id TEXT NOT NULL, screenname TEXT NOT NULL DEFAULT '', avatar TEXT NOT NULL DEFAULT '', added_at TEXT NOT NULL DEFAULT (datetime('now')), seen_through INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, channel_id))` },
+      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_follows_user ON dailymotion_follows(user_id, added_at DESC)` },
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_progress (user_id INTEGER NOT NULL, video_id TEXT NOT NULL, position_seconds REAL NOT NULL DEFAULT 0, duration_seconds REAL, watched INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (user_id, video_id))` },
+      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_progress_user ON dailymotion_progress(user_id, updated_at DESC)` },
+    ],
+    postgres: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_follows (user_id INTEGER NOT NULL, channel_id TEXT NOT NULL, screenname TEXT NOT NULL DEFAULT '', avatar TEXT NOT NULL DEFAULT '', added_at TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')), seen_through INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, channel_id))` },
+      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_follows_user ON dailymotion_follows(user_id, added_at DESC)` },
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS dailymotion_progress (user_id INTEGER NOT NULL, video_id TEXT NOT NULL, position_seconds REAL NOT NULL DEFAULT 0, duration_seconds REAL, watched INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')), PRIMARY KEY (user_id, video_id))` },
+      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_dailymotion_progress_user ON dailymotion_progress(user_id, updated_at DESC)` },
+    ],
+  },
+  {
+    version: 205,
+    name: "invidious-client-tokens",
+    schemaHashes: {
+      "app/src/schema.sql": "0657ff8e5ed18b9370c6143f98bcc8140d9eaf60f5f32bc6a341f870f5084775",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "30b7c3fc889aedc977e2e5cd834cfd48d9e51870530213433359ed24333e03a0",
+      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
+      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
+    },
+    /*
+     * One table, referencing nothing.
+     *
+     * A client speaking the Invidious dialect authenticates by presenting a
+     * token, and what is kept is a keyed hash of it: enough to recognise it on
+     * sight, not enough to reconstruct it. One per profile, so minting a second
+     * replaces the first — which is what revocation is here, and why the row is
+     * keyed by the profile rather than by the token.
+     *
+     * No foreign key to users, for the same reason the Dailymotion tables have
+     * none: the feature has to be removable by dropping this table alone.
+     */
+    sqlite: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS invidious_tokens (user_id INTEGER NOT NULL PRIMARY KEY, token_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_used_at TEXT)` },
+      { kind: "sql", statement: `CREATE UNIQUE INDEX IF NOT EXISTS idx_invidious_tokens_hash ON invidious_tokens(token_hash)` },
+    ],
+    postgres: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS invidious_tokens (user_id INTEGER NOT NULL PRIMARY KEY, token_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')), last_used_at TEXT)` },
+      { kind: "sql", statement: `CREATE UNIQUE INDEX IF NOT EXISTS idx_invidious_tokens_hash ON invidious_tokens(token_hash)` },
+    ],
+  },
+  {
+    version: 206,
+    name: "video-original-titles",
+    schemaHashes: {
+      "app/src/schema.sql": "7b1a9ae6674b59658731c7e60a776662c2edf0cbb0fb0037c123b98385e67301",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "31e77b7af023276f38d1075b0a5a2197fef150513f010b90bab5909971871056",
+      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
+      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
+    },
+    /*
+     * One column, and it is never shown to anybody.
+     *
+     * `title` is what a reader here sees, and YouTube translates a title into
+     * whatever language the request asks for — so on a French instance a
+     * Japanese video can and should be listed under its French title. The
+     * trouble is that the sources which do not translate keep writing over it:
+     * the channel feed and oEmbed both hand back what the uploader wrote, and
+     * neither can tell "this upload was renamed" from "this title was
+     * translated here".
+     *
+     * Remembering the untranslated title answers that question without asking
+     * anybody anything: the feed's title against this one is a rename, and the
+     * feed's title against `title` is nothing at all.
+     */
+    sqlite: [
+      { kind: "add-column", table: "videos", column: "title_original", definition: "TEXT" },
+    ],
+    postgres: [
+      { kind: "add-column", table: "videos", column: "title_original", definition: "TEXT" },
     ],
   },
 ];
