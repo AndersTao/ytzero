@@ -178,10 +178,27 @@ const cookieApproval = await api.request("http://localhost/auth/device/authorize
   headers: { Cookie: approverCookie, "Content-Type": "application/json" },
   body: JSON.stringify({ user_code: cookieAuthorization.user_code }),
 });
-const cookieToken = await api.request("http://localhost/auth/device/token", {
+const cookieBody = JSON.stringify({ device_code: cookieAuthorization.device_code, set_cookie: true });
+// Refused before the code is used: a cross-site form post, another origin, no Origin at all.
+const crossSiteForm = await api.request("http://localhost/auth/device/token", {
+  method: "POST",
+  headers: { "Content-Type": "text/plain", Origin: "https://attacker.example", "Sec-Fetch-Site": "cross-site" },
+  body: cookieBody,
+});
+const otherOrigin = await api.request("http://localhost/auth/device/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: "https://attacker.example" },
+  body: cookieBody,
+});
+const noOrigin = await api.request("http://localhost/auth/device/token", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ device_code: cookieAuthorization.device_code, set_cookie: true }),
+  body: cookieBody,
+});
+const cookieToken = await api.request("http://localhost/auth/device/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: "http://localhost", "Sec-Fetch-Site": "same-origin" },
+  body: cookieBody,
 });
 const cookieTokenBody = await cookieToken.json() as any;
 const setCookie = cookieToken.headers.get("set-cookie") ?? "";
@@ -191,6 +208,10 @@ const tvStatusBody = await tvStatus.json() as any;
 
 if (
   cookieApproval.status !== 200
+  || crossSiteForm.status !== 403
+  || otherOrigin.status !== 403
+  || noOrigin.status !== 403
+  || crossSiteForm.headers.get("set-cookie")
   || cookieToken.status !== 200
   || "access_token" in cookieTokenBody
   || cookieTokenBody.token_type !== "cookie"
