@@ -47,7 +47,6 @@
   <script>
     (function () {
       var DEVICE_NAME = "LG TV";
-      var COOKIE = "ytzero_session";
 
       var qrEl = document.getElementById("qr");
       var codeEl = document.getElementById("code");
@@ -109,20 +108,15 @@
 
       function poll(deviceCode, interval) {
         pollTimer = setTimeout(function () {
-          post("/api/auth/device/token", { device_code: deviceCode })
+          // set_cookie: the server sets the usual HttpOnly session cookie itself.
+          post("/api/auth/device/token", { device_code: deviceCode, set_cookie: true })
             .then(function (r) {
               if (r.status === 428) return poll(deviceCode, interval);   // venter stadig
               if (r.status === 400) return start();                      // koden er udløbet
               if (!r.ok) throw new Error("HTTP " + r.status);
-              return r.json().then(function (t) {
-                stopTimers();
-                var maxAge = Number(t.expires_in) || 30 * 24 * 60 * 60;
-                var secure = location.protocol === "https:" ? "; Secure" : "";
-                document.cookie = COOKIE + "=" + encodeURIComponent(t.access_token) +
-                  "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax" + secure;
-                setStatus("Godkendt – åbner YT Zero…");
-                goHome();
-              });
+              stopTimers();
+              setStatus("Godkendt – åbner YT Zero…");
+              goHome();
             })
             .catch(function () {
               setStatus("Mistede forbindelsen. Prøver igen…", true);

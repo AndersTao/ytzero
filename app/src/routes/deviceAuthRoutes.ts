@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import { AUTH_SESSION_TTL_SECONDS, createSession, requestOrigin } from "../auth";
+import { AUTH_SESSION_TTL_SECONDS, authSessionCookie, createSession, requestOrigin } from "../auth";
 import { database } from "../database";
 import {
   approveDeviceAuthorization,
@@ -66,13 +66,20 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
 
   api.post("/auth/device/token", async (c) => {
     c.header("Cache-Control", "no-store");
-    const { device_code } = await c.req.json().catch(() => ({}));
+    const { device_code, set_cookie } = await c.req.json().catch(() => ({}));
     const authorization = await exchangeDeviceAuthorization(device_code);
     if (authorization.kind === "pending") return c.json({ error: "authorization_pending" }, 428);
     if (authorization.kind === "expired") return c.json({ error: "expired_token" }, 400);
     const scope = access.canSwitchProfiles() ? "account" : "profile";
     const accessToken = await createSession(authorization.userId, scope);
-    log.info("auth.device_login", { scope, id: authorization.userId });
+    log.info("auth.device_login", { scope, id: authorization.userId, cookie: set_cookie === true });
+    // A browser on the instance's own origin (the TV login page) asks for the
+    // session as the same HttpOnly cookie a normal sign-in sets, so the token
+    // never passes through page JavaScript.
+    if (set_cookie === true) {
+      c.header("Set-Cookie", authSessionCookie(accessToken));
+      return c.json({ token_type: "cookie", expires_in: AUTH_SESSION_TTL_SECONDS });
+    }
     return c.json({ access_token: accessToken, token_type: "Bearer", expires_in: AUTH_SESSION_TTL_SECONDS });
   });
 }
