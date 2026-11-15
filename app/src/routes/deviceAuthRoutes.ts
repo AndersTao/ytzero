@@ -19,6 +19,15 @@ interface DeviceAuthRouteAccess {
   currentUserId: (context: ApiContext) => number;
 }
 
+/** A JSON fetch from this instance's own origin: forms cannot send JSON, and other origins differ. */
+function isSameOriginJsonRequest(c: ApiContext): boolean {
+  if (!(c.req.header("content-type") ?? "").toLowerCase().startsWith("application/json")) return false;
+  const fetchSite = c.req.header("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin") return false;
+  const origin = c.req.header("origin");
+  return Boolean(origin) && origin === requestOrigin(c);
+}
+
 export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess): void {
   api.post("/auth/device/code", async (c) => {
     c.header("Cache-Control", "no-store");
@@ -67,6 +76,11 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
   api.post("/auth/device/token", async (c) => {
     c.header("Cache-Control", "no-store");
     const { device_code, set_cookie } = await c.req.json().catch(() => ({}));
+    // Cookie mode is only for the instance's own TV login page. Without this a
+    // cross-site form (enctype=text/plain) could plant a session the attacker
+    // approved in someone else's browser (login CSRF). Checked before the code
+    // is exchanged, so a refused request does not use it up.
+    if (set_cookie === true && !isSameOriginJsonRequest(c)) return c.json({ error: "forbidden_origin" }, 403);
     const authorization = await exchangeDeviceAuthorization(device_code);
     if (authorization.kind === "pending") return c.json({ error: "authorization_pending" }, 428);
     if (authorization.kind === "expired") return c.json({ error: "expired_token" }, 400);
