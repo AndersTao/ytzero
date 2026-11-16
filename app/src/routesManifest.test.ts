@@ -78,7 +78,9 @@ describe("HTTP route manifest", () => {
     const invidiousRoutes = routes.filter((route) => route.includes("/invidious/"));
     // An experiment on its own island: routes nothing upstream calls.
     const dailymotionRoutes = routes.filter((route) => route.includes("/dailymotion"));
-    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, ...providerRoutes, ...invidiousRoutes, ...dailymotionRoutes];
+    // The native apps' relay: a yt-dlp fetch served as it arrives, for when YouTube refuses the direct stream.
+    const relayRoute = "GET /videos/:id/relay";
+    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, ...providerRoutes, ...invidiousRoutes, ...dailymotionRoutes];
     const publicShareManagementRoutes = [
       "GET /public-shares", "PUT /public-shares/policy", "POST /public-shares",
       "PATCH /public-shares/:id", "POST /public-shares/:id/rotate", "DELETE /public-shares/:id",
