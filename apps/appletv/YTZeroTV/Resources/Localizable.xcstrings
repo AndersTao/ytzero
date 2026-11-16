@@ -1,0 +1,369 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ / %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Connect" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forbind"
+          }
+        }
+      }
+    },
+    "Connect to YT Zero" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forbind til YT Zero"
+          }
+        }
+      }
+    },
+    "Continue watching" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsæt med at se"
+          }
+        }
+      }
+    },
+    "Enter the address of your YT Zero server, for example ytzero.example.com." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv adressen på din YT Zero-server, fx ytzero.example.com."
+          }
+        }
+      }
+    },
+    "Main" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Main"
+          }
+        }
+      }
+    },
+    "Mark as watched" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markér som set"
+          }
+        }
+      }
+    },
+    "Marked as watched" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markeret som set"
+          }
+        }
+      }
+    },
+    "No new videos" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen nye videoer"
+          }
+        }
+      }
+    },
+    "No YT Zero server answered at that address." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen YT Zero-server svarede på den adresse."
+          }
+        }
+      }
+    },
+    "Or go to %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eller gå til %@"
+          }
+        }
+      }
+    },
+    "Preparing video…" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forbereder video…"
+          }
+        }
+      }
+    },
+    "Press Menu to go back." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tryk på Menu for at gå tilbage."
+          }
+        }
+      }
+    },
+    "QR code for signing in" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "QR-kode til login"
+          }
+        }
+      }
+    },
+    "Refresh" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opdater"
+          }
+        }
+      }
+    },
+    "Refreshing…" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opdaterer…"
+          }
+        }
+      }
+    },
+    "Reject" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afvis"
+          }
+        }
+      }
+    },
+    "Rejected" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afvist"
+          }
+        }
+      }
+    },
+    "Scan the QR code with your phone, sign in and approve this Apple TV." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan QR-koden med din telefon, log ind og godkend dette Apple TV."
+          }
+        }
+      }
+    },
+    "Server address" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveradresse"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indstillinger"
+          }
+        }
+      }
+    },
+    "Sign in again on this Apple TV." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log ind igen på dette Apple TV."
+          }
+        }
+      }
+    },
+    "Sign in to YT Zero" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log ind på YT Zero"
+          }
+        }
+      }
+    },
+    "Sign out" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log ud"
+          }
+        }
+      }
+    },
+    "Something went wrong – try again" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det lykkedes ikke – prøv igen"
+          }
+        }
+      }
+    },
+    "That is not a valid address." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er ikke en gyldig adresse."
+          }
+        }
+      }
+    },
+    "The code expired." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden er udløbet."
+          }
+        }
+      }
+    },
+    "The server answered %lld." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveren svarede %lld."
+          }
+        }
+      }
+    },
+    "The video could not be played." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen kunne ikke afspilles."
+          }
+        }
+      }
+    },
+    "Up to date · no new videos" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opdateret · ingen nye videoer"
+          }
+        }
+      }
+    },
+    "Updated" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opdateret"
+          }
+        }
+      }
+    },
+    "Updated · %lld new videos" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opdateret · %lld nye videoer"
+          }
+        }
+      }
+    },
+    "Use another server" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brug en anden server"
+          }
+        }
+      }
+    },
+    "Waiting for approval…" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på godkendelse…"
+          }
+        }
+      }
+    },
+    "Waiting…" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter…"
+          }
+        }
+      }
+    },
+    "YT Zero" : {
+
+    }
+  },
+  "version" : "1.0"
+}
