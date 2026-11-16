@@ -26,6 +26,7 @@ export const localeLoaders: Record<Exclude<Language, "en">, () => Promise<Locale
   ru: () => import("./locales/ru").then((module) => module.ru),
   ja: () => import("./locales/ja").then((module) => module.ja),
   hu: () => import("./locales/hu").then((module) => module.hu),
+  da: () => import("./locales/da").then((module) => module.da),
 };
 
 function localeFor(language: Language): Locale {

@@ -28,9 +28,9 @@
  *     pl  tys.    mln     mld
  */
 const MAGNITUDES: Record<string, number> = {
-  k: 1e3, tsd: 1e3, tys: 1e3,
+  k: 1e3, tsd: 1e3, tys: 1e3, t: 1e3,
   m: 1e6, mio: 1e6, mln: 1e6,
-  b: 1e9, md: 1e9, mrd: 1e9, mld: 1e9,
+  b: 1e9, md: 1e9, mrd: 1e9, mld: 1e9, mia: 1e9,
 };
 
 /** Every space YouTube groups thousands with, the narrow ones included. */
