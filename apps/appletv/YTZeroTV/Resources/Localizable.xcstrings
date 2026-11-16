@@ -1,16 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "%@ / %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ / %2$@"
-          }
-        }
-      }
-    },
     "%@, %@": {
       "localizations": {
         "en": {
@@ -291,6 +281,16 @@
         }
       }
     },
+    "The stream could not be loaded.": {
+      "localizations": {
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videoen kunne ikke hentes."
+          }
+        }
+      }
+    },
     "The video could not be played.": {
       "localizations": {
         "da": {
@@ -362,12 +362,12 @@
       }
     },
     "YT Zero": {},
-    "The stream could not be loaded.": {
+    "The stream did not start in time.": {
       "localizations": {
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Videoen kunne ikke hentes."
+            "value": "Videoen startede ikke i tide."
           }
         }
       }

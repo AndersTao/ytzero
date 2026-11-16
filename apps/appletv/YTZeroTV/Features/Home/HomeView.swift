@@ -63,6 +63,9 @@ struct HomeView: View {
             }
             .labelStyle(.iconOnly)
         }
+        // Its own focus section: Up from any card in the grid lands here, not
+        // only from a card that happens to sit below a button.
+        .focusSection()
     }
 
     private var continueShelf: some View {

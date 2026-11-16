@@ -29,6 +29,8 @@ final class PlayerModel {
     private(set) var finished = false
 
     private var ticket: String?
+    /// Why the last stream did not play, as AVPlayer put it (shown on failure).
+    private var lastStreamError: String?
     private var lastSaved: Double = 0
     private var overlayToken = 0
     private var flashToken = 0
@@ -56,7 +58,7 @@ final class PlayerModel {
                 item = await playableItem(stream.url, within: .seconds(45))
             }
             guard let item, let player else {
-                phase = .failed(String(localized: "The stream could not be loaded."))
+                phase = .failed(lastStreamError ?? String(localized: "The stream could not be loaded."))
                 return
             }
             if video.resumePosition > 0 {
@@ -102,10 +104,13 @@ final class PlayerModel {
         while ContinuousClock.now < deadline, !Task.isCancelled {
             switch item.status {
             case .readyToPlay: return item
-            case .failed: return nil
+            case .failed:
+                lastStreamError = Self.describe(item.error)
+                return nil
             default: try? await Task.sleep(for: .milliseconds(250))
             }
         }
+        lastStreamError = String(localized: "The stream did not start in time.")
         return nil
     }
 
@@ -127,7 +132,7 @@ final class PlayerModel {
             try? await Task.sleep(for: .seconds(1))
             guard let player else { continue }
             if let item = player.currentItem, item.status == .failed {
-                phase = .failed(item.error?.localizedDescription ?? String(localized: "The stream could not be loaded."))
+                phase = .failed(Self.describe(item.error) ?? String(localized: "The stream could not be loaded."))
                 showsOverlay = true
                 return
             }
@@ -152,6 +157,17 @@ final class PlayerModel {
             try? await client.markWatched(video.id)
             return
         }
+    }
+
+    /// AVPlayer's message with the domain and code underneath it, which is what
+    /// tells a refused request (HTTP) from an unplayable file (CoreMedia).
+    nonisolated static func describe(_ error: (any Error)?) -> String? {
+        guard let error else { return nil }
+        let outer = error as NSError
+        let inner = outer.userInfo[NSUnderlyingErrorKey] as? NSError
+        let detail = inner.map { "\($0.domain) \($0.code): \($0.userInfo[NSLocalizedDescriptionKey] as? String ?? $0.localizedDescription)" }
+            ?? "\(outer.domain) \(outer.code)"
+        return "\(outer.localizedDescription) (\(detail))"
     }
 
     /// Captions stay off; YouTube's streams may mark a track as default.
