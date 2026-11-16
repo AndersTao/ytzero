@@ -17,15 +17,15 @@ import type { PublishedAgo } from "./youtube";
  * grammar that does not know the language does not merely lose the age, it
  * starts reading the age as the channel's name.
  */
-const PANEL_LANGUAGES = ["en", "fr", "de", "pl"] as const;
+const PANEL_LANGUAGES = ["en", "fr", "de", "pl", "da"] as const;
 export type PanelLanguage = (typeof PANEL_LANGUAGES)[number];
 
 export function panelLanguage(value: string | null | undefined): PanelLanguage {
-  return value === "fr" || value === "de" || value === "pl" ? value : "en";
+  return value === "fr" || value === "de" || value === "pl" || value === "da" ? value : "en";
 }
 
 export function acceptLanguage(language: PanelLanguage): string {
-  return { en: "en-US,en;q=0.9", fr: "fr-FR,fr;q=0.9", de: "de-DE,de;q=0.9", pl: "pl-PL,pl;q=0.9" }[language];
+  return { en: "en-US,en;q=0.9", fr: "fr-FR,fr;q=0.9", de: "de-DE,de;q=0.9", pl: "pl-PL,pl;q=0.9", da: "da-DK,da;q=0.9" }[language];
 }
 
 interface Grammar {
@@ -105,6 +105,20 @@ const GRAMMARS: Record<PanelLanguage, Grammar> = {
       tyg: "week", "tydzień": "week", tygodnie: "week", tygodni: "week",
       mies: "month", "miesiąc": "month", "miesiące": "month", "miesięcy": "month",
       rok: "year", lata: "year", lat: "year",
+    },
+  },
+  // "for 3 dage siden", and the short forms "for 3 t. siden", "for 2 md. siden".
+  da: {
+    views: /\s*visning(?:er)?$/i,
+    ago: /^for\s+(\d+)\s*(sekunder|sekund|minutter|minut|måneder|måned|timer|time|dage|dag|uger|uge|år|sek|min|md|t|d|u)\.?\s+siden$/i,
+    units: {
+      sek: "second", sekund: "second", sekunder: "second",
+      min: "minute", minut: "minute", minutter: "minute",
+      t: "hour", time: "hour", timer: "hour",
+      d: "day", dag: "day", dage: "day",
+      u: "week", uge: "week", uger: "week",
+      md: "month", "måned": "month", "måneder": "month",
+      "år": "year",
     },
   },
 };

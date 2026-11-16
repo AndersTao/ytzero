@@ -122,3 +122,32 @@ describe("the counts a channel page and a search page write", () => {
   });
 });
 
+
+describe("Danish", () => {
+  test("ages, spelled out and short", () => {
+    expect(parseCompactPublishedText("for 3 dage siden", "da")).toEqual({ value: 3, unit: "day" });
+    expect(parseCompactPublishedText("for 1 time siden", "da")).toEqual({ value: 1, unit: "hour" });
+    expect(parseCompactPublishedText("for 13 t. siden", "da")).toEqual({ value: 13, unit: "hour" });
+    expect(parseCompactPublishedText("for 2 uger siden", "da")).toEqual({ value: 2, unit: "week" });
+    expect(parseCompactPublishedText("for 5 måneder siden", "da")).toEqual({ value: 5, unit: "month" });
+    expect(parseCompactPublishedText("for 2 md. siden", "da")).toEqual({ value: 2, unit: "month" });
+    expect(parseCompactPublishedText("for 1 år siden", "da")).toEqual({ value: 1, unit: "year" });
+    expect(parseCompactPublishedText("for 30 minutter siden", "da")).toEqual({ value: 30, unit: "minute" });
+    expect(parseCompactPublishedText("for 3 dage siden", "en")).toBe(null);
+  });
+
+  test("counts with the Danish magnitudes", () => {
+    expect(parseCompactCount("1,2 mio. visninger", "da")).toBe(1_200_000);
+    expect(parseCompactCount("699 t. visninger", "da")).toBe(699_000);
+    expect(parseCompactCount("12.345 visninger", "da")).toBe(12_345);
+    expect(parseCompactCount("1 visning", "da")).toBe(1);
+    expect(parseCompactCount("2,1 mia.", "da")).toBe(2_100_000_000);
+    expect(looksLikeCount("for 3 dage siden", "da")).toBe(false);
+    expect(looksLikePublished("1,2 mio. visninger", "da")).toBe(false);
+  });
+
+  test("is a library language with a Danish Accept-Language", () => {
+    expect(panelLanguage("da")).toBe("da");
+    expect(acceptLanguage("da")).toBe("da-DK,da;q=0.9");
+  });
+});

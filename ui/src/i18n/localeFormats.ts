@@ -91,4 +91,17 @@ export const localeFormats: Record<Language, LocaleFormat> = {
     videoCount: (n) => `${n} videó`, addedVideos: (n) => `${n} újonnan hozzáadott videó`, channelCount: (n) => `${n} csatorna`, playlistCount: (n) => `${n} lejátszási lista`, historyEntryCount: (n) => `${n} elem`,
     ageUnit: (_n, unit) => ({ days: "nap", weeks: "hét", months: "hónap", years: "év" })[unit],
   },
+  da: {
+    videoCount: (n) => `${n} ${plural("da", n, { one: "video", other: "videoer" })}`,
+    addedVideos: (n) => `Tilføjede ${n} ${plural("da", n, { one: "ny video", other: "nye videoer" })}`,
+    channelCount: (n) => `${n} ${plural("da", n, { one: "kanal", other: "kanaler" })}`,
+    playlistCount: (n) => `${n} ${plural("da", n, { one: "playliste", other: "playlister" })}`,
+    historyEntryCount: (n) => `${n} ${plural("da", n, { one: "post", other: "poster" })}`,
+    ageUnit: (n, unit) => plural("da", n, {
+      days: { one: "dag", other: "dage" },
+      weeks: { one: "uge", other: "uger" },
+      months: { one: "måned", other: "måneder" },
+      years: { one: "år", other: "år" },
+    }[unit]),
+  },
 };

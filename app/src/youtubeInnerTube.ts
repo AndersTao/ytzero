@@ -43,7 +43,7 @@ const ORIGIN = "https://www.youtube.com";
 /** Overridable because YouTube retires client versions on its own schedule. */
 const CLIENT_VERSION = process.env.YOUTUBE_CLIENT_VERSION ?? "2.20260812.01.00";
 
-const REGION: Record<PanelLanguage, string> = { en: "US", fr: "FR", de: "DE", pl: "PL" };
+const REGION: Record<PanelLanguage, string> = { en: "US", fr: "FR", de: "DE", pl: "PL", da: "DK" };
 
 /**
  * Ask for the panel as the account, the way the page's own scripts do.
