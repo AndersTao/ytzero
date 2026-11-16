@@ -728,6 +728,32 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       { kind: "add-column", table: "videos", column: "title_original", definition: "TEXT" },
     ],
   },
+  {
+    version: 207,
+    name: "websub-subscriptions",
+    schemaHashes: {
+      "app/src/schema.sql": "7b1a9ae6674b59658731c7e60a776662c2edf0cbb0fb0037c123b98385e67301",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "31e77b7af023276f38d1075b0a5a2197fef150513f010b90bab5909971871056",
+      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
+      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
+      "app/src/websubSchema.sql": "89b7db61d2e146ba8f80d5994a80704af4519c02a94a540a4cfd8acee0cc4e99",
+    },
+    /*
+     * One table, referencing nothing: the channels this instance has asked
+     * YouTube's WebSub hub to push, with the secret each notification is
+     * signed with and the lease the hub granted. Removable on its own, like
+     * the other optional features.
+     */
+    sqlite: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS websub_subscriptions (channel_id TEXT NOT NULL PRIMARY KEY, secret TEXT NOT NULL, callback_url TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', requested_at TEXT, verified_at TEXT, lease_expires_at TEXT, retry_after TEXT, last_notification_at TEXT, last_error TEXT)` },
+      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_websub_subscriptions_state ON websub_subscriptions(state)` },
+    ],
+    postgres: [
+      { kind: "sql", statement: `CREATE TABLE IF NOT EXISTS websub_subscriptions (channel_id TEXT NOT NULL PRIMARY KEY, secret TEXT NOT NULL, callback_url TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending', requested_at TEXT, verified_at TEXT, lease_expires_at TEXT, retry_after TEXT, last_notification_at TEXT, last_error TEXT)` },
+      { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_websub_subscriptions_state ON websub_subscriptions(state)` },
+    ],
+  },
 ];
 
 function quoteIdentifier(identifier: string): string {

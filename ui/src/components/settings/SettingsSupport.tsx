@@ -82,3 +82,5 @@ export function SettingsLoadingState() {
   </div>;
 }
 
+// Re-exported here so the settings page can import it on an existing line.
+export { default as WebSubSettings } from "./WebSubSettings";

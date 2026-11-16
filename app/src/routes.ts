@@ -174,7 +174,7 @@ function isPrimaryUser(c: any): boolean {
 // Admin = the immutable primary owner, an OIDC group administrator, or a
 // delegated profile administrator. Authentication configuration and role
 // delegation remain owner-only even when other admin capabilities are granted.
-function isAdmin(c: any): boolean {
+export function isAdmin(c: any): boolean {
   return isPrimaryUser(c) || Boolean(c.get("sessionAdmin")) || Boolean(c.get("profileAdmin"));
 }
 // Who may edit a profile's general settings (name/color/avatar): the owner, or

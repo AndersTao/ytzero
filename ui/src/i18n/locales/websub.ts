@@ -1,0 +1,70 @@
+const en = {
+  webSubTitle: "Push updates from YouTube",
+  webSubHint: "Instead of waiting for the next feed check, YouTube's WebSub hub notifies this server within minutes of a new upload. The regular feed checks keep running as a fallback.",
+  webSubEnable: "Use push updates",
+  webSubAddress: "Public address",
+  webSubAddressHint: "The address YouTube's hub can reach this server at from the internet, e.g. https://ytzero.example.com. Leave empty to use the server's APP_URL.",
+  webSubAddressFromAppUrl: "Empty uses APP_URL:",
+  webSubAddressMissing: "Set a public address here (or APP_URL on the server) for push updates to start.",
+  webSubPrivacy: "When this is on, the IDs of the channels this instance follows and the public address are sent to Google's hub (pubsubhubbub.appspot.com).",
+  webSubSave: "Save",
+  webSubSaved: "Push settings saved",
+  webSubInvalidAddress: "The address must start with http:// or https:// and have no query string.",
+  webSubStatus: "Status",
+  webSubActive: "active",
+  webSubPending: "waiting for YouTube",
+  webSubFailed: "failed",
+  webSubFollowed: "followed channels",
+  webSubLastNotification: "Last notification",
+  webSubNever: "none yet",
+  webSubLastError: "Last error",
+};
+
+type WebSubMessages = typeof en;
+
+const de: WebSubMessages = {
+  webSubTitle: "Push-Updates von YouTube",
+  webSubHint: "Statt auf die nächste Feed-Prüfung zu warten, benachrichtigt der WebSub-Hub von YouTube diesen Server wenige Minuten nach einem neuen Upload. Die regelmäßigen Feed-Prüfungen laufen als Rückfallebene weiter.",
+  webSubEnable: "Push-Updates verwenden",
+  webSubAddress: "Öffentliche Adresse",
+  webSubAddressHint: "Die Adresse, unter der der YouTube-Hub diesen Server aus dem Internet erreicht, z. B. https://ytzero.example.com. Leer lassen, um APP_URL des Servers zu verwenden.",
+  webSubAddressFromAppUrl: "Leer verwendet APP_URL:",
+  webSubAddressMissing: "Gib hier eine öffentliche Adresse an (oder APP_URL auf dem Server), damit Push-Updates starten.",
+  webSubPrivacy: "Wenn dies aktiv ist, werden die IDs der abonnierten Kanäle und die öffentliche Adresse an den Hub von Google (pubsubhubbub.appspot.com) gesendet.",
+  webSubSave: "Speichern",
+  webSubSaved: "Push-Einstellungen gespeichert",
+  webSubInvalidAddress: "Die Adresse muss mit http:// oder https:// beginnen und darf keinen Query-String enthalten.",
+  webSubStatus: "Status",
+  webSubActive: "aktiv",
+  webSubPending: "wartet auf YouTube",
+  webSubFailed: "fehlgeschlagen",
+  webSubFollowed: "abonnierte Kanäle",
+  webSubLastNotification: "Letzte Benachrichtigung",
+  webSubNever: "noch keine",
+  webSubLastError: "Letzter Fehler",
+};
+
+const pl: WebSubMessages = {
+  webSubTitle: "Powiadomienia push z YouTube",
+  webSubHint: "Zamiast czekać na kolejne sprawdzenie kanałów, hub WebSub YouTube powiadamia ten serwer kilka minut po nowym filmie. Zwykłe sprawdzanie kanałów nadal działa jako zabezpieczenie.",
+  webSubEnable: "Używaj powiadomień push",
+  webSubAddress: "Adres publiczny",
+  webSubAddressHint: "Adres, pod którym hub YouTube może połączyć się z tym serwerem z internetu, np. https://ytzero.example.com. Pozostaw puste, aby użyć APP_URL serwera.",
+  webSubAddressFromAppUrl: "Puste używa APP_URL:",
+  webSubAddressMissing: "Podaj tu adres publiczny (lub APP_URL na serwerze), aby uruchomić powiadomienia push.",
+  webSubPrivacy: "Po włączeniu identyfikatory obserwowanych kanałów i adres publiczny są wysyłane do huba Google (pubsubhubbub.appspot.com).",
+  webSubSave: "Zapisz",
+  webSubSaved: "Zapisano ustawienia push",
+  webSubInvalidAddress: "Adres musi zaczynać się od http:// lub https:// i nie może zawierać parametrów zapytania.",
+  webSubStatus: "Stan",
+  webSubActive: "aktywne",
+  webSubPending: "czeka na YouTube",
+  webSubFailed: "błąd",
+  webSubFollowed: "obserwowane kanały",
+  webSubLastNotification: "Ostatnie powiadomienie",
+  webSubNever: "jeszcze brak",
+  webSubLastError: "Ostatni błąd",
+};
+
+// The other languages show English until someone translates them.
+export const webSubMessages = { en, de, pl, fr: en, es: en, "pt-BR": en, ru: en, ja: en, hu: en } as const;

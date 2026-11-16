@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
-import { api } from "./routes";
+import { api, isAdmin } from "./routes";
+import { registerWebSubAdminRoutes, registerWebSubCallback, startWebSubMaintenance } from "./websubRoutes";
 import { warmPotProvider } from "./ytdlpPotProvider";
 import { provisionManagedYtdlp } from "./ytdlpProvision";
 import { registerInvidiousCompat } from "./compat/invidious";
@@ -59,6 +60,11 @@ registerInvidiousCompat(app);
 // never resolves a profile from cookies and exposes only its own allowlisted
 // read-only projection and token-scoped media resources.
 app.route("/share", createPublicShareRouter(uiDir));
+
+// YouTube's WebSub hub calls in without a session; the callback checks the
+// hub's signature itself. Its settings live inside the authenticated API.
+registerWebSubCallback(app);
+registerWebSubAdminRoutes(api, { isAdmin });
 
 app.route("/api", api);
 
@@ -121,6 +127,7 @@ if (mode.backgroundTasks) {
 // location is empty until somebody writes it.
 provisionManagedYtdlp();
 startScheduler();
+startWebSubMaintenance();
   await startDownloader();
   scheduleTubeArchivistSync(true);
   void flushTubeArchivistWatched();

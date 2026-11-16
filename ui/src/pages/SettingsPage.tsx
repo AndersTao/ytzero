@@ -32,7 +32,7 @@ import { FollowedPlaylistSettingsList } from "../components/settings/FollowedPla
 import { scheduleSettingWrite } from "../settingsWriteQueue";
 import ProfilesSettings, { ProfilePasswordSettings } from "../components/settings/ProfileSettings";
 import { ChannelOwnership, FilterRuleGroups, PlaylistSettingsItem, PluginMultiselect, RuleRow, SidebarNavEditor, TagRow } from "../components/settings/SettingsEditors";
-import { ChangelogNote, LogLine, SettingsLoadingState } from "../components/settings/SettingsSupport";
+import { ChangelogNote, LogLine, SettingsLoadingState, WebSubSettings } from "../components/settings/SettingsSupport";
 import { SettingsSearch } from "../components/settings/SettingsSearch";
 import ChannelSettingsDialog, { hasCustomChannelSettings } from "../components/settings/ChannelSettingsDialog";
 import { filterPlaylistsByName } from "../playlistSearch";
@@ -367,7 +367,7 @@ export default function SettingsPage({ showToast }: { showToast: (m: string) => 
           rights never sees: the people who needed it could not reach it. */}
       {!isCurrentTabLocked && tab === "clients" && (
         <SettingsSection>
-          <InvidiousAccess showToast={showToast} />
+          <InvidiousAccess showToast={showToast} />{isPrimary && <WebSubSettings showToast={showToast} />}
         </SettingsSection>
       )}
 

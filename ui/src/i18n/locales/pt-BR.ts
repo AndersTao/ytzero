@@ -5,6 +5,7 @@ import { feedBuilderMessages } from "./feedBuilder";
 import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
+import { webSubMessages } from "./websub";
 
 export const ptBR: Locale = {
   messages: {
@@ -26,6 +27,7 @@ export const ptBR: Locale = {
     ...clusterMessages["pt-BR"],
     ...notificationMessages["pt-BR"],
     ...tvPairingMessages["pt-BR"],
+    ...webSubMessages["pt-BR"],
     "navToday": "Principal",
     "navSocial": "Social",
     "navDiscovery": "Descoberta",

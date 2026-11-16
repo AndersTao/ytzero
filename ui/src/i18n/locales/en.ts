@@ -5,6 +5,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { feedBuilderMessages } from "./feedBuilder";
 import { tvPairingMessages } from "./tvPairing";
+import { webSubMessages } from "./websub";
 // English defines the message keys; `pl` and `de` are type-checked against them.
 export const en = {
   messages: {
@@ -25,6 +26,7 @@ export const en = {
     ...clusterMessages.en,
     ...notificationMessages.en,
     ...tvPairingMessages.en,
+    ...webSubMessages.en,
     ...feedBuilderMessages.en,
     navToday: "Main",
     navSocial: "Social",

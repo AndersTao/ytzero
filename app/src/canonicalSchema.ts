@@ -9,6 +9,7 @@ export const CANONICAL_SCHEMA_FILES = [
   "app/src/tubeArchivistSchema.sql",
   "app/src/dailymotionSchema.sql",
   "app/src/invidiousSchema.sql",
+  "app/src/websubSchema.sql",
 ] as const;
 
 export type CanonicalSchemaFile = (typeof CANONICAL_SCHEMA_FILES)[number];
