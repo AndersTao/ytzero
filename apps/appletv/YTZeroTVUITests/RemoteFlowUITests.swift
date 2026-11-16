@@ -2,6 +2,7 @@ import XCTest
 
 /// Walks the main flow with the Siri Remote and keeps a screenshot of each
 /// step as a test attachment. Needs a running server the app is paired with.
+@MainActor
 final class RemoteFlowUITests: XCTestCase {
     func testRemoteFlow() throws {
         // Set TEST_RUNNER_YTZERO_UITEST_SERVER and TEST_RUNNER_YTZERO_UITEST_TOKEN
@@ -19,6 +20,15 @@ final class RemoteFlowUITests: XCTestCase {
 
         sleep(6)
         snapshot("01-home")
+        // Up from the first video reaches the header (Refresh / Settings).
+        remote.press(.up)
+        sleep(1)
+        let refresh = app.buttons["Opdater"]
+        let settings = app.buttons["Indstillinger"]
+        XCTAssertTrue(refresh.hasFocus || settings.hasFocus, "Up from the first video should reach the header")
+        snapshot("01b-header")
+        remote.press(.down)
+        sleep(1)
         remote.press(.down)
         sleep(1)
         snapshot("02-first-card-focused")
