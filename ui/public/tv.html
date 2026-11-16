@@ -10,8 +10,8 @@
     channel, title) and a full-screen player. Remote keys only:
       browse  arrows move, OK plays, Back leaves the app
       player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
-      colour  Red rejects, Green marks as watched (the focused or playing video),
-              Blue refreshes the feed
+      numbers 1 rejects, 2 marks as watched (the focused or playing video),
+              3 refreshes the feed. (The colour keys are taken by the LG TV itself.)
     It talks to the same API as the web client, with the session cookie the TV
     login page (/tv-login.html) sets.
   -->
@@ -22,10 +22,10 @@
     body.playing { overflow: hidden; }
 
     #legend { display: flex; justify-content: flex-end; gap: 32px; padding: 28px 80px 0; font-size: 20px; color: #8a8a8a; }
-    #legend span::before { content: ""; display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; vertical-align: -1px; }
-    #legend .red::before { background: #e5484d; }
-    #legend .green::before { background: #30a46c; }
-    #legend .blue::before { background: #3e63dd; }
+    #legend b {
+      display: inline-block; min-width: 26px; padding: 1px 6px; margin-right: 10px; border-radius: 6px;
+      border: 2px solid #6a6a6a; color: #cfcfcf; text-align: center; font-weight: 700;
+    }
 
     .section-title { margin: 8px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
     .section-title[hidden], #continueRow[hidden] { display: none; }
@@ -91,7 +91,7 @@
   </style>
 </head>
 <body>
-  <div id="legend"><span class="red">Afvis</span><span class="green">Markér som set</span><span class="blue">Opdater</span></div>
+  <div id="legend"><span><b>1</b>Afvis</span><span><b>2</b>Markér som set</span><span><b>3</b>Opdater</span></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
   <div id="gridTitle" class="section-title" hidden>Main</div>
@@ -122,7 +122,7 @@
     var SEEK_BACK = 15;
     var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 461, ESC: 27, BACKSPACE: 8,
                 PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, FF: 417, RW: 412, STOP: 413,
-                RED: 403, GREEN: 404, YELLOW: 405, BLUE: 406 };
+                ONE: 49, TWO: 50, THREE: 51, NUM_ONE: 97, NUM_TWO: 98, NUM_THREE: 99 };
 
     var gridEl = document.getElementById("grid");
     var continueEl = document.getElementById("continueRow");
@@ -404,7 +404,7 @@
       return false;
     }
 
-    // ---------- Colour keys ----------
+    // ---------- Number keys ----------
 
     var busy = false;
 
@@ -440,11 +440,11 @@
       }).then(function () { refreshing = false; });
     }
 
-    function colourKey(code) {
+    function numberKey(code) {
       switch (code) {
-        case KEY.RED: actOn("reject"); return true;
-        case KEY.GREEN: actOn("watched"); return true;
-        case KEY.BLUE: refresh(); return true;
+        case KEY.ONE: case KEY.NUM_ONE: actOn("reject"); return true;
+        case KEY.TWO: case KEY.NUM_TWO: actOn("watched"); return true;
+        case KEY.THREE: case KEY.NUM_THREE: refresh(); return true;
       }
       return false;
     }
@@ -652,7 +652,7 @@
     window.addEventListener("popstate", function () { clearTimeout(backTimer); closePlayer(); });
 
     document.addEventListener("keydown", function (e) {
-      var handled = colourKey(e.keyCode) || (current ? playerKey(e.keyCode) : browseKey(e.keyCode));
+      var handled = numberKey(e.keyCode) || (current ? playerKey(e.keyCode) : browseKey(e.keyCode));
       if (handled) e.preventDefault();
     });
 
