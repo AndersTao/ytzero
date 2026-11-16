@@ -1,14 +1,14 @@
 # YT Zero til LG webOS
 
-En lille webOS-app, der åbner YT Zero-instansen `https://ytzero.example.com/`
-i fuld skærm med sit eget ikon. Login sker med YT Zeros indbyggede TV-pairing:
+En lille webOS-app, der åbner din YT Zero-instans i fuld skærm med sit eget
+ikon. Adressen sættes, når du bygger appen (se "Byg appen" nedenfor). Login sker med YT Zeros indbyggede TV-pairing:
 TV'et viser en QR-kode, du godkender på telefonen, og TV'et er så logget ind
 i 30 dage. Passkey-login i Authentik behøver derfor ikke virke på TV'et.
 
 Sådan hænger det sammen:
 
 1. Appen (`app/index.html`) tjekker, at serveren svarer. Derefter åbner den
-   `https://ytzero.example.com/tv-login.html`. Svarer serveren ikke, viser
+   `<din instans>/tv-login.html`. Svarer serveren ikke, viser
    den en fejlside og prøver igen automatisk.
 2. Login-siden (`/tv-login.html`) følger med YT Zero-imaget fra `ui/public`.
    - Er TV'et allerede logget ind, sender den straks videre til forsiden.
@@ -37,7 +37,9 @@ Indhold:
 - `server/tv-login.src.html` er kilden til login-siden. `build.sh` indlejrer
   QR-biblioteket (qrcode-generator, MIT) og skriver resultatet til
   `ui/public/tv-login.html`, som committes.
-- `dist/app.ytzero.webos_1.0.0_all.ipk` er den færdige pakke.
+- `instance.env.example` viser de to indstillinger. Din egen `instance.env`
+  committes ikke.
+- `dist/<app-id>_1.0.0_all.ipk` er den færdige pakke.
 - `build.sh` bygger både login-siden og IPK-pakken igen.
 
 ## 1. Tjek at serveren leverer login-siden
@@ -49,7 +51,19 @@ skrive `1`:
 curl -s https://ytzero.example.com/tv-login.html | grep -c "Log ind på YT Zero"
 ```
 
-## 2. Installér appen på TV'et
+## 2. Byg appen
+
+Kopiér `instance.env.example` til `instance.env`, sæt `YTZERO_URL` til din
+instans' adresse og eventuelt `YTZERO_APP_ID`, og byg:
+
+```bash
+./build.sh
+```
+
+`app/` indeholder kun pladsholdere; adresse og id sættes ind i den kopi, der
+pakkes. Uden `YTZERO_URL` stopper buildet.
+
+## 3. Installér appen på TV'et
 
 1. Opret en gratis konto på https://webostv.developer.lge.com.
 2. Installér appen **Developer Mode** fra LG Content Store på TV'et og log ind.

@@ -29,8 +29,9 @@
   <button id="retry" hidden>Prøv igen</button>
 
   <script>
-    // Adressen på din YT Zero-instans.
-    var INSTANCE_URL = "https://ytzero.example.com/";
+    // Adressen på din YT Zero-instans. Sættes af build.sh fra instance.env
+    // (YTZERO_URL), så repoet ikke peger på nogens server.
+    var INSTANCE_URL = "__YTZERO_URL__";
     // Login-siden (server/tv-login.html) sender straks videre til forsiden, hvis TV'et
     // allerede er logget ind; ellers viser den QR-kode til pairing.
     var START_PATH = "tv-login.html";

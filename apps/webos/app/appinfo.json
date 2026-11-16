@@ -1,5 +1,5 @@
 {
-  "id": "app.ytzero.webos",
+  "id": "__YTZERO_APP_ID__",
   "version": "1.0.0",
   "vendor": "YT Zero",
   "type": "web",
