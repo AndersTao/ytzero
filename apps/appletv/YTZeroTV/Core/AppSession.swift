@@ -27,6 +27,15 @@ final class AppSession {
     }
 
     init() {
+        #if DEBUG
+        // UI tests hand in a server and a session instead of pairing by hand.
+        let environment = ProcessInfo.processInfo.environment
+        if let server = environment["YTZERO_UITEST_SERVER"].flatMap(URL.init(string:)), let token = environment["YTZERO_UITEST_TOKEN"] {
+            serverURL = server
+            self.token = token
+            return
+        }
+        #endif
         if let saved = UserDefaults.standard.string(forKey: Self.addressKey), let url = URL(string: saved) {
             serverURL = url
             token = Keychain.read(account: saved)

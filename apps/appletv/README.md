@@ -58,3 +58,14 @@ Byg fra kommandolinjen uden signering:
 ```bash
 xcodebuild -project YTZeroTV.xcodeproj -scheme YTZeroTV -sdk appletvsimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 ```
+
+### UI-test i simulatoren
+
+`YTZeroTVUITests` trykker sig gennem forsiden, menuen ved langt tryk og
+afspilleren med Siri Remote og gemmer et skærmbillede af hvert trin. Testen
+skal bruge en server og en session til den, fx en testserver og en token fra
+TV-pairing:
+
+```bash
+TEST_RUNNER_YTZERO_UITEST_SERVER=http://localhost:3001 TEST_RUNNER_YTZERO_UITEST_TOKEN=<token> xcodebuild test -project YTZeroTV.xcodeproj -scheme YTZeroTV -destination "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)" CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO
+```

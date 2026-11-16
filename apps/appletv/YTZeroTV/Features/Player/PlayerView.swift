@@ -70,7 +70,7 @@ struct PlayerView: View {
                     .lineLimit(2)
                 ProgressView(value: model.duration > 0 ? min(1, model.position / model.duration) : 0)
                     .tint(.white)
-                Text("\(Duration.seconds(model.position).formatted(.time(pattern: .minuteSecond))) / \(Duration.seconds(model.duration).formatted(.time(pattern: .minuteSecond)))")
+                Text(verbatim: "\(PlaybackTime.text(model.position)) / \(PlaybackTime.text(model.duration))")
                     .font(.callout.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -100,7 +100,9 @@ struct PlayerView: View {
                     .foregroundStyle(.secondary)
             }
         case .playing:
-            EmptyView()
+            if model.isBuffering {
+                ProgressView()
+            }
         }
     }
 }

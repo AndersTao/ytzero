@@ -20,6 +20,8 @@ final class PlayerModel {
     private(set) var position: Double = 0
     private(set) var duration: Double = 0
     private(set) var isPlaying = false
+    /// Waiting for the stream: shown as a spinner over the picture.
+    private(set) var isBuffering = true
     /// "+30 s", "−15 s", pause or play, shown briefly in the middle.
     private(set) var flash: String?
     /// The bar with channel, title and time; shown while paused and briefly after a press.
@@ -90,6 +92,12 @@ final class PlayerModel {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(1))
             guard let player else { continue }
+            if let item = player.currentItem, item.status == .failed {
+                phase = .failed(item.error?.localizedDescription ?? String(localized: "The stream could not be loaded."))
+                showsOverlay = true
+                return
+            }
+            isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
             position = player.currentTime().seconds.isFinite ? player.currentTime().seconds : position
             if let seconds = player.currentItem?.duration.seconds, seconds.isFinite { duration = seconds }
             isPlaying = player.timeControlStatus != .paused

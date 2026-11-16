@@ -5,6 +5,7 @@ import SwiftUI
 struct VideoCard: View {
     let video: Video
     let client: APIClient?
+    let focus: FocusState<String?>.Binding
     let play: () -> Void
     let markWatched: () -> Void
     let reject: () -> Void
@@ -20,6 +21,7 @@ struct VideoCard: View {
                     }
             }
             .buttonStyle(.card)
+            .focused(focus, equals: video.id)
             .contextMenu {
                 Button("Mark as watched", systemImage: "eye", action: markWatched)
                 Button("Reject", systemImage: "xmark.circle", role: .destructive, action: reject)
