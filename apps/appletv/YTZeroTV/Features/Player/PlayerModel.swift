@@ -1,0 +1,171 @@
+import AVFoundation
+import Foundation
+import Observation
+
+/// Plays one video from the server's native stream and keeps the server told:
+/// the visit, the position every 15 seconds and on close, and completion.
+@Observable
+final class PlayerModel {
+    enum Phase: Equatable {
+        case preparing
+        case playing
+        case failed(String)
+    }
+
+    static let seekForward: Double = 30
+    static let seekBack: Double = 15
+
+    private(set) var phase: Phase = .preparing
+    private(set) var player: AVPlayer?
+    private(set) var position: Double = 0
+    private(set) var duration: Double = 0
+    private(set) var isPlaying = false
+    /// "+30 s", "−15 s", pause or play, shown briefly in the middle.
+    private(set) var flash: String?
+    /// The bar with channel, title and time; shown while paused and briefly after a press.
+    private(set) var showsOverlay = true
+    private(set) var finished = false
+
+    private var ticket: String?
+    private var lastSaved: Double = 0
+    private var overlayToken = 0
+    private var flashToken = 0
+
+    // MARK: Lifecycle
+
+    func start(video: Video, client: APIClient) async {
+        try? await client.recordVisit(video.id)
+        do {
+            let stream = try await preparedStream(for: video.id, client: client)
+            ticket = stream.ticket
+            let item = AVPlayerItem(url: stream.url)
+            let player = AVPlayer(playerItem: item)
+            self.player = player
+            if video.resumePosition > 0 {
+                await player.seek(to: CMTime(seconds: video.resumePosition, preferredTimescale: 600))
+            }
+            await turnOffCaptions(on: item)
+            player.play()
+            phase = .playing
+            hideOverlaySoon()
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { await self.track(video: video, client: client, renewEvery: stream.expiresIn / 2) }
+                group.addTask { await self.waitForEnd(of: item, video: video, client: client) }
+                await group.next()
+                group.cancelAll()
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            phase = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Called when the player closes: last position, then let the stream go.
+    func stop(video: Video, client: APIClient) async {
+        player?.pause()
+        if !finished, duration > 0, position >= 1 {
+            try? await client.saveProgress(video.id, position: position, duration: duration)
+        }
+        if let ticket {
+            await client.releaseTicket(video.id, ticket: ticket)
+            self.ticket = nil
+        }
+    }
+
+    /// The server may need a moment to prepare a stream; it says so with 202.
+    private func preparedStream(for id: String, client: APIClient) async throws -> (ticket: String, url: URL, expiresIn: Double) {
+        let deadline = ContinuousClock.now + .seconds(90)
+        while true {
+            do {
+                return try await client.playbackTicket(id)
+            } catch APIError.pending where ContinuousClock.now < deadline {
+                try await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    private func track(video: Video, client: APIClient, renewEvery: Double) async {
+        var lastRenewal = ContinuousClock.now
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(1))
+            guard let player else { continue }
+            position = player.currentTime().seconds.isFinite ? player.currentTime().seconds : position
+            if let seconds = player.currentItem?.duration.seconds, seconds.isFinite { duration = seconds }
+            isPlaying = player.timeControlStatus != .paused
+            if isPlaying, duration > 0, abs(position - lastSaved) >= 15 {
+                lastSaved = position
+                try? await client.saveProgress(video.id, position: position, duration: duration)
+            }
+            if let ticket, renewEvery > 0, ContinuousClock.now - lastRenewal >= .seconds(renewEvery) {
+                lastRenewal = .now
+                try? await client.renewTicket(video.id, ticket: ticket)
+            }
+        }
+    }
+
+    private func waitForEnd(of item: AVPlayerItem, video: Video, client: APIClient) async {
+        for await _ in NotificationCenter.default.notifications(named: AVPlayerItem.didPlayToEndTimeNotification, object: item) {
+            finished = true
+            try? await client.markWatched(video.id)
+            return
+        }
+    }
+
+    /// Captions stay off; YouTube's streams may mark a track as default.
+    private func turnOffCaptions(on item: AVPlayerItem) async {
+        guard let group = try? await item.asset.loadMediaSelectionGroup(for: .legible) else { return }
+        item.select(nil, in: group)
+    }
+
+    // MARK: Remote
+
+    func togglePlay() {
+        guard let player else { return }
+        if player.timeControlStatus == .paused {
+            player.play()
+            isPlaying = true
+            showFlash("▶")
+            hideOverlaySoon()
+        } else {
+            player.pause()
+            isPlaying = false
+            showFlash("❚❚")
+            showsOverlay = true
+        }
+    }
+
+    func seek(by delta: Double) {
+        guard let player else { return }
+        var target = max(0, position + delta)
+        if duration > 0 { target = min(target, duration - 1) }
+        position = target
+        player.seek(to: CMTime(seconds: target, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        showFlash(delta > 0 ? "+\(Int(delta)) s" : "−\(Int(-delta)) s")
+        showOverlayBriefly()
+    }
+
+    func showOverlayBriefly() {
+        showsOverlay = true
+        hideOverlaySoon()
+    }
+
+    private func hideOverlaySoon() {
+        overlayToken += 1
+        let token = overlayToken
+        Task {
+            try? await Task.sleep(for: .seconds(3.5))
+            if token == overlayToken, isPlaying || player?.timeControlStatus != .paused { showsOverlay = false }
+        }
+    }
+
+    private func showFlash(_ text: String) {
+        flash = text
+        flashToken += 1
+        let token = flashToken
+        Task {
+            try? await Task.sleep(for: .seconds(0.9))
+            if token == flashToken { flash = nil }
+        }
+    }
+}

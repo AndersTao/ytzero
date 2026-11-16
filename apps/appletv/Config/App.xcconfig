@@ -1,0 +1,7 @@
+// Shared build settings. Nothing here is specific to one installation.
+// Put your own team and bundle id in Local.xcconfig (not committed);
+// copy Local.xcconfig.example to start.
+YTZERO_BUNDLE_ID = app.ytzero.appletv
+YTZERO_DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"
