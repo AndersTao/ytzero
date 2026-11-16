@@ -508,6 +508,71 @@ export async function growingFileResponse(entry: PendingFetch, kind: MediaKind):
  * for the front of the file first — which arrives first. So a range is
  * answered as soon as the bytes it names are on disk.
  */
+/**
+ * The exact range asked for, streamed as the file arrives.
+ *
+ * AVPlayer asks for large ranges and refuses an answer that covers less than
+ * it asked for ("content range mismatch"), so the bounded answers above do not
+ * play there. This answers the whole range with its final length up front and
+ * sends the bytes as yt-dlp writes them — the same thing
+ * {@link growingFileResponse} does for a request without a range.
+ */
+export async function streamingRangeResponse(entry: PendingFetch, range: string | undefined, kind: MediaKind): Promise<Response> {
+  const total = await entry.total;
+  if (total === null) {
+    const finished = await entry.done;
+    const whole = finished ? localFileResponse(finished, range, mimeFor(kind, finished), false) : null;
+    return whole ?? new Response(null, { status: 502 });
+  }
+  const match = range?.match(/bytes=(\d*)-(\d*)/);
+  const start = match?.[1] ? Number(match[1]) : 0;
+  const askedEnd = match?.[2] ? Number(match[2]) : total - 1;
+  if (!Number.isFinite(start) || start >= total) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${total}` } });
+  const end = Math.min(Number.isFinite(askedEnd) ? askedEnd : total - 1, total - 1);
+
+  let finished: string | null | undefined;
+  void entry.done.then((path) => { finished = path; }, () => { finished = null; });
+  let offset = start;
+  const body = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      for (;;) {
+        const settled = finished !== undefined;
+        const path = settled && finished ? finished : entry.path;
+        let size = 0;
+        try {
+          size = statSync(path).size;
+        } catch {
+          size = 0;
+        }
+        if (offset < size) {
+          const stop = Math.min(offset + STREAM_CHUNK_BYTES, size, end + 1);
+          controller.enqueue(new Uint8Array(await Bun.file(path).slice(offset, stop).arrayBuffer()));
+          offset = stop;
+          if (offset > end) controller.close();
+          return;
+        }
+        if (settled) {
+          // The fetch ended short of the range it announced: say so, rather
+          // than end a body the headers promised was longer.
+          controller.error(new Error("fetch ended early"));
+          return;
+        }
+        await Bun.sleep(120);
+      }
+    },
+  });
+  return new Response(body, {
+    status: 206,
+    headers: {
+      "Content-Type": mimeFor(kind, entry.path),
+      "Content-Length": String(end - start + 1),
+      "Content-Range": `bytes ${start}-${end}/${total}`,
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function partialFileResponse(
   entry: PendingFetch,
   range: string | undefined,

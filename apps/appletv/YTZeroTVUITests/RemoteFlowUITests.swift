@@ -28,7 +28,8 @@ final class RemoteFlowUITests: XCTestCase {
         remote.press(.menu)
         sleep(1)
         remote.press(.select)
-        sleep(10)
+        // Long enough for a refused direct stream to fall back to the relay.
+        sleep(25)
         snapshot("04-player")
         remote.press(.right)
         sleep(1)
