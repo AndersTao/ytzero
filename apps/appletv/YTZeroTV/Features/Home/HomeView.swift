@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var model = HomeModel()
     @State private var playing: Video?
     @State private var showingSettings = false
+    @FocusState private var focusedVideo: String?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 48, alignment: .top), count: 4)
 
@@ -30,9 +31,11 @@ struct HomeView: View {
                 ProgressView()
             }
         }
+        .defaultFocus($focusedVideo, firstVideoID)
         .task {
             guard let client = session.client else { return }
             await model.loadFirstPage(client: client)
+            focusedVideo = firstVideoID
         }
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
@@ -97,10 +100,16 @@ struct HomeView: View {
         }
     }
 
+    /// Where the remote starts: the first video, not the Refresh button.
+    private var firstVideoID: String? {
+        model.continueWatching.first?.id ?? model.main.first?.id
+    }
+
     private func card(for video: Video) -> some View {
         VideoCard(
             video: video,
             client: session.client,
+            focus: $focusedVideo,
             play: { playing = video },
             markWatched: { run { client in await model.markWatched(video, client: client) } },
             reject: { run { client in await model.reject(video, client: client) } }
