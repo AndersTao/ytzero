@@ -99,3 +99,15 @@ describe("native playback capabilities", () => {
     expect(playlist).not.toContain(entry.sessionToken);
   });
 });
+
+describe("relay tickets", () => {
+  test("open only the relay path, and only for reading", () => {
+    const ticket = { videoId: "abcdefghijk", kind: "relay" as const };
+    expect(mediaTicketPath(ticket)).toBe("/api/videos/abcdefghijk/relay");
+    expect(ticketAllowsPath(ticket, "/api/videos/abcdefghijk/relay", "GET")).toBe(true);
+    expect(ticketAllowsPath(ticket, "/api/videos/abcdefghijk/relay", "HEAD")).toBe(true);
+    expect(ticketAllowsPath(ticket, "/api/videos/abcdefghijk/relay", "POST")).toBe(false);
+    expect(ticketAllowsPath(ticket, "/api/videos/abcdefghijk/stream", "GET")).toBe(false);
+    expect(ticketAllowsPath(ticket, "/api/videos/otherVideo1/relay", "GET")).toBe(false);
+  });
+});

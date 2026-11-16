@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
-export type NativeMediaKind = "file" | "hls" | "direct" | "direct-hls" | "live-hls";
+/** "relay": this server fetches the video with yt-dlp and serves it as it arrives. */
+export type NativeMediaKind = "file" | "hls" | "direct" | "direct-hls" | "live-hls" | "relay";
 export type MediaTicket = {
   userId: number;
   videoId: string;
@@ -49,6 +50,7 @@ export class MediaTicketStore {
 export function mediaTicketPath(ticket: Pick<MediaTicket, "videoId" | "kind">): string {
   const base = `/api/videos/${encodeURIComponent(ticket.videoId)}`;
   if (ticket.kind === "hls" || ticket.kind === "direct-hls" || ticket.kind === "live-hls") return `${base}/${ticket.kind}/index.m3u8`;
+  if (ticket.kind === "relay") return `${base}/relay`;
   return ticket.kind === "file" ? `${base}/stream?compat=1` : `${base}/direct-stream`;
 }
 
@@ -57,6 +59,7 @@ export function ticketAllowsPath(ticket: Pick<MediaTicket, "videoId" | "kind">, 
   const base = `/api/videos/${encodeURIComponent(ticket.videoId)}`;
   if (ticket.kind === "file") return pathname === `${base}/stream`;
   if (ticket.kind === "direct") return pathname === `${base}/direct-stream`;
+  if (ticket.kind === "relay") return pathname === `${base}/relay`;
   const prefix = `${base}/${ticket.kind}/`;
   if (!pathname.startsWith(prefix)) return false;
   const file = pathname.slice(prefix.length);

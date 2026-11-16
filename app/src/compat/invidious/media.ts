@@ -100,7 +100,7 @@ export const MAX_ANSWER_BYTES = 8 * 1024 * 1024;
  * A request with no range at all is a downloader rather than a player: it gets
  * the file entire, because a bounded answer is a truncated download.
  */
-export function localFileResponse(path: string, range: string | undefined, contentType?: string): Response | null {
+export function localFileResponse(path: string, range: string | undefined, contentType?: string, bounded = true): Response | null {
   if (!existsSync(path)) return null;
   const size = statSync(path).size;
   const type = contentType ?? (path.endsWith(".webm") ? "video/webm" : "video/mp4");
@@ -116,7 +116,9 @@ export function localFileResponse(path: string, range: string | undefined, conte
   if (!Number.isFinite(start) || start >= size) {
     return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
   }
-  const last = Math.min(Number.isFinite(end) ? end : size - 1, start + MAX_ANSWER_BYTES - 1, size - 1);
+  // AVPlayer rejects an answer shorter than the range it asked for, so native
+  // players get the whole range; Invidious clients get bounded answers (above).
+  const last = Math.min(Number.isFinite(end) ? end : size - 1, bounded ? start + MAX_ANSWER_BYTES - 1 : Number.POSITIVE_INFINITY, size - 1);
   return new Response(file.slice(start, last + 1), {
     status: 206,
     headers: {
