@@ -5,6 +5,7 @@ import { feedBuilderMessages } from "./feedBuilder";
 import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
+import { webSubMessages } from "./websub";
 
 export const fr: Locale = {
   messages: {
@@ -51,6 +52,7 @@ export const fr: Locale = {
     ...clusterMessages.fr,
     ...notificationMessages.fr,
     ...tvPairingMessages.fr,
+    ...webSubMessages.fr,
     "navToday": "Accueil",
     "navSocial": "Social",
     "navDiscovery": "Découverte",

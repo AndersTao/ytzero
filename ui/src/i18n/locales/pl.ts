@@ -6,6 +6,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { feedBuilderMessages } from "./feedBuilder";
 import { tvPairingMessages } from "./tvPairing";
+import { webSubMessages } from "./websub";
 export const pl: Locale = {
   messages: {
     "clientAccessNav": "Dostęp klienta",
@@ -25,6 +26,7 @@ export const pl: Locale = {
     ...clusterMessages.pl,
     ...notificationMessages.pl,
     ...tvPairingMessages.pl,
+    ...webSubMessages.pl,
     ...feedBuilderMessages.pl,
     navToday: "Główna",
     navSocial: "Social",
