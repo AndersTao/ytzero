@@ -7,6 +7,7 @@ import { Hono } from "hono";
 
 const { database } = await import("../src/database");
 const websub = await import("../src/websub");
+const { addAnnouncedVideos } = await import("../src/announcedVideos");
 const { registerWebSubAdminRoutes, registerWebSubCallback } = await import("../src/websubRoutes");
 
 const CHANNEL = "UC" + "q".repeat(22);
@@ -22,9 +23,23 @@ websub.setWebSubHubFetch(async (_url, init) => {
 const refreshed: string[] = [];
 websub.setWebSubRefresher(async (channelId) => {
   refreshed.push(channelId);
-  await database.prepare("INSERT INTO videos (video_id, channel_id, title, published_at) VALUES (?, ?, 'New', '2026-11-16T12:00:00Z')")
+  // The feed lists only the first upload; the others it has not caught up with.
+  await database.prepare("INSERT OR IGNORE INTO videos (video_id, channel_id, title, published_at) VALUES (?, ?, 'New', '2026-11-16T12:00:00Z')")
     .run("abcdefghijk", channelId);
 });
+// The direct lookup is the real one, with the watch page faked.
+const looked: string[] = [];
+websub.setWebSubDirectAdder((channelId, videoIds) => addAnnouncedVideos(channelId, videoIds, {
+  fetchInfo: async (videoId) => {
+    looked.push(videoId);
+    return {
+      videoId, title: "Straight from the watch page", channelId: videoId === "otherchanne" ? "UC" + "o".repeat(22) : channelId,
+      channelTitle: "Test", description: "", thumbnail: "https://i.ytimg.com/vi/x/hq.jpg", viewCount: 1,
+      publishedAt: "2026-11-17T10:00:00+00:00", duration: "PT12M", liveStatus: "none", playableInEmbed: true,
+    };
+  },
+  classifyShort: async () => false,
+}));
 
 const user = await database.prepare("SELECT id FROM users ORDER BY id LIMIT 1").get() as { id: number };
 await database.prepare("INSERT INTO channels (channel_id, title, url) VALUES (?, 'Test', '')").run(CHANNEL);
@@ -79,6 +94,22 @@ const signed = await app.request(callback, { method: "POST", body: atom, headers
 check(signed.status === 204, "a signed notification gets a 2xx");
 await websub.flushWebSubRefreshes();
 check(refreshed.length === 1 && refreshed[0] === CHANNEL, "a signed notification should refresh the channel once");
+check(looked.length === 0, "an upload the feed already lists must not be looked up");
+
+// An upload the feed has not caught up with is looked up directly; one that
+// turns out to belong to another channel is not added under this one.
+const notify = async (ids: string[]) => {
+  const body = `<feed>${ids.map((id) => `<entry><yt:videoId>${id}</yt:videoId><yt:channelId>${CHANNEL}</yt:channelId></entry>`).join("")}</feed>`;
+  await app.request(callback, { method: "POST", body, headers: { "X-Hub-Signature": "sha1=" + createHmac("sha1", secret).update(body).digest("hex") } });
+  await websub.flushWebSubRefreshes();
+};
+await notify(["lmnopqrstuv", "otherchanne"]);
+check(looked.join(",") === "lmnopqrstuv,otherchanne", `both missing uploads should be looked up, got ${looked.join(",")}`);
+const direct = await database.prepare("SELECT channel_id, title, external, is_short, published_at FROM videos WHERE video_id = ?").get("lmnopqrstuv") as any;
+check(direct?.channel_id === CHANNEL && direct.title === "Straight from the watch page", "the looked-up upload should be stored under its channel");
+check(direct?.external === 0, "a followed channel's upload must not be marked external");
+check(direct?.is_short === 0, "the Shorts check should run for it");
+check(!await database.prepare("SELECT 1 FROM videos WHERE video_id = ?").get("otherchanne"), "another channel's video must not be added");
 
 // Turning it off unsubscribes, and the hub's confirmation is accepted.
 hubCalls.length = 0;
