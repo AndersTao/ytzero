@@ -17,7 +17,7 @@ export interface VideoVodMetadata {
 
 export interface VideoVodPlaylistInput {
   videoId: string;
-  resourcePath?: "hls" | "direct-hls";
+  resourcePath?: "hls" | "direct-hls" | "relay-hls";
   /** Stable identity of the indexed representation, used to reject stale ranges. */
   resourceVersion?: string;
   video: MediaSidxIndex;

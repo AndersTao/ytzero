@@ -5,6 +5,7 @@ import { mediaTickets, nativePlaybackAccess, nativePlaybackSource } from "../nat
 import { ytdlpStatus } from "../downloader";
 import { answerMedia } from "../compat/invidious/mediaRoutes";
 import { BEST_HEIGHT, cacheableVideoId } from "../compat/invidious/mediaCache";
+import { RELAY_HLS_HEIGHT, relayHlsPlaylist, relayHlsReadiness } from "../relayHls";
 
 type Environment = { Variables: { userId: number; sessionAdmin?: boolean; profileAdmin?: boolean } };
 
@@ -15,16 +16,26 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
     if (!sessionToken) return c.json({ error: "device session required" }, 401);
     const userId = currentUserId(c);
     const videoId = c.req.param("id");
-    const { source: asked } = await c.req.json().catch(() => ({}));
+    const { source: asked, start } = await c.req.json().catch(() => ({}));
     // A client whose direct stream was refused by YouTube asks for the relay:
     // this server fetches the video with yt-dlp and serves it as it arrives.
-    if (asked === "relay") {
+    // "relay-hls" is the same in full quality, for a player that reads HLS.
+    if (asked === "relay" || asked === "relay-hls") {
       const access = await nativePlaybackAccess(userId, videoId);
       if ("error" in access) return c.json({ error: access.error }, access.status);
       if (access.child.is_child) return c.json({ error: "playback restricted" }, 403);
       if (!cacheableVideoId(videoId) || !await ytdlpStatus()) return c.json({ error: "relay unavailable" }, 503);
-      const ticket = mediaTickets.issue({ userId, videoId, sessionToken, kind: "relay" });
-      return c.json({ ticket, url: `${mediaTicketPath({ videoId, kind: "relay" })}?media_ticket=${ticket}`, content_type: "progressive", expires_in: MEDIA_TICKET_TTL_MS / 1000 });
+      if (asked === "relay-hls") {
+        const readiness = await relayHlsReadiness(userId, videoId, Number(start) || 0, 8_000);
+        if (readiness === "failed") return c.json({ error: "relay stream unavailable" }, 502);
+        if (readiness === "pending") {
+          c.header("Retry-After", "2");
+          return c.json({ preparing: true }, 202);
+        }
+      }
+      const kind = asked === "relay" ? "relay" : "relay-hls";
+      const ticket = mediaTickets.issue({ userId, videoId, sessionToken, kind });
+      return c.json({ ticket, url: `${mediaTicketPath({ videoId, kind })}?media_ticket=${ticket}`, content_type: kind === "relay" ? "progressive" : "hls", expires_in: MEDIA_TICKET_TTL_MS / 1000 });
     }
     const source = await nativePlaybackSource(userId, videoId);
     if ("error" in source) return c.json({ error: source.error }, source.status);
@@ -64,5 +75,19 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
     if (c.req.query("media_ticket") === undefined) return c.json({ error: "media ticket required" }, 401);
     // Unbounded: AVPlayer refuses an answer shorter than the range it asked for.
     return answerMedia(c, currentUserId(c), c.req.param("id"), "muxed", BEST_HEIGHT, { bounded: false });
+  });
+
+  // Also reached only with a relay media ticket (see above).
+  api.get("/videos/:id/relay-hls/:file", async (c) => {
+    if (c.req.query("media_ticket") === undefined) return c.json({ error: "media ticket required" }, 401);
+    const videoId = c.req.param("id");
+    const file = c.req.param("file");
+    if (file === "video.mp4" || file === "audio.mp4") {
+      return answerMedia(c, currentUserId(c), videoId, file === "video.mp4" ? "hls-video" : "hls-audio", RELAY_HLS_HEIGHT, { bounded: false, quiet: true });
+    }
+    if (file !== "index.m3u8" && file !== "video.m3u8" && file !== "audio.m3u8") return c.json({ error: "not found" }, 404);
+    const playlist = await relayHlsPlaylist(currentUserId(c), videoId, file);
+    if (!playlist) return c.json({ error: "relay stream unavailable" }, 502);
+    return new Response(playlist, { headers: { "Content-Type": "application/vnd.apple.mpegurl", "Cache-Control": "no-store" } });
   });
 }

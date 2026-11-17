@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, utimesSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DB_PATH } from "../../db";
 import { MAX_ANSWER_BYTES, localFileResponse } from "./media";
@@ -75,7 +75,13 @@ export const BEST_HEIGHT = OFFERED_HEIGHTS[0];
  */
 export const ADAPTIVE_HEIGHTS = [1080] as const;
 
-export type MediaKind = "muxed" | "video" | "audio";
+/**
+ * "hls-video" and "hls-audio" are the two tracks the Apple TV app plays as one
+ * HLS presentation: H.264 only (AVPlayer has no AV1 decoder on most Apple TVs)
+ * and the audio exactly as YouTube sends it, because the playlist points into
+ * the file by the byte offsets its own index gives.
+ */
+export type MediaKind = "muxed" | "video" | "audio" | "hls-video" | "hls-audio";
 
 export function offeredHeight(value: string | number | undefined | null): number {
   const height = Math.trunc(Number(value));
@@ -89,6 +95,8 @@ export function offeredKind(value: string | undefined | null): MediaKind {
 
 /** What each kind is worth asking yt-dlp for, best first, never empty-handed. */
 function formatFor(kind: MediaKind, height: number): string {
+  if (kind === "hls-video") return `bestvideo[vcodec^=avc1][height<=${height}][ext=mp4]`;
+  if (kind === "hls-audio") return "bestaudio[ext=m4a][acodec^=mp4a]";
   if (kind === "audio") return "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio";
   if (kind === "video") {
     return `bestvideo[height<=${height}][ext=mp4]/bestvideo[height<=${height}]/bestvideo`;
@@ -124,7 +132,7 @@ export function promisedTotal(kind: MediaKind, announced: number | null): number
 
 /** What a file of this kind is, told to the player that reads it. */
 export function mimeFor(kind: MediaKind, path: string): string {
-  if (kind === "audio") return path.endsWith(".webm") ? "audio/webm" : "audio/mp4";
+  if (kind === "audio" || kind === "hls-audio") return path.endsWith(".webm") ? "audio/webm" : "audio/mp4";
   return path.endsWith(".webm") ? "video/webm" : "video/mp4";
 }
 
@@ -213,6 +221,7 @@ export function pruneCache(limit = CACHE_LIMIT_BYTES, keep?: string): void {
     if (file.path === keep) continue;
     try {
       rmSync(file.path, { force: true });
+      rmSync(`${file.path}.txt`, { force: true });
       total -= file.size;
       log.info("invidious.cache_evicted", { file: file.path.split("/").pop(), freed: file.size });
     } catch {
@@ -234,6 +243,8 @@ export interface PendingFetch {
    */
   total: Promise<number | null>;
   done: Promise<string | null>;
+  /** yt-dlp's line about the format it picked: size, height, codecs, width, fps, bitrate, channels. */
+  described?: Promise<string>;
 }
 
 const fetching = new Map<string, PendingFetch>();
@@ -334,8 +345,10 @@ export function startFetch(
      */
     "--http-chunk-size", "1M",
     // One line, so one read of the output settles both.
-    "--print", "%(filesize,filesize_approx)s %(height)s",
+    "--print", "%(filesize,filesize_approx)s %(height)s %(vcodec)s %(acodec)s %(width)s %(fps)s %(tbr)s %(audio_channels)s",
     "-f", formatFor(kind, height),
+    // The HLS tracks are addressed by byte offset: nothing may rewrite them.
+    ...(kind === "hls-video" || kind === "hls-audio" ? ["--fixup", "never"] : []),
     "-o", partial,
     ...potArgsFor(true),
   ];
@@ -378,6 +391,8 @@ export function startFetch(
       const delivered = await announcedHeight;
       const target = join(cacheDir(), `${prefix}.h${delivered ?? height}.mp4`);
       renameSync(partial, target);
+      // The HLS presentation is built from this line, also on a later play.
+      if (kind === "hls-video" || kind === "hls-audio") writeFileSync(`${target}.txt`, await printed);
       const size = statSync(target).size;
       log.info("invidious.cache_fetched", {
         videoId, kind, asked: height, delivered, bytes: size, ms: Date.now() - startedAt,
@@ -402,7 +417,7 @@ export function startFetch(
 
   // Never hold on a size that is not coming: without one the first range waits
   // for the whole file, which is slower but still plays.
-  const entry: PendingFetch = { path: partial, total, done };
+  const entry: PendingFetch = { path: partial, total, done, described: printed };
   fetching.set(key, entry);
   return entry;
 }

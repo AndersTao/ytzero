@@ -25,11 +25,19 @@ Appen er på engelsk og dansk og følger Apple TV'ets sprog.
 - **Login:** Appen bruger serverens TV-pairing. Den viser en QR-kode og en
   kode, du godkender på telefonen, og den session, du får tilbage, gemmes i
   Keychain.
-- **Afspilning:** Videoerne afspilles via serverens relay
-  (`/api/videos/:id/playback-ticket` med `{"source":"relay"}`) i AVPlayer:
-  en downloadet eller gemt kopi, ellers ét yt-dlp-hent, som serveren sender
-  videre, mens det kommer ind. Det er samme vej, som Invidious-klienter som
-  Yattee bruger. Serveren skal derfor have yt-dlp.
+- **Afspilning:** Videoerne afspilles i AVPlayer via serveren, som henter
+  med yt-dlp og sender videre, mens det kommer ind. Det er samme vej, som
+  Invidious-klienter som Yattee bruger. Serveren skal derfor have yt-dlp.
+  - Først `{"source":"relay-hls"}`: billede (H.264, op til 1080p) og lyd
+    hentes hver for sig og afspilles som én HLS-strøm. Appen sender sin
+    startposition med (`start`). Serveren svarer 202, indtil den har hentet
+    så langt, så en video, der fortsættes langt inde, kan tage lidt tid om
+    at starte første gang.
+  - Hvis det ikke kan lade sig gøre, bruges `{"source":"relay"}`: YouTubes
+    samlede fil, som kun findes i 360p.
+  - Begge dele gemmes i Invidious-cachen (`YTZERO_INVIDIOUS_CACHE_MB`,
+    standard 4096). En times 1080p fylder omkring 1 GB, så sæt den højere,
+    hvis du ser lange videoer.
 
 ## Byg og installér
 

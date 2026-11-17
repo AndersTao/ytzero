@@ -77,7 +77,7 @@ export function registerMediaRoutes(app: Hono): void {
  * and the native apps' relay tickets (see nativePlaybackRoutes), which are two
  * ways of proving who may ask, in front of the same answer.
  */
-export async function answerMedia(c: Context, userId: number, videoId: string, kind: MediaKind, height: number, options: { bounded?: boolean } = {}): Promise<Response> {
+export async function answerMedia(c: Context, userId: number, videoId: string, kind: MediaKind, height: number, options: { bounded?: boolean; quiet?: boolean } = {}): Promise<Response> {
   const bounded = options.bounded ?? true;
   const askedAt = Date.now();
   // Somebody is watching: the background passes stand aside until they stop.
@@ -89,6 +89,8 @@ export async function answerMedia(c: Context, userId: number, videoId: string, k
    * request, and reading it required knowing which silences were good ones.
    */
   const answered = (by: string, response: Response) => {
+    // An HLS player asks once per segment: hundreds of these a video.
+    if (options.quiet) return response;
     log.info("invidious.media_answered", {
       videoId, kind, height, by, ms: Date.now() - askedAt,
       // What was asked for and what went back. Without these a kept copy
