@@ -97,6 +97,11 @@ struct HomeView: View {
             .scrollClipDisabled()
             .scrollIndicators(.hidden)
         }
+        // Full width and a focus section of its own, as is Main below: Down
+        // from the header buttons at the right edge looks straight down, and
+        // a short row has no card there. A section takes it from anywhere above.
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .focusSection()
     }
 
     private var mainGrid: some View {
@@ -122,6 +127,8 @@ struct HomeView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .focusSection()
     }
 
     /// Where the remote starts: the first video, not the Refresh button.
