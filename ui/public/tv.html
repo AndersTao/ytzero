@@ -8,10 +8,11 @@
   <!--
     A view-only television page: "Continue watching" and the Main feed (thumbnail,
     channel, title) and a full-screen player. Remote keys only:
-      browse  arrows move, OK plays, Back leaves the app
+      browse  arrows move, OK plays, OK held opens a menu (watched / reject),
+              Up from the top row reaches Refresh in the top right, Back leaves the app
       player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
-      numbers 1 rejects, 2 marks as watched (the focused or playing video),
-              3 refreshes the feed. (The colour keys are taken by the LG TV itself.)
+      numbers 1 rejects, 2 marks as watched, 3 refreshes: shortcuts, not shown.
+              (The colour keys are taken by the LG TV itself.)
     It talks to the same API as the web client, with the session cookie the TV
     login page (/tv-login.html) sets.
   -->
@@ -21,16 +22,32 @@
     body { overflow-x: hidden; }
     body.playing { overflow: hidden; }
 
-    #legend { display: flex; justify-content: flex-end; gap: 32px; padding: 28px 80px 0; font-size: 20px; color: #8a8a8a; }
-    #legend b {
-      display: inline-block; min-width: 26px; padding: 1px 6px; margin-right: 10px; border-radius: 6px;
-      border: 2px solid #6a6a6a; color: #cfcfcf; text-align: center; font-weight: 700;
+    #topbar { display: flex; justify-content: flex-end; padding: 32px 80px 0; }
+    #refreshBtn {
+      font: inherit; font-size: 24px; font-weight: 600; color: #d6d6d6; background: #272727;
+      border: 0; border-radius: 999px; padding: 12px 30px; cursor: pointer; outline: none;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
     }
+    #refreshBtn.focused { background: #3a3a3a; color: var(--fg); box-shadow: 0 0 0 4px var(--accent); transform: scale(1.06); }
+
+    #menu { position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.72); }
+    #menu[hidden] { display: none; }
+    #menuBox { width: 680px; padding: 40px 44px 32px; border-radius: 26px; background: #1f1f1f; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+    #menuTitle {
+      margin: 0 8px 28px; font-size: 28px; line-height: 1.3; color: var(--muted);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .menu-item {
+      display: block; width: 100%; margin: 0 0 10px; padding: 20px 28px; border: 0; border-radius: 16px;
+      font: inherit; font-size: 32px; font-weight: 600; text-align: left; color: var(--fg); background: transparent;
+      cursor: pointer; outline: none;
+    }
+    .menu-item.focused { background: #333; box-shadow: inset 0 0 0 4px var(--accent); }
 
     .section-title { margin: 8px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
     .section-title[hidden], #continueRow[hidden] { display: none; }
     #continueRow {
-      display: flex; gap: 40px; overflow-x: auto; scrollbar-width: none;
+      position: relative; display: flex; gap: 40px; overflow-x: auto; scrollbar-width: none;
       padding: 28px 80px 36px; scroll-padding: 0 80px;
     }
     #continueRow::-webkit-scrollbar { display: none; }
@@ -91,13 +108,22 @@
   </style>
 </head>
 <body>
-  <div id="legend"><span><b>1</b>Afvis</span><span><b>2</b>Markér som set</span><span><b>3</b>Opdater</span></div>
+  <div id="topbar"><button id="refreshBtn" type="button" tabindex="-1">⟳ Opdater</button></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
   <div id="gridTitle" class="section-title" hidden>Main</div>
   <div id="grid" role="list"></div>
   <div id="message">Henter videoer…</div>
   <div id="toast" role="status"></div>
+
+  <div id="menu" role="dialog" aria-modal="true" hidden>
+    <div id="menuBox">
+      <div id="menuTitle"></div>
+      <button class="menu-item" type="button" tabindex="-1" data-act="watched">Markér som set</button>
+      <button class="menu-item" type="button" tabindex="-1" data-act="reject">Afvis</button>
+      <button class="menu-item" type="button" tabindex="-1" data-act="cancel">Annuller</button>
+    </div>
+  </div>
 
   <div id="player" hidden>
     <div id="frame"></div>
@@ -132,8 +158,12 @@
     var flashEl = document.getElementById("flash");
     var toastEl = document.getElementById("toast");
     var errorEl = document.getElementById("playerError");
+    var refreshBtn = document.getElementById("refreshBtn");
+    var menuEl = document.getElementById("menu");
+    var menuItems = Array.prototype.slice.call(menuEl.querySelectorAll(".menu-item"));
 
-    // Two sections; focus is a section plus an index into it.
+    // Two sections of cards; focus is a section plus an index into it, or "top"
+    // for the Refresh button above them.
     var sections = {
       cont: { el: continueEl, items: [], cards: [] },
       grid: { el: gridEl, items: [], cards: [] }
@@ -209,13 +239,25 @@
       card.appendChild(title);
       // Look the index up when clicked: cards move as videos are removed.
       card.addEventListener("click", function () {
+        if (pointerHoldFired) { pointerHoldFired = false; return; }
         var i = sections[sectionName].cards.indexOf(card);
         if (i >= 0) { setFocus(sectionName, i); openPlayer(); }
       });
-      card.addEventListener("mouseenter", function () {
-        var i = sections[sectionName].cards.indexOf(card);
-        if (i >= 0) setFocus(sectionName, i, true);
+      // The Magic Remote's pointer: OK held on a card opens the menu too.
+      card.addEventListener("mousedown", function () {
+        clearTimeout(pointerHold);
+        pointerHoldFired = false;
+        pointerHold = setTimeout(function () {
+          var i = sections[sectionName].cards.indexOf(card);
+          if (i < 0) return;
+          pointerHoldFired = true;
+          setFocus(sectionName, i, true);
+          openMenu();
+        }, HOLD_MS);
       });
+      card.addEventListener("mouseup", function () { clearTimeout(pointerHold); });
+      card.addEventListener("mouseleave", function () { clearTimeout(pointerHold); });
+      card.dataset.section = sectionName;
       return card;
     }
 
@@ -290,7 +332,7 @@
           batch.filter(playable).forEach(function (v) { if (!ids[v.video_id]) addItem("grid", v); });
           loading = false;
           updateChrome();
-          if (first && !current) {
+          if (first && !current && focus.s !== "top") {
             if (hasSection("cont")) setFocus("cont", 0, true);
             else if (hasSection("grid")) setFocus("grid", 0, true);
           }
@@ -312,7 +354,8 @@
       page = 0;
       hasMore = true;
       loading = false;
-      focus = { s: "grid", i: 0 };
+      // Refreshed from the button: stay on it.
+      if (focus.s !== "top") focus = { s: "grid", i: 0 };
       window.scrollTo(0, 0);
       return loadContinue().then(loadMore);
     }
@@ -324,18 +367,43 @@
       return sec && sec.items[focus.i];
     }
 
+    // Exactly one thing carries the mark; clear whatever had it.
+    function clearMark() {
+      var marked = document.querySelectorAll(".card.focused, #refreshBtn.focused");
+      for (var k = 0; k < marked.length; k++) marked[k].classList.remove("focused");
+    }
+
+    function focusTop(quiet) {
+      clearMark();
+      focus = { s: "top", i: 0 };
+      refreshBtn.classList.add("focused");
+      if (!quiet) window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     function setFocus(sectionName, index, quiet) {
       var sec = sections[sectionName];
       if (!sec.cards.length) return;
       index = Math.max(0, Math.min(sec.cards.length - 1, index));
-      var old = sections[focus.s] && sections[focus.s].cards[focus.i];
-      if (old) old.classList.remove("focused");
+      clearMark();
       focus = { s: sectionName, i: index };
       var card = sec.cards[index];
       card.classList.add("focused");
       if (!quiet) {
-        if (sectionName === "cont" && index < COLUMNS) window.scrollTo({ top: 0, behavior: "smooth" });
-        card.scrollIntoView({ block: sectionName === "cont" ? "nearest" : "center", inline: "nearest", behavior: "smooth" });
+        if (sectionName === "cont") {
+          /*
+           * The shelf is the top of the page: show all of it, heading included,
+           * and scroll the row itself sideways. One smooth scroll per box —
+           * scrollIntoView here as well cancelled the page's scroll to the top
+           * and stopped it where the card first showed, under a cut-off
+           * heading, so the next Up was spent finishing the scroll.
+           */
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          var left = card.offsetLeft - 80, right = card.offsetLeft + card.offsetWidth + 80;
+          if (left < continueEl.scrollLeft) continueEl.scrollTo({ left: left, behavior: "smooth" });
+          else if (right > continueEl.scrollLeft + continueEl.clientWidth) continueEl.scrollTo({ left: right - continueEl.clientWidth, behavior: "smooth" });
+        } else {
+          card.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+        }
       }
       // Fetch the next page while two rows remain below the focus.
       if (sectionName === "grid" && index >= sec.cards.length - COLUMNS * 2) loadMore();
@@ -348,7 +416,8 @@
           if (i >= 0) { setFocus(name, i, true); return; }
         }
       }
-      if (sections[focus.s].cards.length) setFocus(focus.s, focus.i, true);
+      if (focus.s === "top") focusTop(true);
+      else if (sections[focus.s].cards.length) setFocus(focus.s, focus.i, true);
       else if (hasSection("cont")) setFocus("cont", 0, true);
       else if (hasSection("grid")) setFocus("grid", 0, true);
     }
@@ -370,18 +439,29 @@
         var i = sections[name].items.findIndex(function (v) { return v.video_id === videoId; });
         if (i >= 0) removeAt(name, i, true);
       });
-      if (!sections[focus.s].cards.length) focus = { s: hasSection("grid") ? "grid" : "cont", i: 0 };
+      if (focus.s !== "top" && !sections[focus.s].cards.length) focus = { s: hasSection("grid") ? "grid" : "cont", i: 0 };
       updateChrome();
       restoreFocus(null);
     }
 
     function browseKey(code) {
       var i = focus.i;
+      if (focus.s === "top") {
+        switch (code) {
+          case KEY.DOWN:
+            if (hasSection("cont")) setFocus("cont", 0);
+            else if (hasSection("grid")) setFocus("grid", 0);
+            return true;
+          case KEY.LEFT: case KEY.RIGHT: case KEY.UP: return true;
+          case KEY.ENTER: refresh(); return true;
+        }
+        return false;
+      }
       if (focus.s === "cont") {
         switch (code) {
           case KEY.LEFT: setFocus("cont", i - 1); return true;
           case KEY.RIGHT: setFocus("cont", i + 1); return true;
-          case KEY.UP: window.scrollTo({ top: 0, behavior: "smooth" }); return true;
+          case KEY.UP: focusTop(); return true;
           case KEY.DOWN: if (hasSection("grid")) setFocus("grid", Math.min(i, COLUMNS - 1)); return true;
         }
       } else {
@@ -392,7 +472,7 @@
           case KEY.UP:
             if (i >= COLUMNS) setFocus("grid", i - COLUMNS);
             else if (hasSection("cont")) setFocus("cont", Math.min(i, sections.cont.cards.length - 1));
-            else window.scrollTo({ top: 0, behavior: "smooth" });
+            else focusTop();
             return true;
           case KEY.DOWN:
             if (i + COLUMNS < n) setFocus("grid", i + COLUMNS);
@@ -400,16 +480,93 @@
             return true;
         }
       }
-      if (code === KEY.ENTER || code === KEY.PLAY || code === KEY.PLAY_PAUSE) { openPlayer(); return true; }
+      // OK itself is handled in the key listener: a short press plays, a long one opens the menu.
+      if (code === KEY.PLAY || code === KEY.PLAY_PAUSE) { openPlayer(); return true; }
       return false;
     }
+
+    // ---------- Hold-OK menu ----------
+
+    var HOLD_MS = 600;
+    var menuOpen = false;
+    var menuVideo = null;
+    var menuIndex = 0;
+    var menuAfter = null;
+    var pointerHold = null;
+    var pointerHoldFired = false;
+
+    function markMenu(index) {
+      menuIndex = Math.max(0, Math.min(menuItems.length - 1, index));
+      menuItems.forEach(function (b, k) { b.classList.toggle("focused", k === menuIndex); });
+    }
+
+    function openMenu() {
+      var v = focusedVideo();
+      if (!v || menuOpen || current) return;
+      menuOpen = true;
+      menuPressed = false;
+      menuVideo = v;
+      document.getElementById("menuTitle").textContent = v.title || "";
+      markMenu(0);
+      menuEl.hidden = false;
+      // Back closes it through history, like the player.
+      history.pushState({ tvMenu: true }, "");
+    }
+
+    // Close, then do what was chosen; the popstate handler runs it.
+    function leaveMenu(after) {
+      if (!menuOpen) return;
+      menuAfter = after || null;
+      history.back();
+    }
+
+    function closeMenu() {
+      menuOpen = false;
+      menuEl.hidden = true;
+      var after = menuAfter, v = menuVideo;
+      menuAfter = null;
+      menuVideo = null;
+      restoreFocus(null);
+      if (after) after(v);
+    }
+
+    function chooseMenu(index) {
+      var act = menuItems[index].getAttribute("data-act");
+      if (act === "cancel") leaveMenu();
+      else leaveMenu(function (v) { actOn(act, v); });
+    }
+
+    function menuKey(code) {
+      switch (code) {
+        case KEY.UP: markMenu(menuIndex - 1); return true;
+        case KEY.DOWN: markMenu(menuIndex + 1); return true;
+        case KEY.ENTER: chooseMenu(menuIndex); return true;
+        case KEY.BACK:
+          // As in the player: webOS may step back by itself.
+          clearTimeout(backTimer);
+          backTimer = setTimeout(function () { if (menuOpen) history.back(); }, 300);
+          return true;
+        case KEY.ESC: case KEY.BACKSPACE: leaveMenu(); return true;
+      }
+      return true; // nothing else reaches the page while the menu is open
+    }
+
+    // Only a press that starts inside the open menu counts: the release of the
+    // pointer hold that opened it must not pick or dismiss anything.
+    var menuPressed = false;
+    menuEl.addEventListener("mousedown", function () { menuPressed = true; }, true);
+    menuItems.forEach(function (b, k) {
+      b.addEventListener("click", function (e) { e.stopPropagation(); if (menuPressed) chooseMenu(k); });
+    });
+    menuEl.addEventListener("click", function (e) { if (e.target === menuEl && menuPressed) leaveMenu(); });
+    refreshBtn.addEventListener("click", function () { focusTop(true); refresh(); });
 
     // ---------- Number keys ----------
 
     var busy = false;
 
-    function actOn(kind) {
-      var v = current || focusedVideo();
+    function actOn(kind, video) {
+      var v = video || current || focusedVideo();
       if (!v || busy) return;
       busy = true;
       var path = "/videos/" + encodeURIComponent(v.video_id) + (kind === "reject" ? "/archive" : "/complete");
@@ -649,11 +806,81 @@
     }
 
     document.getElementById("clickLayer").addEventListener("click", togglePlay);
-    window.addEventListener("popstate", function () { clearTimeout(backTimer); closePlayer(); });
+    window.addEventListener("popstate", function () {
+      clearTimeout(backTimer);
+      if (menuOpen) closeMenu();
+      else closePlayer();
+    });
+
+    /*
+     * OK on a card: a press plays, a hold opens the menu. The remote repeats
+     * keydown while OK is held and sends one keyup on release, so the press is
+     * decided on keyup and the hold by a timer. A keyup that never arrives must
+     * not leave OK dead: a keydown well after the last one is a new press.
+     */
+    var okDown = false;
+    var okHeld = false;
+    var okLast = 0;
+    var okTimer = null;
+
+    function okIsRepeat(e) {
+      var now = Date.now();
+      var repeat = okDown && (e.repeat || now - okLast < 1500);
+      okLast = now;
+      return repeat;
+    }
 
     document.addEventListener("keydown", function (e) {
-      var handled = numberKey(e.keyCode) || (current ? playerKey(e.keyCode) : browseKey(e.keyCode));
+      var code = e.keyCode;
+      if (menuOpen) {
+        // The OK still held from opening the menu must not pick its first line.
+        if (code === KEY.ENTER && okIsRepeat(e)) { e.preventDefault(); return; }
+        okDown = false;
+        if (menuKey(code)) e.preventDefault();
+        return;
+      }
+      if (code === KEY.ENTER && !current && focus.s !== "top") {
+        e.preventDefault();
+        if (okIsRepeat(e)) return;
+        okDown = true;
+        okHeld = false;
+        clearTimeout(okTimer);
+        okTimer = setTimeout(function () { okHeld = true; openMenu(); }, HOLD_MS);
+        return;
+      }
+      var handled = numberKey(code) || (current ? playerKey(code) : browseKey(code));
       if (handled) e.preventDefault();
+    });
+
+    document.addEventListener("keyup", function (e) {
+      if (e.keyCode !== KEY.ENTER) return;
+      var pressed = okDown && !okHeld;
+      okDown = false;
+      okHeld = false;
+      clearTimeout(okTimer);
+      if (pressed && !current && !menuOpen) openPlayer();
+    });
+
+    /*
+     * The pointer moves the mark only when it really moves. A card that scrolls
+     * under a pointer standing still gets mouse events too (the browser sends
+     * them after every scroll), and following those pulled the mark back to
+     * wherever the hidden pointer was: a press of Up landed one row up and
+     * then jumped back, so it took two.
+     */
+    var pointerAt = null;
+    document.addEventListener("mousemove", function (e) {
+      var moved = !pointerAt || pointerAt.x !== e.screenX || pointerAt.y !== e.screenY;
+      pointerAt = { x: e.screenX, y: e.screenY };
+      if (!moved || current || menuOpen) return;
+      var target = e.target && e.target.closest ? e.target : null;
+      if (!target) return;
+      if (target.closest("#refreshBtn")) { if (focus.s !== "top") focusTop(true); return; }
+      var card = target.closest(".card");
+      if (!card) return;
+      var name = card.dataset.section;
+      var i = sections[name] ? sections[name].cards.indexOf(card) : -1;
+      if (i >= 0 && !(focus.s === name && focus.i === i)) setFocus(name, i, true);
     });
 
     window.addEventListener("pagehide", function () { saveProgress(true); });
