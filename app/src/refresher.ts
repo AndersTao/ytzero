@@ -1,6 +1,6 @@
 import { database } from "./database";
 import { classifyIsShort, fetchAllChannelStreams, fetchAllChannelVideos, fetchChannelAbout, fetchChannelFeed, fetchChannelPlaylists, fetchChannelStreams, fetchChannelSubscriberCountFromWatch, fetchChannelVideos, fetchChannelVideosDurations, fetchLiveInfo, fetchPlaylistFeed, fetchPlaylistSnapshot, fetchVideoInfo, fetchVideoPublishedAt, isPrivateVideoError } from "./youtube";
-import { MetadataCookieFallbackBudget } from "./videoMetadataFallback";
+import { MetadataCookieFallbackBudget } from "./videoMetadataFallback"; import { isRecordedStream } from "./streamVerification";
 import { applyAutoTags } from "./autotags";
 import { applyPlaylistRulesToVideo } from "./userPlaylists";
 import { applyFilterRules } from "./filterRules";
@@ -875,7 +875,7 @@ async function runChannelSync(channelId: string, userId?: number): Promise<Chann
     );
     if (v.isStream) {
       if (v.isLive) await database.prepare("UPDATE videos SET live_status = 'live' WHERE video_id = ?").run(v.videoId);
-      else await markArchivedStream.run(v.videoId);
+      else if (await isRecordedStream(v.videoId)) await markArchivedStream.run(v.videoId); // the Live tab lists premieres too
     }
     if (isNew) {
       await notifyTagRuleMatches(v.videoId, await applyAutoTags(v.videoId, rss?.title ?? v.title, rss?.description ?? ""));

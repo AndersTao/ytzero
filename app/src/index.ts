@@ -3,6 +3,7 @@ import { serveStatic } from "hono/bun";
 import { api, isAdmin } from "./routes";
 import { registerWebSubAdminRoutes, registerWebSubCallback, startWebSubMaintenance } from "./websubRoutes";
 import { registerChannelLiveFeedRoutes } from "./routes/channelLiveFeedRoutes";
+import { repairStreamBadges } from "./streamVerification";
 import { warmPotProvider } from "./ytdlpPotProvider";
 import { provisionManagedYtdlp } from "./ytdlpProvision";
 import { registerInvidiousCompat } from "./compat/invidious";
@@ -130,6 +131,8 @@ if (mode.backgroundTasks) {
 provisionManagedYtdlp();
 startScheduler();
 startWebSubMaintenance();
+// Once, slowly: clear the Livestream mark from premieres the Live tab misled the sync into marking.
+setTimeout(() => void repairStreamBadges().catch(() => {}), 60_000);
   await startDownloader();
   scheduleTubeArchivistSync(true);
   void flushTubeArchivistWatched();

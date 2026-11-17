@@ -26,8 +26,11 @@
     #refreshBtn {
       font: inherit; font-size: 24px; font-weight: 600; color: #d6d6d6; background: #272727;
       border: 0; border-radius: 999px; padding: 12px 30px; cursor: pointer; outline: none;
+      display: inline-flex; align-items: center; gap: 10px;
       transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
     }
+    /* Drawn, not a character: the TV's font has no ⟳ and showed a box. */
+    #refreshBtn svg { width: 24px; height: 24px; }
     #refreshBtn.focused { background: #3a3a3a; color: var(--fg); box-shadow: 0 0 0 4px var(--accent); transform: scale(1.06); }
 
     #menu { position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.72); }
@@ -46,6 +49,9 @@
 
     .section-title { margin: 8px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
     .section-title[hidden], #continueRow[hidden] { display: none; }
+    /* A rule beside "Main" separates what is under way from what is new. */
+    #gridTitle:not([hidden]) { display: flex; align-items: center; gap: 28px; }
+    #gridTitle::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: rgba(255,255,255,.18); }
     #continueRow {
       position: relative; display: flex; gap: 40px; overflow-x: auto; scrollbar-width: none;
       padding: 28px 80px 36px; scroll-padding: 0 80px;
@@ -113,7 +119,7 @@
   </style>
 </head>
 <body>
-  <div id="topbar"><button id="refreshBtn" type="button" tabindex="-1">⟳ Opdater</button></div>
+  <div id="topbar"><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
   <div id="gridTitle" class="section-title" hidden>Main</div>
