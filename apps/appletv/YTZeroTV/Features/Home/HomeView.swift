@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var model = HomeModel()
     @State private var playing: Video?
     @State private var showingSettings = false
+    @Environment(\.scenePhase) private var scenePhase
     @FocusState private var focusedVideo: String?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 48, alignment: .top), count: 4)
@@ -37,6 +38,11 @@ struct HomeView: View {
             await model.loadFirstPage(client: client)
             focusedVideo = firstVideoID
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, model.isStale, playing == nil {
+                run { client in await model.loadFirstPage(client: client) }
+            }
+        }
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
         }
@@ -54,10 +60,18 @@ struct HomeView: View {
             Text("YT Zero")
                 .font(.title2.bold())
             Spacer()
-            Button("Refresh", systemImage: "arrow.clockwise") {
+            // Never disabled: the server takes half a minute to check the
+            // channels, and a focused button that turns disabled leaves the
+            // remote with nothing to move. A second press is ignored instead.
+            Button {
                 run { client in await model.refresh(client: client) }
+            } label: {
+                if model.isRefreshing {
+                    Label { Text("Refreshing…") } icon: { ProgressView() }
+                } else {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
             }
-            .disabled(model.isRefreshing)
             Button("Settings", systemImage: "gearshape") {
                 showingSettings = true
             }
