@@ -34,7 +34,7 @@ function track(durations: number[], lengths: number[]): Uint8Array {
   return concat(box("ftyp", concat(new TextEncoder().encode("dash"), uint32(0), new TextEncoder().encode("iso6"))), box("moov", new Uint8Array(16)), sidx, media);
 }
 
-test("relay-hls builds a full-quality presentation from cached tracks and waits for a later start", async () => {
+test("relay-hls builds a full-quality presentation from cached tracks and starts a later start from the middle", async () => {
   const root = mkdtempSync(join(tmpdir(), "ytzero-relay-hls-"));
   const cache = join(root, "cache");
   mkdirSync(cache);
@@ -57,10 +57,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 case "$fmt" in
-  bestvideo*) src="${root}/video.mp4"; echo "${video.byteLength} 1080 avc1.640028 none 1920 30 4000 NA" ;;
-  *) src="${root}/audio.mp4"; echo "${audio.byteLength} NA none mp4a.40.2 NA NA 128 2" ;;
+  bestvideo*|137) src="${root}/video.mp4"; echo "${video.byteLength} 1080 avc1.640028 none 1920 30 4000 NA 137" ;;
+  *) src="${root}/audio.mp4"; echo "${audio.byteLength} NA none mp4a.40.2 NA NA 128 2 140" ;;
 esac
 case "$url" in *v=bad*) head -c 2000 /dev/zero > "$out"; exit 0 ;; esac
+# A file already there is resumed from its end, as yt-dlp does.
+have=$(wc -c < "$out" 2>/dev/null || echo 0)
+if [ "$have" -gt 0 ]; then tail -c +$((have + 1)) "$src" >> "$out"; exit 0; fi
 head -c 45000 "$src" > "$out"
 while [ ! -f "${root}/release" ]; do sleep 0.05; done
 cat "$src" > "$out"
@@ -71,7 +74,7 @@ cat "$src" > "$out"
       env: {
         ...Bun.env, DB_PATH: join(root, "db/source.db"), AVATAR_DIR: join(root, "avatars"), DOWNLOADS_DIR: join(root, "downloads"),
         DOWNLOAD_COOKIES_DIR: join(root, "cookies"), YTDLP_PATH: ytdlp, YTZERO_INVIDIOUS_CACHE_DIR: cache, YTZERO_POT_PROVIDER: "off",
-        RELAY_HLS_FIXTURES: root,
+        RELAY_HLS_FIXTURES: root, YTZERO_RELAY_HLS_TAIL_AFTER_MB: "0",
       },
       stdout: "pipe", stderr: "pipe",
     });

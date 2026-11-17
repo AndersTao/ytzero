@@ -4,7 +4,8 @@
 import { readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const { forgetRelayHlsPresentations, relayHlsPlaylist, relayHlsReadiness } = await import("../src/relayHls");
+const { forgetRelayHlsPresentations, relayHlsPlaylist, relayHlsReadiness, relayHlsTailResponse } = await import("../src/relayHls");
+const { readFileSync } = await import("node:fs");
 const { mediaTicketPath, ticketAllowsPath } = await import("../src/mediaTickets");
 
 const root = process.env.RELAY_HLS_FIXTURES!;
@@ -22,9 +23,15 @@ check(!ticketAllowsPath(ticket, "/api/videos/abcdefghijk/relay", "GET"), "the ti
 check(!ticketAllowsPath(ticket, "/api/videos/otherchanne/relay-hls/video.mp4", "GET"), "the ticket must not open another video");
 
 // The fake writes the front of each file at once and the rest only once
-// released, so a start further in has to wait for it.
+// released. A start further in is fetched from the middle instead of waiting.
 check(await relayHlsReadiness(1, "abcdefghijk", 0, 5_000) === "ready", "the start of the video should be ready from the front of the files");
-check(await relayHlsReadiness(1, "abcdefghijk", 20, 600) === "pending", "a start past what has arrived should be pending");
+check(await relayHlsReadiness(1, "abcdefghijk", 20, 5_000) === "ready", "a start past what has arrived should be fetched from there");
+const source = readFileSync(join(root, "video.mp4"));
+const tailAnswer = await relayHlsTailResponse("abcdefghijk", "hls-video", "bytes=60124-80123");
+const tailBytes = tailAnswer ? new Uint8Array(await tailAnswer.arrayBuffer()) : null;
+check(tailAnswer?.status === 206 && tailBytes?.byteLength === 20_000 && Buffer.compare(Buffer.from(tailBytes), source.subarray(60124, 80124)) === 0,
+  `the range past the head should come from the tail, byte for byte, got ${tailAnswer?.status} ${tailBytes?.byteLength}`);
+check(await relayHlsTailResponse("abcdefghijk", "hls-video", "bytes=100-200") === null, "a range the head has should stay with the head");
 const master = await relayHlsPlaylist(1, "abcdefghijk", "index.m3u8");
 check(master?.includes('CODECS="avc1.640028,mp4a.40.2"') && master.includes("RESOLUTION=1920x1080") && master.includes('CHANNELS="2"'),
   `the master playlist should describe the tracks yt-dlp picked, got ${master}`);

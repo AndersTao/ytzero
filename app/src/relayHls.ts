@@ -4,6 +4,7 @@ import { cachedEntry, pendingFetch, startFetch, type MediaKind, type PendingFetc
 import { log } from "./logger";
 import { parseMediaSidx, type MediaSidxIndex } from "./mediaSidx";
 import { createVideoVodPresentation, type VideoVodPresentation } from "./videoVodPlaylist";
+import { startTail, tailCovers, tailResponse } from "./relayHlsTail";
 
 /*
  * Full quality for AVPlayer without the direct path.
@@ -34,7 +35,9 @@ interface Track {
   prefix: (bytes: number, signal: AbortSignal) => Promise<Uint8Array | null>;
 }
 
-type Built = { presentation: VideoVodPresentation; generation: string };
+/** What a tail needs to fetch the same file: the format and its full length. */
+type Pinned = { formatId: string | null; total: number };
+type Built = { presentation: VideoVodPresentation; generation: string; video: Pinned; audio: Pinned };
 const presentations = new Map<string, Built>();
 const building = new Map<string, Promise<Built | null>>();
 
@@ -143,7 +146,8 @@ async function build(userId: number, videoId: string, signal: AbortSignal): Prom
     log.warn("relay_hls.unsupported", { videoId, reason: result.reason });
     return null;
   }
-  return { presentation: result.presentation, generation };
+  const pinned = (track: Track): Pinned => ({ formatId: words(track.described)[8] ?? null, total: track.total });
+  return { presentation: result.presentation, generation, video: pinned(video), audio: pinned(audio) };
 }
 
 /** The presentation for this video, built once and shared by everyone asking. */
@@ -179,28 +183,36 @@ function arrived(videoId: string, kind: MediaKind): number {
   }
 }
 
-/** Where the bytes for `start` seconds and the segment after them end. */
-function neededBytes(segments: VideoVodPresentation["videoSegments"], start: number): number {
+/** Where the segment holding `start` seconds begins, and where the one after it ends. */
+function neededRange(segments: VideoVodPresentation["videoSegments"], start: number): { from: number; to: number } {
   let elapsed = 0;
-  for (let position = 0; position < segments.length; position++) {
-    elapsed += segments[position].durationSeconds;
+  let position = segments.length - 1;
+  for (let index = 0; index < segments.length; index++) {
+    elapsed += segments[index].durationSeconds;
     if (elapsed > start) {
-      const next = segments[Math.min(position + 1, segments.length - 1)];
-      return next.offset + next.length;
+      position = index;
+      break;
     }
   }
-  const last = segments.at(-1)!;
-  return last.offset + last.length;
+  const next = segments[Math.min(position + 1, segments.length - 1)];
+  return { from: segments[position].offset, to: next.offset + next.length };
+}
+
+/** How far behind the head may be before a tail is worth starting (MB). */
+function tailAfterBytes(): number {
+  const megabytes = Number(process.env.YTZERO_RELAY_HLS_TAIL_AFTER_MB ?? 32);
+  return (Number.isFinite(megabytes) && megabytes >= 0 ? megabytes : 32) * 1024 * 1024;
 }
 
 /**
  * Whether a player starting at `start` seconds will find its first segments.
  *
  * AVPlayer gives a segment seven seconds to start arriving and then gives up
- * on the item for good. A play that resumes forty minutes in asks for bytes
- * the fetch reaches a minute or so later, so the client is told to wait
- * (202, which it already retries) until they are here, and only then handed
- * the playlist. Waits up to `waitMs` before answering "pending".
+ * on the item for good. So the client is told to wait (202, which it already
+ * retries) until those bytes are here. When the place is far ahead of the
+ * fetch from the start, a second fetch begins right there (relayHlsTail), so
+ * a resume forty minutes in waits seconds, not the minute or two the first
+ * fetch takes to get there. Waits up to `waitMs` before answering "pending".
  */
 export async function relayHlsReadiness(userId: number, videoId: string, start: number, waitMs: number): Promise<"ready" | "pending" | "failed"> {
   const deadline = Date.now() + waitMs;
@@ -208,14 +220,26 @@ export async function relayHlsReadiness(userId: number, videoId: string, start: 
   if (built === undefined) return "pending";
   if (built === null) return "failed";
   const at = Math.max(0, Number.isFinite(start) ? start : 0);
-  const video = neededBytes(built.presentation.videoSegments, at);
-  const audio = neededBytes(built.presentation.audioSegments, at);
+  const tracks = [
+    { kind: "hls-video" as const, pinned: built.video, range: neededRange(built.presentation.videoSegments, at) },
+    { kind: "hls-audio" as const, pinned: built.audio, range: neededRange(built.presentation.audioSegments, at) },
+  ];
+  for (const { kind, pinned, range } of tracks) {
+    if (pinned.formatId && range.from - arrived(videoId, kind) > tailAfterBytes()) {
+      startTail(userId, videoId, kind, pinned.formatId, range.from, pinned.total, () => arrived(videoId, kind));
+    }
+  }
   for (;;) {
-    if (arrived(videoId, "hls-video") >= video && arrived(videoId, "hls-audio") >= audio) return "ready";
+    if (tracks.every(({ kind, range }) => arrived(videoId, kind) >= range.to || tailCovers(videoId, kind, range.from, range.to))) return "ready";
     if (!pendingFetch(videoId, "hls-video", RELAY_HLS_HEIGHT) && !cachedEntry(videoId, "hls-video", RELAY_HLS_HEIGHT)) return "failed";
     if (Date.now() >= deadline) return "pending";
-    await Bun.sleep(250);
+    await Bun.sleep(150);
   }
+}
+
+/** A range a tail can answer that the head has not reached yet, or null. */
+export function relayHlsTailResponse(videoId: string, kind: "hls-video" | "hls-audio", range: string | undefined): Promise<Response | null> {
+  return tailResponse(videoId, kind, range, arrived(videoId, kind));
 }
 
 export type RelayHlsPlaylist = "index.m3u8" | "video.m3u8" | "audio.m3u8";
