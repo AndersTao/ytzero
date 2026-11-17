@@ -35,7 +35,9 @@ websub.setWebSubDirectAdder((channelId, videoIds) => addAnnouncedVideos(channelI
     return {
       videoId, title: "Straight from the watch page", channelId: videoId === "otherchanne" ? "UC" + "o".repeat(22) : channelId,
       channelTitle: "Test", description: "", thumbnail: "https://i.ytimg.com/vi/x/hq.jpg", viewCount: 1,
-      publishedAt: "2026-11-17T10:00:00+00:00", duration: "PT12M", liveStatus: "none", playableInEmbed: true,
+      publishedAt: "2026-11-17T10:00:00+00:00", duration: "PT12M",
+      // The first upload is a stream announced for later, which the feed cannot tell.
+      liveStatus: videoId === "abcdefghijk" ? "upcoming" : "none", playableInEmbed: true,
     };
   },
   classifyShort: async () => false,
@@ -94,7 +96,9 @@ const signed = await app.request(callback, { method: "POST", body: atom, headers
 check(signed.status === 204, "a signed notification gets a 2xx");
 await websub.flushWebSubRefreshes();
 check(refreshed.length === 1 && refreshed[0] === CHANNEL, "a signed notification should refresh the channel once");
-check(looked.length === 0, "an upload the feed already lists must not be looked up");
+check(looked.join(",") === "abcdefghijk", "a new upload the feed lists should still be looked up once");
+const settled = await database.prepare("SELECT live_status, external FROM videos WHERE video_id = ?").get("abcdefghijk") as any;
+check(settled?.live_status === "upcoming", `the watch page should settle a stream the feed listed as an upload, got ${settled?.live_status}`);
 
 // An upload the feed has not caught up with is looked up directly; one that
 // turns out to belong to another channel is not added under this one.
@@ -103,6 +107,9 @@ const notify = async (ids: string[]) => {
   await app.request(callback, { method: "POST", body, headers: { "X-Hub-Signature": "sha1=" + createHmac("sha1", secret).update(body).digest("hex") } });
   await websub.flushWebSubRefreshes();
 };
+looked.length = 0;
+await notify(["abcdefghijk"]);
+check(looked.length === 0, "a notification about a stored video is an edit and must not be looked up");
 await notify(["lmnopqrstuv", "otherchanne"]);
 check(looked.join(",") === "lmnopqrstuv,otherchanne", `both missing uploads should be looked up, got ${looked.join(",")}`);
 const direct = await database.prepare("SELECT channel_id, title, external, is_short, published_at FROM videos WHERE video_id = ?").get("lmnopqrstuv") as any;

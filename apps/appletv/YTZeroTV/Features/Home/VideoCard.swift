@@ -19,6 +19,12 @@ struct VideoCard: View {
                             ProgressBar(value: progress)
                         }
                     }
+                    .overlay(alignment: .topLeading) {
+                        if let badge = video.liveBadge {
+                            LiveBadge(kind: badge)
+                                .padding(12)
+                        }
+                    }
             }
             .buttonStyle(.card)
             .focused(focus, equals: video.id)
@@ -39,5 +45,20 @@ struct VideoCard: View {
             }
             .accessibilityHidden(true)
         }
+    }
+}
+
+/// "LIVE" on a stream that is on now, "Livestream" on a recording of one, so
+/// they can be told from ordinary uploads at a glance.
+struct LiveBadge: View {
+    let kind: Video.LiveBadge
+
+    var body: some View {
+        Text(kind == .live ? "LIVE" : "Livestream")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(kind == .live ? Color.red : Color.black.opacity(0.75), in: .rect(cornerRadius: 8))
     }
 }

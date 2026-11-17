@@ -62,6 +62,11 @@
       box-shadow: 0 0 0 0 transparent; transition: box-shadow .15s ease;
     }
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .badge {
+      position: absolute; top: 12px; left: 12px; padding: 4px 12px; border-radius: 8px;
+      font-size: 20px; font-weight: 700; letter-spacing: .02em; color: #fff; background: rgba(0,0,0,.75);
+    }
+    .badge.live { background: #e5484d; }
     .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.3); }
     .progress div { height: 100%; background: #e5484d; }
     .card.focused { transform: scale(1.06); }
@@ -220,6 +225,13 @@
       img.src = thumbUrl(v.thumbnail);
       img.onerror = function () { img.onerror = null; img.src = "/nothumbnail.jpg"; };
       thumb.appendChild(img);
+      // "LIVE" on a stream that is on now, "Livestream" on a recording of one.
+      if (v.live_status === "live" || v.live_status === "was_live") {
+        var badge = document.createElement("div");
+        badge.className = v.live_status === "live" ? "badge live" : "badge";
+        badge.textContent = v.live_status === "live" ? "LIVE" : "Livestream";
+        thumb.appendChild(badge);
+      }
       if (sectionName === "cont" && v.watch_position && v.watch_duration) {
         var bar = document.createElement("div");
         bar.className = "progress";

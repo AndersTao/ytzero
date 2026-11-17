@@ -20,14 +20,20 @@ export interface AnnouncedVideoOptions {
 }
 
 /**
- * Add uploads a push notification announced that the channel's RSS feed does
- * not list yet, by looking each one up on its own watch page.
+ * Settle uploads a push notification announced, by looking each one up on its
+ * own watch page: add the ones the channel's RSS feed does not list yet, and
+ * correct the ones it does.
  *
  * The hub calls within seconds of an upload, but the feed is a cached copy
  * that trails it by minutes for most channels and by days for some — one
  * large channel's feed was found a day behind, so its pushed uploads never
  * arrived at all. The notification already names the video; waiting for the
  * feed to agree is not needed to know it exists.
+ *
+ * And the feed cannot tell a livestream from an upload: a stream announced
+ * for later came in as an ordinary video and sat in the feed as a "starts
+ * soon" page until the live pass a few minutes later. The watch page knows,
+ * so a video the feed has just added gets its live state from it as well.
  *
  * Only the channel the notification was for: a video that turns out to
  * belong to another channel is not added under this one.
@@ -39,7 +45,6 @@ export async function addAnnouncedVideos(channelId: string, videoIds: string[], 
   );
   const added: string[] = [];
   for (const videoId of videoIds) {
-    if (await videoExists.get(videoId)) continue;
     let info: VideoInfo;
     try {
       info = await fetchInfo(videoId);
@@ -52,8 +57,12 @@ export async function addAnnouncedVideos(channelId: string, videoIds: string[], 
       log.warn("websub.direct_lookup_other_channel", { channelId, videoId, foundChannelId: info.channelId });
       continue;
     }
-    // The feed may have caught up while the page was being read.
-    if (await videoExists.get(videoId)) continue;
+    if (await videoExists.get(videoId)) {
+      // Listed by the feed already: only what the watch page knows better.
+      await persistDirectVideoInfo(info);
+      if (info.liveStatus !== "none") log.info("websub.live_status_settled", { channelId, videoId, liveStatus: info.liveStatus });
+      continue;
+    }
     await persistDirectVideoInfo(info);
     // That write is shared with lookups of videos nobody follows, and marks
     // the row external; this one belongs to a followed channel.

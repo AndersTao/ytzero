@@ -218,10 +218,11 @@ export function setWebSubDirectAdder(adder: DirectAdder | null): void {
 
 /*
  * The hub often calls before the channel's RSS feed lists the new upload, so
- * the channel is read a little later. What the feed still does not list is
- * then looked up on its own watch page (see addAnnouncedVideos): the feed can
- * trail by minutes, or for some channels by days. Should that lookup fail as
- * well, the channel is read once or twice more.
+ * the channel is read a little later. Each new upload is then looked up on
+ * its own watch page (see addAnnouncedVideos): the feed can trail by minutes,
+ * or for some channels by days, and never says whether a video is a
+ * livestream. Should that lookup fail as well, the channel is read once or
+ * twice more.
  */
 const PUSH_DELAYS_MS = [45_000, 5 * 60_000, 15 * 60_000];
 const pendingPushes = new Map<string, { videoIds: Set<string>; timer: ReturnType<typeof setTimeout>; attempt: number }>();
@@ -237,19 +238,22 @@ async function runPushRefresh(channelId: string): Promise<void> {
   const entry = pendingPushes.get(channelId);
   pendingPushes.delete(channelId);
   if (!entry) return;
+  // New uploads only: a notification about a video already stored is an edit
+  // of it, and the regular passes keep those up to date.
+  const announced = await notStored([...entry.videoIds]);
   try {
     await refreshChannelNow(channelId);
   } catch (error) {
     log.warn("websub.refresh_failed", { channelId, error: errorText(error) });
   }
-  let missing = await notStored([...entry.videoIds]);
-  if (missing.length) {
+  let missing = announced;
+  if (announced.length) {
     try {
-      await addAnnouncedNow(channelId, missing);
+      await addAnnouncedNow(channelId, announced);
     } catch (error) {
       log.warn("websub.direct_add_failed", { channelId, error: errorText(error) });
     }
-    missing = await notStored(missing);
+    missing = await notStored(announced);
   }
   if (missing.length && entry.attempt + 1 < PUSH_DELAYS_MS.length) schedulePushRefresh(channelId, missing, entry.attempt + 1);
   else if (missing.length) log.info("websub.video_not_in_feed", { channelId, videoIds: missing });

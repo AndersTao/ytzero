@@ -40,6 +40,17 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         liveStatus = try container.decodeIfPresent(String.self, forKey: .liveStatus)
     }
 
+    enum LiveBadge { case live, recording }
+
+    /// Which stream badge the card shows, if any.
+    var liveBadge: LiveBadge? {
+        switch liveStatus {
+        case "live": .live
+        case "was_live": .recording
+        default: nil
+        }
+    }
+
     /// Whether the card can be played at all.
     var isPlayable: Bool {
         !isUnavailable && !isPrivate && liveStatus != "upcoming"
