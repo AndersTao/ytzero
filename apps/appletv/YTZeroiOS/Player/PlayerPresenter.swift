@@ -50,13 +50,16 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         isPresenting = true
         presenter.present(controller, animated: true)
 
-        // The model may swap players (full quality, then the plain relay when
-        // that fails), so the screen follows whichever is current.
+        // The screen gets the player once it plays. Handed over while still
+        // loading, AVKit takes it for paused and keeps its controls up until
+        // someone taps. The model may also swap players (full quality, then
+        // the plain relay when that fails), and the screen follows.
         attach = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self, let controller = self.controller, let model = self.model else { return }
-                if controller.player !== model.player {
-                    controller.player = model.player
+                let current = model.phase == .playing ? model.player : nil
+                if current != nil, controller.player !== current {
+                    controller.player = current
                 }
                 if let item = model.player?.currentItem, item.externalMetadata.isEmpty {
                     item.externalMetadata = Self.metadata(for: video)
@@ -164,9 +167,11 @@ private struct PlayerStatusView: View {
     var body: some View {
         switch model.phase {
         case .preparing:
+            // Below the player's own buttons in the middle, not under them.
             ProgressView("Preparing video…")
                 .tint(.white)
                 .foregroundStyle(.white)
+                .padding(.top, 240)
         case .failed(let message):
             VStack(spacing: 10) {
                 Text("The video could not be played.")

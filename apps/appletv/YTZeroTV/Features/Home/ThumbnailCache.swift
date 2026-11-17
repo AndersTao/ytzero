@@ -8,7 +8,9 @@ nonisolated final class ThumbnailCache: @unchecked Sendable {
     private let cache = NSCache<NSString, UIImage>()
 
     private init() {
-        cache.countLimit = 400
+        // By size, not count: a few hundred decoded thumbnails are hundreds
+        // of megabytes, more than an older iPad can spare.
+        cache.totalCostLimit = 96 * 1024 * 1024
     }
 
     func image(for key: String) -> UIImage? {
@@ -16,6 +18,7 @@ nonisolated final class ThumbnailCache: @unchecked Sendable {
     }
 
     func store(_ image: UIImage, for key: String) {
-        cache.setObject(image, forKey: key as NSString)
+        let pixels = image.size.width * image.scale * image.size.height * image.scale
+        cache.setObject(image, forKey: key as NSString, cost: Int(pixels) * 4)
     }
 }

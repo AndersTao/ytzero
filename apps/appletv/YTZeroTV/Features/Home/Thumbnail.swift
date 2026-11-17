@@ -29,8 +29,18 @@ struct Thumbnail: View {
             image = cached
             return
         }
-        guard let data = try? await client.imageData(for: source), let decoded = UIImage(data: data) else { return }
-        ThumbnailCache.shared.store(decoded, for: source)
-        image = decoded
+        guard let data = try? await client.imageData(for: source), let original = UIImage(data: data) else { return }
+        // Decoded once, in the background and at the size a card shows. A
+        // JPEG handed straight to SwiftUI is decoded on the main thread the
+        // first time it is drawn, at full size, which is what made scrolling
+        // stutter on an older iPad.
+        let width = min(original.size.width, Self.maxPixelWidth)
+        let size = CGSize(width: width, height: (original.size.height * width / max(original.size.width, 1)).rounded())
+        guard let prepared = await original.byPreparingThumbnail(ofSize: size) else { return }
+        ThumbnailCache.shared.store(prepared, for: source)
+        image = prepared
     }
+
+    /// Wide enough for the largest card on any screen this runs on.
+    private static let maxPixelWidth: CGFloat = 800
 }

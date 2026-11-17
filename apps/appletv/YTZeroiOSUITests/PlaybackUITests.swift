@@ -24,9 +24,14 @@ final class PlaybackUITests: XCTestCase {
         XCTAssertTrue(shelf.buttons.firstMatch.waitForExistence(timeout: 5), "the shelf should have a video")
         shelf.buttons.firstMatch.tap()
 
-        // Time to fetch, start the stream and play a little.
-        sleep(20)
+        sleep(1)
+        snapshot("02-preparing")
+        // Time to fetch, start the stream and play a little. AVKit's controls
+        // should have hidden themselves by then, without a tap.
+        sleep(15)
         snapshot("02-playing")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label IN {'Luk', 'Close'}")).firstMatch.isHittable,
+                       "the player's controls should hide on their own once it plays")
         XCTAssertFalse(app.staticTexts["Videoen kunne ikke afspilles."].exists, "the video should play")
         app.tap()
         let close = app.buttons.matching(NSPredicate(format: "label IN {'Luk', 'Close', 'Færdig', 'Done'}")).firstMatch
