@@ -40,23 +40,15 @@ final class PlayerModel {
     func start(video: Video, client: APIClient) async {
         try? await client.recordVisit(video.id)
         do {
-            // The server's direct stream first; when YouTube refuses it, the
-            // server's own relay, which fetches the video and serves it as it arrives.
-            var stream: (ticket: String, url: URL, expiresIn: Double)
-            var item: AVPlayerItem?
-            if let direct = try? await preparedStream(for: video.id, client: client, relay: false) {
-                stream = direct
-                ticket = direct.ticket
-                item = await playableItem(direct.url, within: .seconds(15))
-            } else {
-                stream = (ticket: "", url: client.baseURL, expiresIn: 0)
-            }
-            if item == nil {
-                if let ticket { await client.releaseTicket(video.id, ticket: ticket) }
-                stream = try await preparedStream(for: video.id, client: client, relay: true)
-                ticket = stream.ticket
-                item = await playableItem(stream.url, within: .seconds(45))
-            }
+            // Always the server's relay: a downloaded or kept copy when there is
+            // one, otherwise one yt-dlp fetch served as it arrives. It is what
+            // Invidious clients such as Yattee play too. The direct stream is
+            // not tried first: YouTube refuses it to AVPlayer, and asking for it
+            // cost a second extraction per play, which is what gets a server
+            // marked as a bot.
+            let stream = try await preparedStream(for: video.id, client: client)
+            ticket = stream.ticket
+            let item = await playableItem(stream.url, within: .seconds(45))
             guard let item, let player else {
                 phase = .failed(lastStreamError ?? String(localized: "The stream could not be loaded."))
                 return
@@ -115,11 +107,11 @@ final class PlayerModel {
     }
 
     /// The server may need a moment to prepare a stream; it says so with 202.
-    private func preparedStream(for id: String, client: APIClient, relay: Bool) async throws -> (ticket: String, url: URL, expiresIn: Double) {
+    private func preparedStream(for id: String, client: APIClient) async throws -> (ticket: String, url: URL, expiresIn: Double) {
         let deadline = ContinuousClock.now + .seconds(90)
         while true {
             do {
-                return try await client.playbackTicket(id, relay: relay)
+                return try await client.playbackTicket(id)
             } catch APIError.pending where ContinuousClock.now < deadline {
                 try await Task.sleep(for: .seconds(2))
             }

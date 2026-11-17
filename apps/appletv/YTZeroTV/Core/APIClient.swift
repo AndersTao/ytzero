@@ -130,11 +130,10 @@ nonisolated struct APIClient: Sendable {
     // MARK: Playback
 
     /// A playable stream for the video; `.pending` while the server prepares it.
-    /// `relay` asks the server to fetch the video itself (with yt-dlp) and
-    /// serve it as it arrives, for when YouTube refuses the direct stream.
-    func playbackTicket(_ id: String, relay: Bool = false) async throws -> (ticket: String, url: URL, expiresIn: Double) {
-        let body = relay ? ["source": "relay"] : [String: String]()
-        let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "POST", body: body))
+    /// Always the relay: the server serves a downloaded or kept copy, or
+    /// fetches the video itself with yt-dlp and serves it as it arrives.
+    func playbackTicket(_ id: String) async throws -> (ticket: String, url: URL, expiresIn: Double) {
+        let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "POST", body: ["source": "relay"]))
         if response.statusCode == 202 { throw APIError.pending }
         let ticket = try decode(APIModels.PlaybackTicket.self, from: data, status: response.statusCode)
         // The server answers with a path on itself; the media requests carry the
