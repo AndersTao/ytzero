@@ -24,10 +24,12 @@ Sådan hænger det sammen:
    30 s frem og Venstre 15 s tilbage, OK eller et klik i midten sætter pause, og
    Back går tilbage til Main. Afspilningen fortsætter, hvor man slap, og
    fremskridt gemmes.
-   Øverst står "Fortsæt med at se". Talknapperne på fjernbetjeningen virker
-   på den valgte (eller den igangværende) video: 1 afviser, 2 markerer som
-   set, og 3 opdaterer feedet. Farveknapperne bruges ikke, fordi LG-TV'et selv
-   fanger dem (billed- og energiindstillinger).
+   Øverst står "Fortsæt med at se". Hold OK nede på en video for at få en
+   menu med "Markér som set" og "Afvis". Op fra øverste række går til
+   "Opdater" i øverste højre hjørne. Talknapperne virker stadig som genveje
+   (1 afviser, 2 markerer som set, 3 opdaterer), men vises ikke. Farveknapperne
+   bruges ikke, fordi LG-TV'et selv fanger dem (billed- og
+   energiindstillinger).
 4. Back på forsiden lukker appen.
 
 Indhold:
