@@ -1,7 +1,10 @@
 import { randomBytes } from "node:crypto";
 
-/** "relay": this server fetches the video with yt-dlp and serves it as it arrives. */
-export type NativeMediaKind = "file" | "hls" | "direct" | "direct-hls" | "live-hls" | "relay";
+/**
+ * "relay": this server fetches the video with yt-dlp and serves it as it arrives.
+ * "relay-hls": the same, as separate full-quality tracks in one HLS presentation.
+ */
+export type NativeMediaKind = "file" | "hls" | "direct" | "direct-hls" | "live-hls" | "relay" | "relay-hls";
 export type MediaTicket = {
   userId: number;
   videoId: string;
@@ -49,7 +52,7 @@ export class MediaTicketStore {
 
 export function mediaTicketPath(ticket: Pick<MediaTicket, "videoId" | "kind">): string {
   const base = `/api/videos/${encodeURIComponent(ticket.videoId)}`;
-  if (ticket.kind === "hls" || ticket.kind === "direct-hls" || ticket.kind === "live-hls") return `${base}/${ticket.kind}/index.m3u8`;
+  if (ticket.kind === "hls" || ticket.kind === "direct-hls" || ticket.kind === "live-hls" || ticket.kind === "relay-hls") return `${base}/${ticket.kind}/index.m3u8`;
   if (ticket.kind === "relay") return `${base}/relay`;
   return ticket.kind === "file" ? `${base}/stream?compat=1` : `${base}/direct-stream`;
 }

@@ -40,16 +40,29 @@ final class PlayerModel {
     func start(video: Video, client: APIClient) async {
         try? await client.recordVisit(video.id)
         do {
-            // Always the server's relay: a downloaded or kept copy when there is
-            // one, otherwise one yt-dlp fetch served as it arrives. It is what
-            // Invidious clients such as Yattee play too. The direct stream is
-            // not tried first: YouTube refuses it to AVPlayer, and asking for it
-            // cost a second extraction per play, which is what gets a server
-            // marked as a bot.
-            let stream = try await preparedStream(for: video.id, client: client)
-            ticket = stream.ticket
-            let item = await playableItem(stream.url, within: .seconds(45))
-            guard let item, let player else {
+            // Always through the server, which fetches with yt-dlp and serves
+            // as it arrives — what Invidious clients such as Yattee play too.
+            // The direct stream is not tried: YouTube refuses it to AVPlayer.
+            //
+            // Full quality first: H.264 video and AAC audio as separate tracks
+            // in one HLS presentation. A resume deep into a long video waits
+            // until the server has fetched that far. When it cannot be played
+            // that way, the plain relay (YouTube's muxed file, 360p) still can.
+            var stream: Stream?
+            var item: AVPlayerItem?
+            if let full = try? await preparedStream(for: video.id, client: client, source: "relay-hls", start: video.resumePosition, within: .seconds(180)) {
+                stream = full
+                item = await playableItem(full.url, within: .seconds(45))
+                if item == nil { await client.releaseTicket(video.id, ticket: full.ticket) }
+            }
+            try Task.checkCancellation()
+            if item == nil {
+                let relay = try await preparedStream(for: video.id, client: client, source: "relay", start: 0, within: .seconds(90))
+                stream = relay
+                item = await playableItem(relay.url, within: .seconds(45))
+            }
+            ticket = stream?.ticket
+            guard let item, let stream, let player else {
                 phase = .failed(lastStreamError ?? String(localized: "The stream could not be loaded."))
                 return
             }
@@ -106,12 +119,14 @@ final class PlayerModel {
         return nil
     }
 
+    typealias Stream = (ticket: String, url: URL, expiresIn: Double)
+
     /// The server may need a moment to prepare a stream; it says so with 202.
-    private func preparedStream(for id: String, client: APIClient) async throws -> (ticket: String, url: URL, expiresIn: Double) {
-        let deadline = ContinuousClock.now + .seconds(90)
+    private func preparedStream(for id: String, client: APIClient, source: String, start: Double, within limit: Duration) async throws -> Stream {
+        let deadline = ContinuousClock.now + limit
         while true {
             do {
-                return try await client.playbackTicket(id)
+                return try await client.playbackTicket(id, source: source, start: start)
             } catch APIError.pending where ContinuousClock.now < deadline {
                 try await Task.sleep(for: .seconds(2))
             }

@@ -80,7 +80,9 @@ describe("HTTP route manifest", () => {
     const dailymotionRoutes = routes.filter((route) => route.includes("/dailymotion"));
     // The native apps' relay: a yt-dlp fetch served as it arrives, for when YouTube refuses the direct stream.
     const relayRoute = "GET /videos/:id/relay";
-    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, ...providerRoutes, ...invidiousRoutes, ...dailymotionRoutes];
+    // The same in full quality, as one HLS presentation of the separate tracks.
+    const relayHlsRoute = "GET /videos/:id/relay-hls/:file";
+    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, ...providerRoutes, ...invidiousRoutes, ...dailymotionRoutes];
     const publicShareManagementRoutes = [
       "GET /public-shares", "PUT /public-shares/policy", "POST /public-shares",
       "PATCH /public-shares/:id", "POST /public-shares/:id/rotate", "DELETE /public-shares/:id",
