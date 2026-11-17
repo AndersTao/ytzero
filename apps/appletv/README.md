@@ -18,6 +18,28 @@ En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-side
 
 Appen er på engelsk og dansk og følger Apple TV'ets sprog.
 
+## iPhone og iPad
+
+Samme projekt har også en app til iPhone og iPad (`YTZeroiOS`, iOS 17 eller
+nyere, så den også kører på ældre iPads). Den deler server, login, forside-
+logik og afspilning (`PlayerModel`) med Apple TV-appen, så den får samme
+hurtige start, 1080p og fortsæt. Kun skærmene er lavet til touch:
+
+- **Forside:** "Fortsæt med at se" som vandret række og Main nedenunder med
+  skillelinje. Main har én kolonne på iPhone og flere på iPad.
+- **Tryk** afspiller, og **tryk og hold** giver Markér som set og Afvis.
+- **Træk ned** henter listerne igen. **Opdater-knappen** får også serveren til
+  at tjekke kanalerne (cirka 30 sekunder).
+- **Afspiller:** Apples egen afspiller med spoling, AirPlay og billede i
+  billede. Lyden fortsætter, når skærmen slukkes, og låseskærmen viser titel
+  og kanal.
+- **Login:** Appen viser en kode og åbner godkendelsessiden i browseren på
+  telefonen selv. Bagefter vender du tilbage til appen, der fortsætter af sig
+  selv.
+
+Byg den som Apple TV-appen. Vælg skemaet **YTZeroiOS**, og sæt
+`YTZERO_IOS_BUNDLE_ID` i `Config/Local.xcconfig`.
+
 ## Sådan virker det
 
 - **Første start:** Du skriver adressen på din YT Zero-server. Intet er bygget
@@ -78,6 +100,10 @@ xcodebuild -project YTZeroTV.xcodeproj -scheme YTZeroTV -sdk appletvsimulator -d
 ```
 
 ### UI-test i simulatoren
+
+`YTZeroiOSUITests` åbner den første video i "Fortsæt med at se", lader den
+spille og lukker den igen (skemaet `YTZeroiOS` og en iPhone- eller
+iPad-simulator, med de samme to miljøvariabler som herunder).
 
 `YTZeroTVUITests` trykker sig gennem forsiden, menuen ved langt tryk og
 afspilleren med Siri Remote og gemmer et skærmbillede af hvert trin. Testen

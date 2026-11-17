@@ -13,10 +13,10 @@ final class PairingModel {
 
     private(set) var state: State = .loading
 
-    func run(client: APIClient, onToken: (String) -> Void) async {
+    func run(client: APIClient, deviceName: String = "Apple TV", onToken: (String) -> Void) async {
         while !Task.isCancelled {
             do {
-                let code = try await client.beginPairing()
+                let code = try await client.beginPairing(deviceName: deviceName)
                 state = .waiting(code: code.userCode, link: code.verificationURIComplete ?? code.verificationURI, address: code.verificationURI)
                 let deadline = ContinuousClock.now + .seconds(max(30, code.expiresIn))
                 while ContinuousClock.now < deadline {

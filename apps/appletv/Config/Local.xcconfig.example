@@ -3,3 +3,5 @@
 YTZERO_DEVELOPMENT_TEAM = ABCDE12345
 // A bundle id under your own domain or account.
 YTZERO_BUNDLE_ID = com.example.ytzero.appletv
+// The same for the iPhone and iPad app.
+YTZERO_IOS_BUNDLE_ID = com.example.ytzero.ios
