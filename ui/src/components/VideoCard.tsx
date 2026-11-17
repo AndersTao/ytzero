@@ -896,6 +896,7 @@ export function VideoCard({
             </span>
           )}
           {video.live_status === "upcoming" && <span className="live-badge upcoming">{t("upcomingBadge")}</span>}
+          {video.live_status === "was_live" && <span className="live-badge upcoming">{t("recordedLiveBadge")}</span>}
           {video.is_private === 1 && (
             <Badge variant="warning" size="sm" className="private-video-badge">
               <Lock size={11} /> {t("privateVideoBadge")}

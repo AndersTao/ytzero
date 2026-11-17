@@ -6,6 +6,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { liveStreamMessages } from "./liveStreams";
 
 export const ru: Locale = {
   messages: {
@@ -28,6 +29,7 @@ export const ru: Locale = {
     ...notificationMessages.ru,
     ...tvPairingMessages.ru,
     ...webSubMessages.ru,
+    ...liveStreamMessages.ru,
     "navToday": "Главная",
     "navSocial": "Общение",
     "navDiscovery": "Открытия",

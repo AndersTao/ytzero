@@ -51,6 +51,17 @@ export function appendShortsFeedVisibility(where: string[], userId: number): voi
   }
 }
 
+/**
+ * A livestream — on now, announced or recorded — from a channel whose streams
+ * this profile has hidden (user_channels.live_feed_visibility = 'hidden').
+ */
+export function channelLiveHiddenSql(userId: number, alias = "v"): string {
+  return `(${alias}.live_status IN ('live', 'upcoming', 'was_live') AND COALESCE((
+    SELECT live_pref.live_feed_visibility FROM user_channels live_pref
+    WHERE live_pref.user_id = ${userId} AND live_pref.channel_id = ${alias}.channel_id
+  ), 'default') = 'hidden')`;
+}
+
 // The WHERE clause for the plain, unfiltered-by-channel/search main feed —
 // shared by GET /feed (when none of channel/q/all_sources/liked/only_shorts
 // apply), GET /feed/adjacent and the cleanup view, so "what the feed shows"
@@ -106,6 +117,7 @@ export function feedVisibilityWhere(
     if (getUserSetting(uid, "hide_live_from_feed") === "1" || childHidesLive(uid)) {
       where.push("v.live_status NOT IN ('live', 'upcoming')");
     }
+    where.push(`NOT ${channelLiveHiddenSql(uid)}`);
     where.push(`NOT (
       v.members_only = 1 AND CASE COALESCE(
         (SELECT member_pref.members_only_visibility FROM user_channels member_pref

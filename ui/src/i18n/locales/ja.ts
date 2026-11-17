@@ -6,6 +6,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { liveStreamMessages } from "./liveStreams";
 
 export const ja: Locale = {
   messages: {
@@ -28,6 +29,7 @@ export const ja: Locale = {
     ...notificationMessages.ja,
     ...tvPairingMessages.ja,
     ...webSubMessages.ja,
+    ...liveStreamMessages.ja,
     "navToday": "メインページ",
     "navSocial": "社会招聘",
     "navDiscovery": "ディスカバリー",

@@ -6,6 +6,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { liveStreamMessages } from "./liveStreams";
 
 export const fr: Locale = {
   messages: {
@@ -53,6 +54,7 @@ export const fr: Locale = {
     ...notificationMessages.fr,
     ...tvPairingMessages.fr,
     ...webSubMessages.fr,
+    ...liveStreamMessages.fr,
     "navToday": "Accueil",
     "navSocial": "Social",
     "navDiscovery": "Découverte",

@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import { ArrowDownToLine, Camera, Clapperboard, LoaderCircle, Maximize, Minimize, MonitorPlay, Pause, PictureInPicture2, Play, Volume2, VolumeX } from "lucide-react";
 import type { AvailableSubtitle, SponsorSegment, VideoChapter, VideoSubtitle } from "../api";
@@ -430,6 +430,22 @@ const LocalPlayer = forwardRef<LocalPlayerHandle, {
     }
   }, []);
 
+  /*
+   * Leave fullscreen ourselves when this player holds it. What follows the end
+   * of a video — the "up next" card, the next video — lives outside this
+   * element: the card cannot be seen from inside fullscreen, and the next
+   * video replaces this player while it is still the fullscreen element.
+   * Removing that element is how iPad Safari (17) was left with its own close
+   * button on screen and no longer answering it.
+   */
+  const leaveOwnFullscreen = useCallback(() => {
+    const root = rootRef.current;
+    const holder = document.fullscreenElement;
+    if (root && holder && (holder === root || root.contains(holder))) document.exitFullscreen?.().catch(() => {});
+  }, []);
+  // Layout cleanup runs before the element is taken out of the page.
+  useLayoutEffect(() => () => leaveOwnFullscreen(), [leaveOwnFullscreen]);
+
   const clearPendingTouchTap = useCallback(() => {
     if (touchTapTimerRef.current !== null) window.clearTimeout(touchTapTimerRef.current);
     touchTapTimerRef.current = null;
@@ -816,6 +832,7 @@ const LocalPlayer = forwardRef<LocalPlayerHandle, {
           endedRef.current = true;
           setPlaying(false);
           setControlsVisible(true);
+          leaveOwnFullscreen();
           onEnded?.();
         }}
         onError={() => { if (!hls) onError?.(); }}

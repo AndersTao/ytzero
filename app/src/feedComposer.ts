@@ -1,7 +1,7 @@
 import { database } from "./database";
 import { getUserSetting } from "./db";
 import { childHidesLive } from "./childTime";
-import { appendShortsFeedVisibility, feedSortSql, feedSourceExists, feedVisibilityWhere } from "./feedQuery";
+import { appendShortsFeedVisibility, channelLiveHiddenSql, feedSortSql, feedSourceExists, feedVisibilityWhere } from "./feedQuery";
 import { videoSelect, type VideoRow } from "./videoRoutesSupport";
 import type {
   FeedBuilderConfig,
@@ -181,6 +181,7 @@ export function recipeWhere(recipe: FeedRecipe, userId: number): { where: string
   else applyMediaMode(where, recipe.shorts, "COALESCE(v.is_short, 0) = 1", false);
   if (childHidesLive(userId)) where.push("v.live_status NOT IN ('live', 'upcoming')");
   else applyMediaMode(where, recipe.live, "v.live_status IN ('live', 'upcoming')", getUserSetting(userId, "hide_live_from_feed") === "1");
+  where.push(`NOT ${channelLiveHiddenSql(userId)}`);
   if (recipe.membersOnly === "inherit") {
     where.push(`NOT (
       v.members_only = 1 AND CASE COALESCE(

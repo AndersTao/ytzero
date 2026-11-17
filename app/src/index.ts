@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { api, isAdmin } from "./routes";
 import { registerWebSubAdminRoutes, registerWebSubCallback, startWebSubMaintenance } from "./websubRoutes";
+import { registerChannelLiveFeedRoutes } from "./routes/channelLiveFeedRoutes";
 import { warmPotProvider } from "./ytdlpPotProvider";
 import { provisionManagedYtdlp } from "./ytdlpProvision";
 import { registerInvidiousCompat } from "./compat/invidious";
@@ -65,6 +66,7 @@ app.route("/share", createPublicShareRouter(uiDir));
 // hub's signature itself. Its settings live inside the authenticated API.
 registerWebSubCallback(app);
 registerWebSubAdminRoutes(api, { isAdmin });
+registerChannelLiveFeedRoutes(api);
 
 app.route("/api", api);
 
