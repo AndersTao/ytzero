@@ -25,9 +25,11 @@ Appen er på engelsk og dansk og følger Apple TV'ets sprog.
 - **Login:** Appen bruger serverens TV-pairing. Den viser en QR-kode og en
   kode, du godkender på telefonen, og den session, du får tilbage, gemmes i
   Keychain.
-- **Afspilning:** Videoerne afspilles via serverens native stream
-  (`/api/videos/:id/playback-ticket`) i AVPlayer. Serveren skal derfor kunne
-  afspille direkte, hvilket kræver yt-dlp.
+- **Afspilning:** Videoerne afspilles via serverens relay
+  (`/api/videos/:id/playback-ticket` med `{"source":"relay"}`) i AVPlayer:
+  en downloadet eller gemt kopi, ellers ét yt-dlp-hent, som serveren sender
+  videre, mens det kommer ind. Det er samme vej, som Invidious-klienter som
+  Yattee bruger. Serveren skal derfor have yt-dlp.
 
 ## Byg og installér
 
