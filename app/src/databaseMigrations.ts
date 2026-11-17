@@ -754,6 +754,29 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       { kind: "sql", statement: `CREATE INDEX IF NOT EXISTS idx_websub_subscriptions_state ON websub_subscriptions(state)` },
     ],
   },
+  {
+    version: 208,
+    name: "channel-live-feed-visibility",
+    schemaHashes: {
+      "app/src/schema.sql": "f079d9bc13754dc96fdcc5ab3ee3781f285cba161c3e702a58c4f041e56c0404",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "31e77b7af023276f38d1075b0a5a2197fef150513f010b90bab5909971871056",
+      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
+      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
+      "app/src/websubSchema.sql": "89b7db61d2e146ba8f80d5994a80704af4519c02a94a540a4cfd8acee0cc4e99",
+    },
+    /*
+     * One column on a profile's channel preferences: whether that channel's
+     * livestreams are left out of the feed. NULL is "default", the profile's
+     * own rule, so every existing row keeps behaving as it did.
+     */
+    sqlite: [
+      { kind: "add-column", table: "user_channels", column: "live_feed_visibility", definition: "TEXT" },
+    ],
+    postgres: [
+      { kind: "add-column", table: "user_channels", column: "live_feed_visibility", definition: "TEXT" },
+    ],
+  },
 ];
 
 function quoteIdentifier(identifier: string): string {

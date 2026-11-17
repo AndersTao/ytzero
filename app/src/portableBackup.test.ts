@@ -216,11 +216,11 @@ describe("portable backup classification and restore", () => {
     const options = await backup.backupOptions();
     const profile = options.profiles[0];
     await setUserSetting(1, "show_shorts", "disabled");
-    db.prepare("UPDATE user_channels SET shorts_feed_visibility='show' WHERE user_id=1 AND channel_id='UCportable'").run();
+    db.prepare("UPDATE user_channels SET shorts_feed_visibility='show', live_feed_visibility='hidden' WHERE user_id=1 AND channel_id='UCportable'").run();
     const zip = await backup.createPortableBackup({ preset: "setup", profiles: [profile.id] });
 
     await setUserSetting(1, "show_shorts", "0");
-    db.prepare("UPDATE user_channels SET shorts_feed_visibility='default' WHERE user_id=1 AND channel_id='UCportable'").run();
+    db.prepare("UPDATE user_channels SET shorts_feed_visibility='default', live_feed_visibility=NULL WHERE user_id=1 AND channel_id='UCportable'").run();
 
     const analyzed = await backup.analyzePortableBackup(1, zip);
     const mappings = { [profile.id]: { action: "merge" as const, targetProfileId: 1 } };
@@ -233,6 +233,7 @@ describe("portable backup classification and restore", () => {
 
     expect(getUserSetting(1, "show_shorts")).toBe("disabled");
     expect((db.prepare("SELECT shorts_feed_visibility FROM user_channels WHERE user_id=1 AND channel_id='UCportable'").get() as any)?.shorts_feed_visibility).toBe("show");
+    expect((db.prepare("SELECT live_feed_visibility FROM user_channels WHERE user_id=1 AND channel_id='UCportable'").get() as any)?.live_feed_visibility).toBe("hidden");
   });
 
   test("round-trips tag filter-bar visibility only with the tags section", async () => {

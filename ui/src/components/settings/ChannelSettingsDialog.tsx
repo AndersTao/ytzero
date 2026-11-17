@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, LoaderCircle } from "lucide-react";
 import { api, type Channel, type ChannelManualStatus, type ChannelShortsFeedVisibility, type MembersOnlyVisibility } from "../../api";
+import { setChannelLiveFeedVisibility, type ChannelLiveFeedVisibility } from "../../channelLiveFeedApi";
 import { resolvePlaybackSpeeds } from "../../../../shared/playbackSpeeds";
 import { SUBTITLE_LANGUAGES } from "../../subtitleLanguages";
 import { useI18n } from "../../i18n";
@@ -18,6 +19,7 @@ interface ChannelSettingsDraft {
   captions: CaptionChoice;
   membersOnly: MembersOnlyVisibility;
   shorts: ChannelShortsFeedVisibility;
+  live: ChannelLiveFeedVisibility;
   notifications: NotificationMode;
 }
 
@@ -32,6 +34,7 @@ function draftFromChannel(channel: Channel): ChannelSettingsDraft {
         : "default",
     membersOnly: channel.members_only_visibility ?? "default",
     shorts: channel.shorts_feed_visibility ?? "default",
+    live: channel.live_feed_visibility ?? "default",
     notifications: "default",
   };
 }
@@ -43,6 +46,7 @@ export function hasCustomChannelSettings(channel: Channel): boolean {
     || channel.caption_mode != null
     || (channel.members_only_visibility ?? "default") !== "default"
     || (channel.shorts_feed_visibility ?? "default") !== "default"
+    || (channel.live_feed_visibility ?? "default") !== "default"
     || schedule.refresh_schedule_days != null
     || schedule.refresh_schedule_time != null;
 }
@@ -120,6 +124,9 @@ export default function ChannelSettingsDialog({ channel, open, onOpenChange, onS
       }
       if (loadedChannel?.followed !== 0 && draft.shorts !== initial.shorts) {
         requests.push(api.setChannelShortsFeedVisibility(channel.channel_id, draft.shorts));
+      }
+      if (loadedChannel?.followed !== 0 && draft.live !== initial.live) {
+        requests.push(setChannelLiveFeedVisibility(channel.channel_id, draft.live));
       }
       if (loadedChannel?.followed !== 0 && draft.notifications !== initial.notifications) {
         requests.push(api.updateNotificationSource("channel", channel.channel_id, draft.notifications === "default" ? null : draft.notifications === "on"));
@@ -228,6 +235,19 @@ export default function ChannelSettingsDialog({ channel, open, onOpenChange, onS
               onChange={(shorts) => setDraft((current) => current && ({ ...current, shorts }))}
             />
           </SettingRow>}
+          <SettingRow label={t("channelLiveFeed")} description={t("channelLiveFeedHint")}>
+            <SelectMenu
+              floating
+              disabled={!followed}
+              label={t("channelLiveFeed")}
+              value={draft.live}
+              options={[
+                { value: "default", label: t("channelSettingDefault") },
+                { value: "hidden", label: t("channelLiveFeedHidden") },
+              ]}
+              onChange={(live) => setDraft((current) => current && ({ ...current, live }))}
+            />
+          </SettingRow>
           <SettingRow label={t("channelRefreshSchedule")} description={t("channelRefreshScheduleHint")}>
             <Button disabled={!followed} leadingIcon={<CalendarClock />} onClick={() => setScheduleOpen(true)}>{t("channelRefreshSchedule")}</Button>
           </SettingRow>

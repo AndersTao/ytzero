@@ -6,6 +6,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { liveStreamMessages } from "./liveStreams";
 
 export const ptBR: Locale = {
   messages: {
@@ -28,6 +29,7 @@ export const ptBR: Locale = {
     ...notificationMessages["pt-BR"],
     ...tvPairingMessages["pt-BR"],
     ...webSubMessages["pt-BR"],
+    ...liveStreamMessages["pt-BR"],
     "navToday": "Principal",
     "navSocial": "Social",
     "navDiscovery": "Descoberta",

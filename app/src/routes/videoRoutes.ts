@@ -6,7 +6,7 @@ import { fetchVideoChapters, fetchVideoCreators, fetchVideoInfo } from "../youtu
 import { discoveryRecommendations, dismissDiscoveryRecommendation, getPluginSettings, pluginEnabled, recommendationFeed, refreshDiscoveryInBackground, refreshDiscoveryNow } from "../plugins";
 import { validYouTubeVideoId } from "../youtubeComments";
 import { childDownloadsOnly, childHidesLive, childLocalOnly, isChildUser, isParentLocked } from "../childTime";
-import { followedExists, profileVideoOwnershipExists, shortsUiVisibilitySql } from "../feedQuery";
+import { channelLiveHiddenSql, followedExists, profileVideoOwnershipExists, shortsUiVisibilitySql } from "../feedQuery";
 import { profileDownloadsEnabled } from "../downloadConfig";
 import { getDeArrowBranding } from "../dearrow";
 import { log } from "../logger";
@@ -123,7 +123,7 @@ api.get("/live", async (c) => {
     // and every other list honours that. This one did not, so a stream put
     // aside stayed on the page it was put aside from — for good, because a
     // scheduled stream that never starts is never anything but upcoming.
-    .prepare(`${videoSelect(uid)} WHERE v.live_status IN ('live','upcoming') AND COALESCE(uv.status, 'inbox') != 'archived' AND ${followedExists(uid)} ORDER BY v.live_status = 'live' DESC, v.published_at DESC`)
+    .prepare(`${videoSelect(uid)} WHERE v.live_status IN ('live','upcoming') AND COALESCE(uv.status, 'inbox') != 'archived' AND ${followedExists(uid)} AND NOT ${channelLiveHiddenSql(uid)} ORDER BY v.live_status = 'live' DESC, v.published_at DESC`)
     .all() as VideoRow[];
   return c.json({ videos: await attachTags(uid, rows) });
 });
