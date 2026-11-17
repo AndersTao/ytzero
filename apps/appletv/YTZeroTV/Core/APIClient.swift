@@ -130,12 +130,13 @@ nonisolated struct APIClient: Sendable {
     // MARK: Playback
 
     /// A playable stream for the video; `.pending` while the server prepares it.
-    /// Always fetched by the server with yt-dlp and served as it arrives:
+    /// Fetched by the server with yt-dlp and served as it arrives:
     /// "relay-hls" as separate full-quality tracks in one HLS presentation,
-    /// "relay" as YouTube's one muxed file (360p). `start` is where playback
-    /// will begin, so the server can hold the stream back until it is there.
-    func playbackTicket(_ id: String, source: String, start: Double) async throws -> (ticket: String, url: URL, expiresIn: Double) {
-        struct Body: Encodable, Sendable { let source: String; let start: Double }
+    /// "relay" as YouTube's one muxed file (360p). No source lets the server
+    /// choose, which is how a stream that is live now is played. `start` is
+    /// where playback will begin, so the server can be ready there.
+    func playbackTicket(_ id: String, source: String?, start: Double) async throws -> (ticket: String, url: URL, expiresIn: Double) {
+        struct Body: Encodable, Sendable { let source: String?; let start: Double }
         let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "POST", body: Body(source: source, start: start)))
         if response.statusCode == 202 { throw APIError.pending }
         let ticket = try decode(APIModels.PlaybackTicket.self, from: data, status: response.statusCode)

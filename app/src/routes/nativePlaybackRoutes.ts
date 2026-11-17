@@ -5,7 +5,7 @@ import { mediaTickets, nativePlaybackAccess, nativePlaybackSource } from "../nat
 import { ytdlpStatus } from "../downloader";
 import { answerMedia } from "../compat/invidious/mediaRoutes";
 import { BEST_HEIGHT, cacheableVideoId } from "../compat/invidious/mediaCache";
-import { RELAY_HLS_HEIGHT, relayHlsPlaylist, relayHlsReadiness } from "../relayHls";
+import { RELAY_HLS_HEIGHT, relayHlsPlaylist, relayHlsReadiness, relayHlsTailResponse } from "../relayHls";
 
 type Environment = { Variables: { userId: number; sessionAdmin?: boolean; profileAdmin?: boolean } };
 
@@ -83,7 +83,9 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
     const videoId = c.req.param("id");
     const file = c.req.param("file");
     if (file === "video.mp4" || file === "audio.mp4") {
-      return answerMedia(c, currentUserId(c), videoId, file === "video.mp4" ? "hls-video" : "hls-audio", RELAY_HLS_HEIGHT, { bounded: false, quiet: true });
+      const kind = file === "video.mp4" ? "hls-video" : "hls-audio";
+      return await relayHlsTailResponse(videoId, kind, c.req.header("range"))
+        ?? answerMedia(c, currentUserId(c), videoId, kind, RELAY_HLS_HEIGHT, { bounded: false, quiet: true });
     }
     if (file !== "index.m3u8" && file !== "video.m3u8" && file !== "audio.m3u8") return c.json({ error: "not found" }, 404);
     const playlist = await relayHlsPlaylist(currentUserId(c), videoId, file);

@@ -45,18 +45,24 @@ final class PlayerModel {
             // The direct stream is not tried: YouTube refuses it to AVPlayer.
             //
             // Full quality first: H.264 video and AAC audio as separate tracks
-            // in one HLS presentation. A resume deep into a long video waits
-            // until the server has fetched that far. When it cannot be played
-            // that way, the plain relay (YouTube's muxed file, 360p) still can.
+            // in one HLS presentation. For a resume deep into a long video the
+            // server also starts fetching from that place. When it cannot be
+            // played that way, the plain relay (YouTube's muxed file, 360p) can.
             var stream: Stream?
             var item: AVPlayerItem?
-            if let full = try? await preparedStream(for: video.id, client: client, source: "relay-hls", start: video.resumePosition, within: .seconds(180)) {
+            // A stream that is live now cannot be fetched as a file: the
+            // server's live path relays YouTube's own live HLS instead.
+            if video.liveStatus == "live" {
+                let live = try await preparedStream(for: video.id, client: client, source: nil, start: 0, within: .seconds(60))
+                stream = live
+                item = await playableItem(live.url, within: .seconds(45))
+            } else if let full = try? await preparedStream(for: video.id, client: client, source: "relay-hls", start: video.resumePosition, within: .seconds(180)) {
                 stream = full
                 item = await playableItem(full.url, within: .seconds(45))
                 if item == nil { await client.releaseTicket(video.id, ticket: full.ticket) }
             }
             try Task.checkCancellation()
-            if item == nil {
+            if item == nil, video.liveStatus != "live" {
                 let relay = try await preparedStream(for: video.id, client: client, source: "relay", start: 0, within: .seconds(90))
                 stream = relay
                 item = await playableItem(relay.url, within: .seconds(45))
@@ -66,7 +72,7 @@ final class PlayerModel {
                 phase = .failed(lastStreamError ?? String(localized: "The stream could not be loaded."))
                 return
             }
-            if video.resumePosition > 0 {
+            if video.resumePosition > 0, video.liveStatus != "live" {
                 await player.seek(to: CMTime(seconds: video.resumePosition, preferredTimescale: 600))
             }
             await turnOffCaptions(on: item)
@@ -122,13 +128,15 @@ final class PlayerModel {
     typealias Stream = (ticket: String, url: URL, expiresIn: Double)
 
     /// The server may need a moment to prepare a stream; it says so with 202.
-    private func preparedStream(for id: String, client: APIClient, source: String, start: Double, within limit: Duration) async throws -> Stream {
+    private func preparedStream(for id: String, client: APIClient, source: String?, start: Double, within limit: Duration) async throws -> Stream {
         let deadline = ContinuousClock.now + limit
         while true {
             do {
                 return try await client.playbackTicket(id, source: source, start: start)
             } catch APIError.pending where ContinuousClock.now < deadline {
-                try await Task.sleep(for: .seconds(2))
+                // The server already holds each request until it is ready or
+                // a few seconds have passed, so ask again straight away.
+                try await Task.sleep(for: .milliseconds(300))
             }
         }
     }

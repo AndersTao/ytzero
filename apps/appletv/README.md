@@ -30,9 +30,17 @@ Appen er på engelsk og dansk og følger Apple TV'ets sprog.
   Invidious-klienter som Yattee bruger. Serveren skal derfor have yt-dlp.
   - Først `{"source":"relay-hls"}`: billede (H.264, op til 1080p) og lyd
     hentes hver for sig og afspilles som én HLS-strøm. Appen sender sin
-    startposition med (`start`). Serveren svarer 202, indtil den har hentet
-    så langt, så en video, der fortsættes langt inde, kan tage lidt tid om
-    at starte første gang.
+    startposition med (`start`). Serveren svarer 202, indtil der er hentet
+    nok til at starte der. Ligger stedet langt inde i en video, der ikke er
+    hentet endnu, begynder serveren også at hente fra stedet selv, så det
+    tager sekunder i stedet for minutter.
+  - Sporene hentes som YouTubes visionOS-klient, fordi standardklienterne
+    får en reklame-ventetid på cirka 6 sekunder før første byte.
+    `YTZERO_RELAY_HLS_PLAYER_CLIENT` vælger en anden klient (tom = yt-dlp's
+    eget valg). `YTZERO_RELAY_HLS_TAIL_AFTER_MB` (standard 32) er, hvor langt
+    foran hentningen stedet skal ligge, før der hentes fra midten.
+  - En stream, der er live nu, spilles via serverens live-vej (YouTubes egen
+    live-HLS sendt videre).
   - Hvis det ikke kan lade sig gøre, bruges `{"source":"relay"}`: YouTubes
     samlede fil, som kun findes i 360p.
   - Begge dele gemmes i Invidious-cachen (`YTZERO_INVIDIOUS_CACHE_MB`,

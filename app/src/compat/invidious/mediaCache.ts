@@ -301,6 +301,57 @@ function firstLine(stream: ReadableStream<Uint8Array>): Promise<string> {
 }
 
 /**
+ * Which YouTube client the HLS tracks are fetched as.
+ *
+ * yt-dlp's default set includes a TV client for which YouTube plays a short ad
+ * first, and yt-dlp honours it by sleeping before the download: measured, six
+ * of the ten seconds before the first byte. The visionOS client has no such
+ * wait and offers the same H.264 formats. Empty means yt-dlp's own choice.
+ */
+function hlsClientArgs(): string[] {
+  const client = (process.env.YTZERO_RELAY_HLS_PLAYER_CLIENT ?? "visionos").trim();
+  return client ? ["--extractor-args", `youtube:player_client=${client}`] : [];
+}
+
+/** A file in the media cache, for a module that keeps its own files there. */
+export function mediaCachePath(name: string): string {
+  mkdirSync(cacheDir(), { recursive: true });
+  return join(cacheDir(), name);
+}
+
+/**
+ * The yt-dlp command for one track into `output`, shared by a fetch from the
+ * start and one from the middle of a file (see relayHlsTail).
+ */
+export function mediaFetchArgs(userId: number, videoId: string, kind: MediaKind, format: string, output: string): string[] {
+  const args = [
+    `https://www.youtube.com/watch?v=${videoId}`,
+    "--no-playlist", "--no-warnings", "--no-part", "--no-simulate",
+    /*
+     * The same instance, minutes apart: seven and a half megabytes in
+     * two-thirds of a second, and seven and a half megabytes in twenty
+     * seconds. Same size, same code, thirty times the speed — which is not
+     * contention or a slow line but YouTube throttling a connection once it
+     * has been open a few seconds.
+     *
+     * Pieces small enough to finish before the throttle takes hold. Ten
+     * megabytes was one piece for most of these files, which is to say no
+     * pieces at all.
+     */
+    "--http-chunk-size", "1M",
+    // One line, so one read of the output settles both.
+    "--print", "%(filesize,filesize_approx)s %(height)s %(vcodec)s %(acodec)s %(width)s %(fps)s %(tbr)s %(audio_channels)s %(format_id)s",
+    "-f", format,
+    // The HLS tracks are addressed by byte offset: nothing may rewrite them.
+    ...(kind === "hls-video" || kind === "hls-audio" ? ["--fixup", "never", ...hlsClientArgs()] : []),
+    "-o", output,
+    ...potArgsFor(true),
+  ];
+  if (downloadCookiesConfigured(userId)) args.push("--cookies", downloadCookiesFile(userId));
+  return args;
+}
+
+/**
  * Start fetching, and say straight away where it lands and how big it will be.
  *
  * The size comes out of the same run that does the downloading: `--print` with
@@ -329,32 +380,10 @@ export function startFetch(
   // the height yt-dlp actually picked, which is not always the one asked for.
   const partial = join(cacheDir(), `${prefix}.partial`);
   rmSync(partial, { force: true });
-  const args = [
-    `https://www.youtube.com/watch?v=${videoId}`,
-    "--no-playlist", "--no-warnings", "--no-part", "--no-simulate",
-    /*
-     * The same instance, minutes apart: seven and a half megabytes in
-     * two-thirds of a second, and seven and a half megabytes in twenty
-     * seconds. Same size, same code, thirty times the speed — which is not
-     * contention or a slow line but YouTube throttling a connection once it
-     * has been open a few seconds.
-     *
-     * Pieces small enough to finish before the throttle takes hold. Ten
-     * megabytes was one piece for most of these files, which is to say no
-     * pieces at all.
-     */
-    "--http-chunk-size", "1M",
-    // One line, so one read of the output settles both.
-    "--print", "%(filesize,filesize_approx)s %(height)s %(vcodec)s %(acodec)s %(width)s %(fps)s %(tbr)s %(audio_channels)s",
-    "-f", formatFor(kind, height),
-    // The HLS tracks are addressed by byte offset: nothing may rewrite them.
-    ...(kind === "hls-video" || kind === "hls-audio" ? ["--fixup", "never"] : []),
-    "-o", partial,
-    ...potArgsFor(true),
-  ];
-  if (downloadCookiesConfigured(userId)) args.push("--cookies", downloadCookiesFile(userId));
+  const args = mediaFetchArgs(userId, videoId, kind, formatFor(kind, height), partial);
 
   const startedAt = Date.now();
+
   const child = Bun.spawn([YTDLP, ...args], { stdout: "pipe", stderr: "pipe" });
   const timer = setTimeout(() => child.kill(), FETCH_TIMEOUT_MS);
   const announced = firstLine(child.stdout as ReadableStream<Uint8Array>);
