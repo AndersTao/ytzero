@@ -65,8 +65,9 @@ nonisolated struct APIClient: Sendable {
 
     // MARK: Pairing
 
-    func beginPairing() async throws -> APIModels.DeviceCode {
-        let (data, response) = try await send(request("/auth/device/code", method: "POST", body: ["device_name": "Apple TV"]))
+    /// `deviceName` is how the server lists this device among the signed-in ones.
+    func beginPairing(deviceName: String) async throws -> APIModels.DeviceCode {
+        let (data, response) = try await send(request("/auth/device/code", method: "POST", body: ["device_name": deviceName]))
         return try decode(APIModels.DeviceCode.self, from: data, status: response.statusCode)
     }
 
