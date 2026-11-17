@@ -102,8 +102,15 @@ struct HomeView: View {
     private var mainGrid: some View {
         VStack(alignment: .leading, spacing: 24) {
             if !model.continueWatching.isEmpty {
-                Text("Main")
-                    .font(.headline)
+                // As on the LG page: a line from the title to the edge keeps
+                // what is under way apart from everything else.
+                HStack(spacing: 28) {
+                    Text("Main")
+                        .font(.headline)
+                    Rectangle()
+                        .fill(.white.opacity(0.18))
+                        .frame(height: 2)
+                }
             }
             LazyVGrid(columns: columns, spacing: 56) {
                 ForEach(model.main) { video in
