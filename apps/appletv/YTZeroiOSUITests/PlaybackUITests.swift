@@ -22,6 +22,7 @@ final class PlaybackUITests: XCTestCase {
         // The shelf is the scroll view inside the page's own.
         let shelf = app.scrollViews.element(boundBy: 1)
         XCTAssertTrue(shelf.buttons.firstMatch.waitForExistence(timeout: 5), "the shelf should have a video")
+        let watchedBefore = shelf.buttons.firstMatch.value as? String ?? ""
         shelf.buttons.firstMatch.tap()
 
         sleep(1)
@@ -40,6 +41,12 @@ final class PlaybackUITests: XCTestCase {
         if close.exists { close.tap() } else { app.swipeDown(velocity: .fast) }
         XCTAssertTrue(app.staticTexts["Fortsæt med at se"].waitForExistence(timeout: 10), "closing should return to the shelves")
         snapshot("04-back-home")
+        // How far it got shows straight away, without refreshing.
+        let moved = NSPredicate { _, _ in (shelf.buttons.firstMatch.value as? String ?? "") != watchedBefore }
+        let progressShown = XCTNSPredicateExpectation(predicate: moved, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [progressShown], timeout: 5), .completed,
+                       "the card should show the new position (was \(watchedBefore))")
+        snapshot("05-progress")
     }
 
     private func snapshot(_ name: String) {

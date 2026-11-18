@@ -5,6 +5,8 @@ import SwiftUI
 struct PlayerView: View {
     let video: Video
     let onFinished: () -> Void
+    /// After closing, once the position is saved: the video as far as watched.
+    let onClosed: (Video) -> Void
 
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
@@ -53,7 +55,7 @@ struct PlayerView: View {
         .onDisappear {
             guard let client = session.client else { return }
             let model = model
-            Task { await model.stop(video: video, client: client) }
+            Task { onClosed(await model.stop(video: video, client: client)) }
         }
     }
 

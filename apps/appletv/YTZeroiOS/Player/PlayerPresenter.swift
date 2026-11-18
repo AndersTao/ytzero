@@ -16,14 +16,14 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
     private var video: Video?
     private var client: APIClient?
     private var onFinished: (() -> Void)?
-    private var onClose: (() -> Void)?
+    private var onClose: ((Video) -> Void)?
     private var attach: Task<Void, Never>?
     private var playback: Task<Void, Never>?
     /// In picture in picture the player's screen is gone but playback is not.
     private var inPictureInPicture = false
     private var restoring = false
 
-    func present(video: Video, client: APIClient, onFinished: @escaping () -> Void, onClose: @escaping () -> Void) {
+    func present(video: Video, client: APIClient, onFinished: @escaping () -> Void, onClose: @escaping (Video) -> Void) {
         guard !isPresenting, let presenter = Self.topViewController() else { return }
         let model = PlayerModel()
         let controller = PlayerController()
@@ -103,13 +103,15 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         if dismissing, let controller, controller.presentingViewController != nil {
             controller.dismiss(animated: true)
         }
+        // The home screen hears only once the position is saved: asked
+        // sooner, the server answered with the old one.
         if let model, let video, let client {
-            Task { await model.stop(video: video, client: client) }
+            let onClose = onClose
+            Task { onClose?(await model.stop(video: video, client: client)) }
         }
         controller?.player = nil
         controller = nil
         model = nil
-        onClose?()
         onFinished = nil
         onClose = nil
     }

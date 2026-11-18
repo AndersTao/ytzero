@@ -40,5 +40,12 @@ struct VideoCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("\(video.title), \(video.channelTitle)"))
+        .accessibilityValue(watchedText)
+    }
+
+    /// How far it was watched, for VoiceOver; the bar itself is hidden from it.
+    private var watchedText: Text {
+        guard video.progress != nil, let position = video.watchPosition, let duration = video.watchDuration else { return Text(verbatim: "") }
+        return Text("Watched \(PlaybackTime.text(position)) of \(PlaybackTime.text(duration))")
     }
 }
