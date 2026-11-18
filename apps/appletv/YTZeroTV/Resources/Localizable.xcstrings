@@ -69,6 +69,16 @@
         }
       }
     },
+    "just now" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lige nu"
+          }
+        }
+      }
+    },
     "Mark as watched" : {
       "localizations" : {
         "da" : {

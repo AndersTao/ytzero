@@ -24,13 +24,21 @@ struct VideoCard: View {
                                 .padding(8)
                         }
                     }
+                    .overlay(alignment: .bottomTrailing) {
+                        if let length = video.durationText {
+                            // Above the progress bar when there is one.
+                            DurationBadge(text: length)
+                                .padding(.horizontal, 8)
+                                .padding(.bottom, video.progress == nil ? 8 : 18)
+                        }
+                    }
                     .clipShape(.rect(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(video.title)
                         .font(compact ? .subheadline.weight(.semibold) : .headline)
                         .lineLimit(2, reservesSpace: compact)
                         .multilineTextAlignment(.leading)
-                    Text(video.channelTitle)
+                    ChannelLine(video: video)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)

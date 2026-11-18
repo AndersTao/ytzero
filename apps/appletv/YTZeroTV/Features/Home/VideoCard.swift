@@ -25,6 +25,14 @@ struct VideoCard: View {
                                 .padding(12)
                         }
                     }
+                    .overlay(alignment: .bottomTrailing) {
+                        if let length = video.durationText {
+                            // Above the progress bar when there is one.
+                            DurationBadge(text: length)
+                                .padding(.horizontal, 12)
+                                .padding(.bottom, video.progress == nil ? 12 : 30)
+                        }
+                    }
             }
             .buttonStyle(.card)
             .focused(focus, equals: video.id)
@@ -35,7 +43,7 @@ struct VideoCard: View {
             .accessibilityLabel(Text("\(video.title), \(video.channelTitle)"))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(video.channelTitle)
+                ChannelLine(video: video)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

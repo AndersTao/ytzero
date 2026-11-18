@@ -10,9 +10,11 @@
 		04670B6A2A573F015133E1AE /* PlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17275C609051ADB5288EBCD6 /* PlayerModel.swift */; };
 		09BBC489493172E8C10848E1 /* YTZeroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A445E323359909E630C92C /* YTZeroApp.swift */; };
 		0E50BD283F61E3ABFA10AAD8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DCCDB2580C2205957548C6C2 /* Assets.xcassets */; };
+		181272339AF09923C8FF98D4 /* DurationBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */; };
 		1A3360B30C402D981E84760A /* PairingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9261E6B8BE81C91F88595AD4 /* PairingModel.swift */; };
 		27A5381A13C1104812951154 /* LiveBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F14179E2C77DF98908F235 /* LiveBadge.swift */; };
 		3D89FAF4D44FACF07B1F19C9 /* YTZeroTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E8A982F7084ECA86DF6DD54 /* YTZeroTVApp.swift */; };
+		43A6869FE354D290B8A2DC7E /* DurationBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */; };
 		4550D3D210F2A7785BF2CC56 /* HomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */; };
 		46D426C5DDDE06D6050D3A88 /* PlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17275C609051ADB5288EBCD6 /* PlayerModel.swift */; };
 		49183A9D50C8AF01BFC8A7F1 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935C1E5B61141FDA2C2D95CB /* APIError.swift */; };
@@ -110,6 +112,7 @@
 		D1829D1ADAD013419FDA5EEE /* YTZeroTV.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D9F14179E2C77DF98908F235 /* LiveBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveBadge.swift; sourceTree = "<group>"; };
 		DB8BA03B68DF52B7EAD16554 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationBadge.swift; sourceTree = "<group>"; };
 		DCCDB2580C2205957548C6C2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E38BA03DEC7C6FDB40049ADF /* Thumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thumbnail.swift; sourceTree = "<group>"; };
 		E4970AE5A60B47F9E03DBD67 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -262,6 +265,7 @@
 		C4E0DB837CBE8CEB5AA8614D /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */,
 				ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */,
 				0BA6869E5E8D57AF63B4DBA1 /* HomeView.swift */,
 				D9F14179E2C77DF98908F235 /* LiveBadge.swift */,
@@ -494,6 +498,7 @@
 				CCD3D53ECB3B91C7921FAAC5 /* APIError.swift in Sources */,
 				F38CF3CF6422C113C5951689 /* APIModels.swift in Sources */,
 				744AEE2B701376CE4486E575 /* AppSession.swift in Sources */,
+				181272339AF09923C8FF98D4 /* DurationBadge.swift in Sources */,
 				D8ED259D4462E710355D1396 /* HomeModel.swift in Sources */,
 				95C178331387B696D5B3E239 /* HomeView.swift in Sources */,
 				D83E312F8A1263C08B3DD4F0 /* Keychain.swift in Sources */,
@@ -521,6 +526,7 @@
 				49183A9D50C8AF01BFC8A7F1 /* APIError.swift in Sources */,
 				7307E694F49FFE0F16C5EE49 /* APIModels.swift in Sources */,
 				FC349A29C312B3F7054D9444 /* AppSession.swift in Sources */,
+				43A6869FE354D290B8A2DC7E /* DurationBadge.swift in Sources */,
 				4550D3D210F2A7785BF2CC56 /* HomeModel.swift in Sources */,
 				D4F9E73803DBCBF2BB58B440 /* HomeView.swift in Sources */,
 				602C22C1A9084F972E13FEC6 /* Keychain.swift in Sources */,

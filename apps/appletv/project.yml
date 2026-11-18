@@ -52,6 +52,7 @@ targets:
       - path: YTZeroTV/Core
       - path: YTZeroTV/Features/Home/HomeModel.swift
       - path: YTZeroTV/Features/Home/LiveBadge.swift
+      - path: YTZeroTV/Features/Home/DurationBadge.swift
       - path: YTZeroTV/Features/Home/ProgressBar.swift
       - path: YTZeroTV/Features/Home/Thumbnail.swift
       - path: YTZeroTV/Features/Home/ThumbnailCache.swift
