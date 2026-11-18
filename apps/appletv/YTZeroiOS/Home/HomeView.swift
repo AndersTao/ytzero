@@ -32,8 +32,13 @@ struct HomeView: View {
                 }
             }
             .overlay(alignment: .bottom) { noticeView }
-            .navigationTitle("YT Zero")
-            .toolbar { toolbar }
+            // The name sits on the same row as the buttons rather than a large
+            // title under them, which left a band of empty bar above the lists.
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                titleItem
+                toolbar
+            }
         }
         .task {
             guard let client = session.client else { return }
@@ -47,6 +52,24 @@ struct HomeView: View {
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
         }
+    }
+
+    @ToolbarContentBuilder
+    private var titleItem: some ToolbarContent {
+        if #available(iOS 26, *) {
+            // Plain text, not a button in a glass capsule.
+            ToolbarItem(placement: .topBarLeading) { appName }
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .topBarLeading) { appName }
+        }
+    }
+
+    private var appName: some View {
+        Text("YT Zero")
+            .font(.title.bold())
+            .fixedSize()
+            .accessibilityAddTraits(.isHeader)
     }
 
     @ToolbarContentBuilder
