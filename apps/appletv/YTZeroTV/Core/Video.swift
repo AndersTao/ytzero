@@ -12,6 +12,9 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
     let isUnavailable: Bool
     let isPrivate: Bool
     let liveStatus: String?
+    /// As the server stores it: usually "12:34" or "1:02:03".
+    let duration: String?
+    let publishedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id = "video_id"
@@ -24,6 +27,8 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         case isUnavailable = "is_unavailable"
         case isPrivate = "is_private"
         case liveStatus = "live_status"
+        case duration
+        case publishedAt = "published_at"
     }
 
     init(from decoder: any Decoder) throws {
@@ -38,6 +43,43 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         isUnavailable = (try? container.decodeIfPresent(Int.self, forKey: .isUnavailable)) == 1
         isPrivate = (try? container.decodeIfPresent(Int.self, forKey: .isPrivate)) == 1
         liveStatus = try container.decodeIfPresent(String.self, forKey: .liveStatus)
+        duration = try? container.decodeIfPresent(String.self, forKey: .duration)
+        publishedAt = (try? container.decodeIfPresent(String.self, forKey: .publishedAt)).flatMap(Self.parseTimestamp)
+    }
+
+    /// "2026-11-17T09:47:40Z", with or without fractions, or SQLite's
+    /// "2026-11-17 09:47:40" (UTC); a bare date counts as midday.
+    static func parseTimestamp(_ raw: String) -> Date? {
+        let text = raw.trimmingCharacters(in: .whitespaces)
+        if text.count == 10 { return try? Date("\(text)T12:00:00Z", strategy: .iso8601) }
+        var normalized = text.replacingOccurrences(of: " ", with: "T")
+        if normalized.range(of: #"([zZ]|[+-]\d\d(:?\d\d)?)$"#, options: .regularExpression) == nil { normalized += "Z" }
+        if let date = try? Date(normalized, strategy: .iso8601) { return date }
+        return try? Date(normalized, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+    }
+
+    /// The length on the thumbnail, as "4:05" or "1:02:03"; nil for a stream
+    /// that is on now, a short, or a length the server does not know.
+    var durationText: String? {
+        guard liveStatus != "live", liveStatus != "upcoming", !isShort, let duration else { return nil }
+        let parts = duration.split(separator: ":").map { Int($0.trimmingCharacters(in: .whitespaces)) }
+        if parts.count >= 2, !parts.contains(nil) {
+            let seconds = parts.reduce(0) { $0 * 60 + ($1 ?? 0) }
+            return seconds > 0 ? PlaybackTime.text(Double(seconds)) : nil
+        }
+        if let seconds = Int(duration), seconds > 0 { return PlaybackTime.text(Double(seconds)) }
+        return nil
+    }
+
+    /// "1 hr. ago", in the app's language.
+    var publishedAgo: String? {
+        guard let publishedAt else { return nil }
+        let now = Date.now
+        if now.timeIntervalSince(publishedAt) < 60 { return String(localized: "just now") }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.dateTimeStyle = .numeric
+        return formatter.localizedString(for: min(publishedAt, now), relativeTo: now)
     }
 
     enum LiveBadge { case live, recording }

@@ -73,6 +73,11 @@
       font-size: 20px; font-weight: 700; letter-spacing: .02em; color: #fff; background: rgba(0,0,0,.75);
     }
     .badge.live { background: #e5484d; }
+    .duration {
+      position: absolute; right: 12px; bottom: 12px; padding: 2px 10px; border-radius: 6px;
+      font-size: 20px; font-weight: 600; color: #fff; background: rgba(0,0,0,.8);
+    }
+    .progress ~ .duration { bottom: 22px; }
     .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.3); }
     .progress div { height: 100%; background: #e5484d; }
     .card.focused { transform: scale(1.06); }
@@ -205,6 +210,53 @@
       return /^https?:\/\//.test(url) ? "/api/img?u=" + encodeURIComponent(url) : url;
     }
 
+    // "12:34" or "1:02:03" as the server stores it; "" for a live stream, a
+    // short or a length it does not know.
+    function durationText(v) {
+      if (!v.duration || v.is_short || v.live_status === "live" || v.live_status === "upcoming") return "";
+      var parts = String(v.duration).split(":");
+      var seconds = 0;
+      for (var i = 0; i < parts.length; i++) {
+        if (!/^\s*\d+\s*$/.test(parts[i])) return "";
+        seconds = seconds * 60 + Number(parts[i]);
+      }
+      if (!seconds) return "";
+      var h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
+      var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+      return h ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s);
+    }
+
+    // When the server stamped it: ISO, or SQLite's "YYYY-MM-DD HH:MM:SS" in UTC.
+    function parseStamp(text) {
+      if (!text) return null;
+      var t = String(text).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(t)) t += "T12:00:00Z";
+      t = t.replace(" ", "T");
+      if (!/[zZ]|[+-]\d\d(:?\d\d)?$/.test(t)) t += "Z";
+      var d = new Date(t);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // "for 1 t. siden", as the web client says it in Danish. Written out rather
+    // than Intl.RelativeTimeFormat, which older webOS browsers lack.
+    function publishedAgo(v) {
+      var at = parseStamp(v.published_at);
+      if (!at) return "";
+      var now = new Date();
+      var minutes = Math.floor((now.getTime() - at.getTime()) / 60000);
+      if (minutes < 1) return "lige nu";
+      if (minutes < 60) return "for " + minutes + " min. siden";
+      var hours = Math.floor(minutes / 60);
+      if (hours < 24) return "for " + hours + " t. siden";
+      var days = Math.floor(hours / 24);
+      if (days < 30) return "for " + days + " " + (days === 1 ? "dag" : "dage") + " siden";
+      var months = (now.getUTCFullYear() - at.getUTCFullYear()) * 12 + now.getUTCMonth() - at.getUTCMonth();
+      if (now.getUTCDate() < at.getUTCDate()) months--;
+      months = Math.max(1, months);
+      if (months < 12) return "for " + months + " " + (months === 1 ? "md." : "mdr.") + " siden";
+      return "for " + Math.floor(months / 12) + " år siden";
+    }
+
     function playable(v) {
       return v && v.video_id && !removed[v.video_id] && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
     }
@@ -246,9 +298,17 @@
         bar.appendChild(fill);
         thumb.appendChild(bar);
       }
+      var length = durationText(v);
+      if (length) {
+        var lengthEl = document.createElement("div");
+        lengthEl.className = "duration";
+        lengthEl.textContent = length;
+        thumb.appendChild(lengthEl);
+      }
       var channel = document.createElement("div");
       channel.className = "channel";
-      channel.textContent = v.channel_title || "";
+      var ago = publishedAgo(v);
+      channel.textContent = (v.channel_title || "") + (ago ? " · " + ago : "");
       var title = document.createElement("div");
       title.className = "title";
       title.textContent = v.title || "";
