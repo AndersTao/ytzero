@@ -59,6 +59,7 @@ targets:
       - path: YTZeroTV/Features/Pairing/PairingModel.swift
       - path: YTZeroTV/Features/Player/PlayerModel.swift
       - path: YTZeroTV/Features/Player/PlaybackTime.swift
+      - path: YTZeroTV/Features/Player/PlayerLayerView.swift
       - path: YTZeroTV/Resources/Localizable.xcstrings
       - path: YTZeroTV/Resources/InfoPlist.xcstrings
     scheme:
