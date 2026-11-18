@@ -46,8 +46,15 @@ struct HomeView: View {
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
         }
-        .fullScreenCover(item: $playing, onDismiss: reloadShelf) { video in
-            PlayerView(video: video) { model.finished(video) }
+        .fullScreenCover(item: $playing) { video in
+            PlayerView(video: video) {
+                model.finished(video)
+            } onClosed: { watched in
+                // Only now: asked while the position was still being saved,
+                // the server answered with the old one.
+                model.played(watched)
+                reloadShelf()
+            }
         }
         .confirmationDialog("Settings", isPresented: $showingSettings) {
             Button("Sign out", role: .destructive) { session.signOut() }

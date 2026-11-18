@@ -16,14 +16,14 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
     private var video: Video?
     private var client: APIClient?
     private var onFinished: (() -> Void)?
-    private var onClose: (() -> Void)?
+    private var onClose: ((Video) -> Void)?
     private var attach: Task<Void, Never>?
     private var playback: Task<Void, Never>?
     /// In picture in picture the player's screen is gone but playback is not.
     private var inPictureInPicture = false
     private var restoring = false
 
-    func present(video: Video, client: APIClient, onFinished: @escaping () -> Void, onClose: @escaping () -> Void) {
+    func present(video: Video, client: APIClient, onFinished: @escaping () -> Void, onClose: @escaping (Video) -> Void) {
         guard !isPresenting, let presenter = Self.topViewController() else { return }
         let model = PlayerModel()
         let controller = PlayerController()
@@ -50,13 +50,16 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         isPresenting = true
         presenter.present(controller, animated: true)
 
-        // The model may swap players (full quality, then the plain relay when
-        // that fails), so the screen follows whichever is current.
+        // The screen gets the player once it plays. Handed over while still
+        // loading, AVKit takes it for paused and keeps its controls up until
+        // someone taps. The model may also swap players (full quality, then
+        // the plain relay when that fails), and the screen follows.
         attach = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self, let controller = self.controller, let model = self.model else { return }
-                if controller.player !== model.player {
-                    controller.player = model.player
+                let current = model.phase == .playing ? model.player : nil
+                if current != nil, controller.player !== current {
+                    controller.player = current
                 }
                 if let item = model.player?.currentItem, item.externalMetadata.isEmpty {
                     item.externalMetadata = Self.metadata(for: video)
@@ -100,13 +103,15 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         if dismissing, let controller, controller.presentingViewController != nil {
             controller.dismiss(animated: true)
         }
+        // The home screen hears only once the position is saved: asked
+        // sooner, the server answered with the old one.
         if let model, let video, let client {
-            Task { await model.stop(video: video, client: client) }
+            let onClose = onClose
+            Task { onClose?(await model.stop(video: video, client: client)) }
         }
         controller?.player = nil
         controller = nil
         model = nil
-        onClose?()
         onFinished = nil
         onClose = nil
     }
@@ -164,9 +169,11 @@ private struct PlayerStatusView: View {
     var body: some View {
         switch model.phase {
         case .preparing:
+            // Below the player's own buttons in the middle, not under them.
             ProgressView("Preparing video…")
                 .tint(.white)
                 .foregroundStyle(.white)
+                .padding(.top, 240)
         case .failed(let message):
             VStack(spacing: 10) {
                 Text("The video could not be played.")

@@ -94,15 +94,21 @@ final class PlayerModel {
     }
 
     /// Called when the player closes: last position, then let the stream go.
-    func stop(video: Video, client: APIClient) async {
+    /// Returns the video as far as it was watched, once the server has it.
+    @discardableResult
+    func stop(video: Video, client: APIClient) async -> Video {
         player?.pause()
+        var watched = video
         if !finished, duration > 0, position >= 1 {
             try? await client.saveProgress(video.id, position: position, duration: duration)
+            watched.watchPosition = position
+            watched.watchDuration = duration
         }
         if let ticket {
             await client.releaseTicket(video.id, ticket: ticket)
             self.ticket = nil
         }
+        return watched
     }
 
     /// Load a stream into the player and wait until it can play; nil when it

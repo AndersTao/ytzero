@@ -105,6 +105,15 @@ final class HomeModel {
         await act(on: video, success: String(localized: "Rejected")) { try await client.reject(video.id) }
     }
 
+    /// Back from the player: the card shows how far it got and moves to the
+    /// front of Continue watching at once, without waiting for the server.
+    func played(_ video: Video) {
+        guard video.progress != nil, !video.isShort, !removed.contains(video.id) else { return }
+        main.removeAll { $0.id == video.id }
+        continueWatching.removeAll { $0.id == video.id }
+        continueWatching.insert(video, at: 0)
+    }
+
     /// The player finished the video: it leaves both shelves.
     func finished(_ video: Video) {
         remove(video.id)

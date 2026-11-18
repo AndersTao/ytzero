@@ -22,11 +22,17 @@ final class PlaybackUITests: XCTestCase {
         // The shelf is the scroll view inside the page's own.
         let shelf = app.scrollViews.element(boundBy: 1)
         XCTAssertTrue(shelf.buttons.firstMatch.waitForExistence(timeout: 5), "the shelf should have a video")
+        let watchedBefore = shelf.buttons.firstMatch.value as? String ?? ""
         shelf.buttons.firstMatch.tap()
 
-        // Time to fetch, start the stream and play a little.
-        sleep(20)
+        sleep(1)
+        snapshot("02-preparing")
+        // Time to fetch, start the stream and play a little. AVKit's controls
+        // should have hidden themselves by then, without a tap.
+        sleep(15)
         snapshot("02-playing")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label IN {'Luk', 'Close'}")).firstMatch.isHittable,
+                       "the player's controls should hide on their own once it plays")
         XCTAssertFalse(app.staticTexts["Videoen kunne ikke afspilles."].exists, "the video should play")
         app.tap()
         let close = app.buttons.matching(NSPredicate(format: "label IN {'Luk', 'Close', 'Færdig', 'Done'}")).firstMatch
@@ -35,6 +41,12 @@ final class PlaybackUITests: XCTestCase {
         if close.exists { close.tap() } else { app.swipeDown(velocity: .fast) }
         XCTAssertTrue(app.staticTexts["Fortsæt med at se"].waitForExistence(timeout: 10), "closing should return to the shelves")
         snapshot("04-back-home")
+        // How far it got shows straight away, without refreshing.
+        let moved = NSPredicate { _, _ in (shelf.buttons.firstMatch.value as? String ?? "") != watchedBefore }
+        let progressShown = XCTNSPredicateExpectation(predicate: moved, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [progressShown], timeout: 5), .completed,
+                       "the card should show the new position (was \(watchedBefore))")
+        snapshot("05-progress")
     }
 
     private func snapshot(_ name: String) {

@@ -399,6 +399,16 @@
         }
       }
     },
+    "Watched %@ of %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set %1$@ af %2$@"
+          }
+        }
+      }
+    },
     "YT Zero" : {
       "shouldTranslate" : false
     }

@@ -120,7 +120,8 @@ struct HomeView: View {
             guard let client = session.client else { return }
             player.present(video: video, client: client) {
                 model.finished(video)
-            } onClose: {
+            } onClose: { watched in
+                model.played(watched)
                 run { client in await model.loadContinue(client: client) }
             }
         }
