@@ -1,14 +1,19 @@
 import AVKit
+import MediaPlayer
 import Observation
 import SwiftUI
 import UIKit
 
-/// Plays a video in the system player, presented over the app: its own Done,
-/// scrubbing, AirPlay and picture in picture, with the lock screen and
-/// Control Center showing what plays. Finding a stream, resuming and saving
-/// the position are the shared `PlayerModel`'s, as on the Apple TV.
+/// Plays a video full screen over the app with this app's own controls
+/// (`PlayerControls`): 15 s back and 30 s forward, double tap on the sides,
+/// picture in picture, AirPlay, and the lock screen and Control Center
+/// showing what plays. Finding a stream, resuming and saving the position are
+/// the shared `PlayerModel`'s, as on the Apple TV.
+///
+/// AVKit's own player screen was used before, but on iPhone and iPad its skip
+/// buttons are fixed at 10 s and it does not tell when its controls are up.
 @Observable
-final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
+final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
     private(set) var isPresenting = false
 
     private var controller: PlayerController?
@@ -19,6 +24,7 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
     private var onClose: ((Video) -> Void)?
     private var attach: Task<Void, Never>?
     private var playback: Task<Void, Never>?
+    private var nowPlaying: MPNowPlayingSession?
     /// In picture in picture the player's screen is gone but playback is not.
     private var inPictureInPicture = false
     private var restoring = false
@@ -27,19 +33,19 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         guard !isPresenting, let presenter = Self.topViewController() else { return }
         let model = PlayerModel()
         let controller = PlayerController()
-        controller.delegate = self
-        controller.allowsPictureInPicturePlayback = true
-        controller.canStartPictureInPictureAutomaticallyFromInline = true
         controller.modalPresentationStyle = .fullScreen
         controller.onDisappear = { [weak self] in self?.controllerDisappeared() }
-        let status = UIHostingController(rootView: PlayerStatusView(model: model))
-        status.view.backgroundColor = .clear
-        status.view.isUserInteractionEnabled = false
-        status.view.frame = controller.contentOverlayView?.bounds ?? .zero
-        status.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        controller.contentOverlayView?.addSubview(status.view)
-        controller.addChild(status)
-        status.didMove(toParent: controller)
+        controller.pictureInPictureDelegate = self
+        controller.showControls(
+            PlayerControls(
+                model: model,
+                video: video,
+                close: { [weak self] in self?.close(dismissing: true) },
+                startPictureInPicture: AVPictureInPictureController.isPictureInPictureSupported()
+                    ? { [weak controller] in controller?.startPictureInPicture() }
+                    : nil
+            )
+        )
 
         self.model = model
         self.controller = controller
@@ -50,19 +56,14 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         isPresenting = true
         presenter.present(controller, animated: true)
 
-        // The screen gets the player once it plays. Handed over while still
-        // loading, AVKit takes it for paused and keeps its controls up until
-        // someone taps. The model may also swap players (full quality, then
-        // the plain relay when that fails), and the screen follows.
+        // The model may swap players (full quality, then the plain relay
+        // when that fails), and the picture follows.
         attach = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self, let controller = self.controller, let model = self.model else { return }
-                let current = model.phase == .playing ? model.player : nil
-                if current != nil, controller.player !== current {
+                if let current = model.player, controller.player !== current {
                     controller.player = current
-                }
-                if let item = model.player?.currentItem, item.externalMetadata.isEmpty {
-                    item.externalMetadata = Self.metadata(for: video)
+                    self.publishNowPlaying(for: current, model: model, video: video)
                 }
                 try? await Task.sleep(for: .milliseconds(250))
             }
@@ -77,16 +78,47 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
         }
     }
 
-    /// What the lock screen, Control Center and AirPlay receivers show.
-    private static func metadata(for video: Video) -> [AVMetadataItem] {
-        func item(_ identifier: AVMetadataIdentifier, _ value: String) -> AVMetadataItem {
-            let item = AVMutableMetadataItem()
-            item.identifier = identifier
-            item.value = value as NSString
-            item.extendedLanguageTag = "und"
-            return item
+    /// The lock screen and Control Center: title, channel, play and pause,
+    /// the same 15 s / 30 s skips as on screen, and dragging the timeline.
+    private func publishNowPlaying(for player: AVPlayer, model: PlayerModel, video: Video) {
+        player.currentItem?.nowPlayingInfo = [
+            MPMediaItemPropertyTitle: video.title,
+            MPMediaItemPropertyArtist: video.channelTitle,
+        ]
+        let session = MPNowPlayingSession(players: [player])
+        session.automaticallyPublishesNowPlayingInfo = true
+        let commands = session.remoteCommandCenter
+        commands.playCommand.addTarget { [weak model] _ in
+            guard let model, model.isPlaying == false else { return .success }
+            model.togglePlay()
+            return .success
         }
-        return [item(.commonIdentifierTitle, video.title), item(.iTunesMetadataTrackSubTitle, video.channelTitle)]
+        commands.pauseCommand.addTarget { [weak model] _ in
+            guard let model, model.isPlaying else { return .success }
+            model.togglePlay()
+            return .success
+        }
+        commands.togglePlayPauseCommand.addTarget { [weak model] _ in
+            model?.togglePlay()
+            return .success
+        }
+        commands.skipForwardCommand.preferredIntervals = [NSNumber(value: PlayerModel.seekForward)]
+        commands.skipForwardCommand.addTarget { [weak model] _ in
+            model?.seek(by: PlayerModel.seekForward, quietly: true)
+            return .success
+        }
+        commands.skipBackwardCommand.preferredIntervals = [NSNumber(value: PlayerModel.seekBack)]
+        commands.skipBackwardCommand.addTarget { [weak model] _ in
+            model?.seek(by: -PlayerModel.seekBack, quietly: true)
+            return .success
+        }
+        commands.changePlaybackPositionCommand.addTarget { [weak model] event in
+            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            model?.seek(to: event.positionTime)
+            return .success
+        }
+        session.becomeActiveIfPossible { _ in }
+        nowPlaying = session
     }
 
     private func controllerDisappeared() {
@@ -109,36 +141,46 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
             let onClose = onClose
             Task { onClose?(await model.stop(video: video, client: client)) }
         }
+        controller?.stopPictureInPicture()
         controller?.player = nil
         controller = nil
         model = nil
+        nowPlaying = nil
         onFinished = nil
         onClose = nil
     }
 
-    // MARK: AVPlayerViewControllerDelegate
+    // MARK: AVPictureInPictureControllerDelegate
 
-    func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
+    func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         inPictureInPicture = true
     }
 
-    func playerViewControllerDidStopPictureInPicture(_ playerViewController: AVPlayerViewController) {
+    func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        // As AVKit's own screen did: the video carries on in the corner and
+        // the app is usable underneath.
+        if let controller, controller.presentingViewController != nil {
+            controller.dismiss(animated: true)
+        }
+    }
+
+    func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         inPictureInPicture = false
         // Closed from the floating window rather than brought back: done.
-        if !restoring, playerViewController.presentingViewController == nil { close(dismissing: false) }
+        if !restoring, controller?.presentingViewController == nil { close(dismissing: false) }
         restoring = false
     }
 
-    func playerViewController(
-        _ playerViewController: AVPlayerViewController,
+    func pictureInPictureController(
+        _ pictureInPictureController: AVPictureInPictureController,
         restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
     ) {
-        guard playerViewController.presentingViewController == nil, let presenter = Self.topViewController() else {
+        guard let controller, controller.presentingViewController == nil, let presenter = Self.topViewController() else {
             completionHandler(true)
             return
         }
         restoring = true
-        presenter.present(playerViewController, animated: true) { completionHandler(true) }
+        presenter.present(controller, animated: true) { completionHandler(true) }
     }
 
     private static func topViewController() -> UIViewController? {
@@ -151,42 +193,66 @@ final class PlayerPresenter: NSObject, AVPlayerViewControllerDelegate {
     }
 }
 
-/// The system player, telling when its screen goes away (Done, a swipe down,
-/// or picture in picture).
-final class PlayerController: AVPlayerViewController {
+/// The picture with the controls over it, telling when its screen goes away
+/// (closed, or into picture in picture).
+final class PlayerController: UIViewController {
     var onDisappear: (() -> Void)?
+    weak var pictureInPictureDelegate: AVPictureInPictureControllerDelegate?
+
+    private let picture = PlayerLayerView.LayerView()
+    private var pictureInPicture: AVPictureInPictureController?
+    private var controls: UIViewController?
+
+    var player: AVPlayer? {
+        get { picture.playerLayer.player }
+        set {
+            picture.playerLayer.player = newValue
+            if newValue != nil, pictureInPicture == nil, AVPictureInPictureController.isPictureInPictureSupported() {
+                let pip = AVPictureInPictureController(playerLayer: picture.playerLayer)
+                pip?.canStartPictureInPictureAutomaticallyFromInline = true
+                pip?.delegate = pictureInPictureDelegate
+                pictureInPicture = pip
+            }
+        }
+    }
+
+    func showControls(_ overlay: PlayerControls) {
+        let hosting = UIHostingController(rootView: overlay)
+        hosting.view.backgroundColor = .clear
+        controls = hosting
+    }
+
+    func startPictureInPicture() {
+        guard let pictureInPicture, pictureInPicture.isPictureInPicturePossible else { return }
+        pictureInPicture.startPictureInPicture()
+    }
+
+    func stopPictureInPicture() {
+        if pictureInPicture?.isPictureInPictureActive == true { pictureInPicture?.stopPictureInPicture() }
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+        picture.playerLayer.videoGravity = .resizeAspect
+        picture.frame = view.bounds
+        picture.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(picture)
+        if let controls {
+            addChild(controls)
+            controls.view.frame = view.bounds
+            controls.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(controls.view)
+            controls.didMove(toParent: self)
+        }
+    }
+
+    override var prefersStatusBarHidden: Bool { true }
+    override var prefersHomeIndicatorAutoHidden: Bool { true }
+    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         onDisappear?()
-    }
-}
-
-/// Over the picture while there is nothing to show yet, or when it failed.
-private struct PlayerStatusView: View {
-    let model: PlayerModel
-
-    var body: some View {
-        switch model.phase {
-        case .preparing:
-            // Below the player's own buttons in the middle, not under them.
-            ProgressView("Preparing video…")
-                .tint(.white)
-                .foregroundStyle(.white)
-                .padding(.top, 240)
-        case .failed(let message):
-            VStack(spacing: 10) {
-                Text("The video could not be played.")
-                    .font(.headline)
-                Text(message)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(32)
-            .foregroundStyle(.white)
-        case .playing:
-            EmptyView()
-        }
     }
 }

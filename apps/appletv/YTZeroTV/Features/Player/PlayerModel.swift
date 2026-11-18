@@ -214,13 +214,46 @@ final class PlayerModel {
         }
     }
 
-    func seek(by delta: Double) {
+    /// Jump by `delta` seconds. A double tap on the side of the picture
+    /// skips quietly: it shows its own mark there, and the controls stay away.
+    func seek(by delta: Double, quietly: Bool = false) {
+        seek(to: position + delta)
+        if quietly { return }
+        showFlash(delta > 0 ? "+\(Int(delta)) s" : "−\(Int(-delta)) s")
+        showOverlayBriefly()
+    }
+
+    /// Straight to a place, as dragging along the timeline does.
+    func seek(to seconds: Double) {
         guard let player else { return }
-        var target = max(0, position + delta)
+        var target = max(0, seconds)
         if duration > 0 { target = min(target, duration - 1) }
         position = target
         player.seek(to: CMTime(seconds: target, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
-        showFlash(delta > 0 ? "+\(Int(delta)) s" : "−\(Int(-delta)) s")
+    }
+
+    /// How fast it plays, kept when pausing and playing again.
+    private(set) var speed: Float = 1
+
+    func setSpeed(_ rate: Float) {
+        speed = rate
+        player?.defaultRate = rate
+        if let player, player.timeControlStatus != .paused { player.rate = rate }
+    }
+
+    /// A tap on the picture: the controls come up, or go away while it plays.
+    func toggleOverlay() {
+        if showsOverlay, isPlaying {
+            overlayToken += 1
+            showsOverlay = false
+        } else {
+            showOverlayBriefly()
+        }
+    }
+
+    /// Keep the controls up while someone works them, such as dragging the
+    /// timeline; they hide again a while after the last call.
+    func keepOverlay() {
         showOverlayBriefly()
     }
 
