@@ -63,5 +63,23 @@ if (process.env[ISOLATION_FLAG] !== "1") {
       const shelf = await (await request("/in-progress")).json() as { videos: Array<{ video_id: string }> };
       expect(shelf.videos.some((video) => video.video_id === "novisit0001")).toBe(false);
     });
+
+    test("marking a video watched part way through takes it off the shelf", async () => {
+      // Marked watched at 80 %, it kept its position, and the shelf took any
+      // position under 92 % as unfinished: the video came straight back.
+      db.prepare(`INSERT INTO videos(video_id,channel_id,title,published_at,duration)
+        VALUES('markedseen1','UCvisit','Marked watched before the end', datetime('now'), 600)`).run();
+      await request("/videos/markedseen1/watch", { method: "POST", body: "{}" });
+      await request("/videos/markedseen1/progress", {
+        method: "PUT",
+        body: JSON.stringify({ position: 480, duration: 600 }),
+      });
+      const before = await (await request("/in-progress")).json() as { videos: Array<{ video_id: string }> };
+      expect(before.videos.some((video) => video.video_id === "markedseen1")).toBe(true);
+
+      await request("/videos/markedseen1/complete", { method: "POST", body: "{}" });
+      const after = await (await request("/in-progress")).json() as { videos: Array<{ video_id: string }> };
+      expect(after.videos.some((video) => video.video_id === "markedseen1")).toBe(false);
+    });
   });
 }
