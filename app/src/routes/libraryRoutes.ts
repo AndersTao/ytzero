@@ -98,7 +98,7 @@ api.get("/in-progress", async (c) => {
       AND uv.watch_duration > 30
       AND uv.watch_position >= 3
       AND CAST(uv.watch_position AS REAL) / uv.watch_duration < 0.92
-      AND COALESCE(uv.status, 'inbox') = 'inbox'
+      AND COALESCE(uv.status, 'inbox') = 'inbox' AND COALESCE(uv.watched, 0) = 0 -- marked watched keeps its position
       AND ${shortsUiVisibilitySql(uid)}
     ORDER BY lw.last_watched DESC
     LIMIT 20
