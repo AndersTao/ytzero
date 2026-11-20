@@ -29,6 +29,13 @@ final class PlayerModel {
     private(set) var finished = false
 
     private var ticket: String?
+    /// The kind of stream playing, asked for again when its ticket runs out:
+    /// "relay-hls", "relay", or nil for a stream that is live now.
+    private var source: String?
+    private var recoveries = 0
+    /// Playing as far as the viewer is concerned: started and not paused by
+    /// them. AVPlayer pauses by itself when a stream runs dry.
+    private var wantsToPlay = false
     /// Why the last stream did not play, as AVPlayer put it (shown on failure).
     private var lastStreamError: String?
     private var lastSaved: Double = 0
@@ -55,21 +62,33 @@ final class PlayerModel {
             if video.liveStatus == "live" {
                 let live = try await preparedStream(for: video.id, client: client, source: nil, start: 0, within: .seconds(60))
                 stream = live
+                source = nil
                 item = await playableItem(live.url, within: .seconds(45))
             } else if let full = try? await preparedStream(for: video.id, client: client, source: "relay-hls", start: video.resumePosition, within: .seconds(180)) {
                 stream = full
+                source = "relay-hls"
                 item = await playableItem(full.url, within: .seconds(45))
-                if item == nil { await client.releaseTicket(video.id, ticket: full.ticket) }
+                if item == nil {
+                    // Stop it before letting the ticket go, or it keeps asking.
+                    player?.replaceCurrentItem(with: nil)
+                    await client.releaseTicket(video.id, ticket: full.ticket, reason: lastStreamError)
+                }
             }
             try Task.checkCancellation()
             if item == nil, video.liveStatus != "live" {
                 let relay = try await preparedStream(for: video.id, client: client, source: "relay", start: 0, within: .seconds(90))
                 stream = relay
+                source = "relay"
                 item = await playableItem(relay.url, within: .seconds(45))
             }
             ticket = stream?.ticket
             guard let item, let stream, let player else {
                 phase = .failed(lastStreamError ?? String(localized: "The stream could not be loaded."))
+                if let stream {
+                    player?.replaceCurrentItem(with: nil)
+                    await client.releaseTicket(video.id, ticket: stream.ticket, reason: lastStreamError)
+                    ticket = nil
+                }
                 return
             }
             if video.resumePosition > 0, video.liveStatus != "live" {
@@ -77,12 +96,13 @@ final class PlayerModel {
             }
             await turnOffCaptions(on: item)
             player.play()
+            wantsToPlay = true
             phase = .playing
             hideOverlaySoon()
             let renewEvery = stream.expiresIn / 2
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { await self.track(video: video, client: client, renewEvery: renewEvery) }
-                group.addTask { await self.waitForEnd(of: item, video: video, client: client) }
+                group.addTask { await self.waitForEnd(video: video, client: client) }
                 await group.next()
                 group.cancelAll()
             }
@@ -117,18 +137,49 @@ final class PlayerModel {
         let item = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: item)
         self.player = player
+        return await isPlayable(item, within: limit) ? item : nil
+    }
+
+    private func isPlayable(_ item: AVPlayerItem, within limit: Duration) async -> Bool {
         let deadline = ContinuousClock.now + limit
         while ContinuousClock.now < deadline, !Task.isCancelled {
             switch item.status {
-            case .readyToPlay: return item
+            case .readyToPlay: return true
             case .failed:
-                lastStreamError = Self.describe(item.error)
-                return nil
+                lastStreamError = Self.report(item)
+                return false
             default: try? await Task.sleep(for: .milliseconds(250))
             }
         }
         lastStreamError = String(localized: "The stream did not start in time.")
-        return nil
+        return false
+    }
+
+    /// The stream's ticket ran out — the device slept through a long pause,
+    /// or the server restarted and forgot it — or the stream broke off. Ask
+    /// for a new ticket for the same kind of stream and carry on from the
+    /// same place. A few times per video, not forever.
+    private func recover(video: Video, client: APIClient) async -> Bool {
+        guard recoveries < 3, let player else { return false }
+        recoveries += 1
+        let at = position
+        let resume = wantsToPlay
+        guard let stream = try? await preparedStream(for: video.id, client: client, source: source, start: at, within: .seconds(90)) else { return false }
+        let item = AVPlayerItem(url: stream.url)
+        player.replaceCurrentItem(with: item)
+        guard await isPlayable(item, within: .seconds(45)) else {
+            player.replaceCurrentItem(with: nil)
+            await client.releaseTicket(video.id, ticket: stream.ticket, reason: lastStreamError)
+            return false
+        }
+        if let old = ticket { await client.releaseTicket(video.id, ticket: old) }
+        ticket = stream.ticket
+        if video.liveStatus != "live", at > 0 {
+            await player.seek(to: CMTime(seconds: at, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        await turnOffCaptions(on: item)
+        if resume { player.play() }
+        return true
     }
 
     typealias Stream = (ticket: String, url: URL, expiresIn: Double)
@@ -149,15 +200,55 @@ final class PlayerModel {
 
     private func track(video: Video, client: APIClient, renewEvery: Double) async {
         var lastRenewal = ContinuousClock.now
+        var seenErrors = 0
+        var stalledSince: ContinuousClock.Instant?
+        var lastProbe = ContinuousClock.now
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(1))
             guard let player else { continue }
             if let item = player.currentItem, item.status == .failed {
-                phase = .failed(Self.describe(item.error) ?? String(localized: "The stream could not be loaded."))
+                let reason = Self.report(item)
+                if await recover(video: video, client: client) {
+                    lastRenewal = .now
+                    continue
+                }
+                phase = .failed(reason ?? String(localized: "The stream could not be loaded."))
                 showsOverlay = true
+                if let ticket {
+                    await client.releaseTicket(video.id, ticket: ticket, reason: reason)
+                    self.ticket = nil
+                }
                 return
             }
             isBuffering = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+            // Stuck, or newly failing requests: ask whether the ticket still
+            // counts. This is what a lapsed ticket looks like from here —
+            // AVPlayer neither fails the item nor names the refusal; its
+            // error log grows, and once what it holds runs out it pauses
+            // itself with an empty buffer.
+            let errorCount = player.currentItem?.errorLog()?.events.count ?? 0
+            let newErrors = errorCount > seenErrors
+            seenErrors = errorCount
+            let starved = wantsToPlay && player.timeControlStatus == .paused && player.currentItem?.isPlaybackBufferEmpty == true
+            if newErrors || isBuffering || starved {
+                let since = stalledSince ?? .now
+                stalledSince = since
+                if let ticket, newErrors || ContinuousClock.now - since >= .seconds(4), ContinuousClock.now - lastProbe >= .seconds(10) {
+                    lastProbe = .now
+                    do {
+                        try await client.renewTicket(video.id, ticket: ticket)
+                    } catch APIError.unauthorized {
+                        if await recover(video: video, client: client) {
+                            lastRenewal = .now
+                            stalledSince = nil
+                            seenErrors = player.currentItem?.errorLog()?.events.count ?? 0
+                            continue
+                        }
+                    } catch {}
+                }
+            } else {
+                stalledSince = nil
+            }
             position = player.currentTime().seconds.isFinite ? player.currentTime().seconds : position
             if let seconds = player.currentItem?.duration.seconds, seconds.isFinite { duration = seconds }
             isPlaying = player.timeControlStatus != .paused
@@ -167,13 +258,21 @@ final class PlayerModel {
             }
             if let ticket, renewEvery > 0, ContinuousClock.now - lastRenewal >= .seconds(renewEvery) {
                 lastRenewal = .now
-                try? await client.renewTicket(video.id, ticket: ticket)
+                do {
+                    try await client.renewTicket(video.id, ticket: ticket)
+                } catch APIError.unauthorized {
+                    // Gone already (see recover); a new one before AVPlayer
+                    // needs it, rather than after it has failed.
+                    if await recover(video: video, client: client) { lastRenewal = .now }
+                } catch {}
             }
         }
     }
 
-    private func waitForEnd(of item: AVPlayerItem, video: Video, client: APIClient) async {
-        for await _ in NotificationCenter.default.notifications(named: AVPlayerItem.didPlayToEndTimeNotification, object: item) {
+    /// The end of whichever item plays: `recover` may have swapped it.
+    private func waitForEnd(video: Video, client: APIClient) async {
+        for await note in NotificationCenter.default.notifications(named: AVPlayerItem.didPlayToEndTimeNotification) {
+            guard let item = note.object as? AVPlayerItem, item === player?.currentItem else { continue }
             finished = true
             try? await client.markWatched(video.id)
             return
@@ -191,6 +290,20 @@ final class PlayerModel {
         return "\(outer.localizedDescription) (\(detail))"
     }
 
+    /// `describe` plus the last entry of the item's error log: the HTTP status
+    /// and the request a stream failed on, which the error alone leaves out.
+    static func report(_ item: AVPlayerItem) -> String? {
+        var parts: [String] = []
+        if let error = describe(item.error) { parts.append(error) }
+        if let event = item.errorLog()?.events.last {
+            var line = "log: \(event.errorDomain) \(event.errorStatusCode)"
+            if let comment = event.errorComment { line += " \(comment)" }
+            if let uri = event.uri, let path = URL(string: uri)?.path { line += " \(path)" }
+            parts.append(line)
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     /// Captions stay off; YouTube's streams may mark a track as default.
     private func turnOffCaptions(on item: AVPlayerItem) async {
         guard let group = try? await item.asset.loadMediaSelectionGroup(for: .legible) else { return }
@@ -203,11 +316,13 @@ final class PlayerModel {
         guard let player else { return }
         if player.timeControlStatus == .paused {
             player.play()
+            wantsToPlay = true
             isPlaying = true
             showFlash("▶")
             hideOverlaySoon()
         } else {
             player.pause()
+            wantsToPlay = false
             isPlaying = false
             showFlash("❚❚")
             showsOverlay = true

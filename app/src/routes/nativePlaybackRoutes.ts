@@ -1,5 +1,6 @@
 import type { Context, Hono } from "hono";
 import { bearerSessionToken } from "../deviceSessionAuth";
+import { log } from "../logger";
 import { MEDIA_TICKET_TTL_MS, mediaTicketPath } from "../mediaTickets";
 import { mediaTickets, nativePlaybackAccess, nativePlaybackSource } from "../nativePlayback";
 import { ytdlpStatus } from "../downloader";
@@ -63,8 +64,13 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
   api.delete("/videos/:id/playback-ticket", async (c) => {
     c.header("Cache-Control", "private, no-store");
     const sessionToken = bearerSessionToken(c.req.header("authorization"));
-    const { ticket } = await c.req.json().catch(() => ({}));
+    const { ticket, reason } = await c.req.json().catch(() => ({}));
     const entry = typeof ticket === "string" ? mediaTickets.read(ticket) : null;
+    // A player that gave up on this stream says why, which is otherwise only
+    // on the device: what AVPlayer reported, and the request it failed on.
+    if (typeof reason === "string" && reason) {
+      log.warn("native.stream_failed", { videoId: c.req.param("id"), kind: entry?.kind ?? null, userId: currentUserId(c), reason: reason.slice(0, 600) });
+    }
     if (entry && entry.userId === currentUserId(c) && entry.videoId === c.req.param("id") && entry.sessionToken === sessionToken) mediaTickets.revoke(ticket);
     return c.json({ ok: true });
   });

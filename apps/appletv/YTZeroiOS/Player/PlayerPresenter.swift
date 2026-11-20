@@ -64,6 +64,9 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
                 if let current = model.player, controller.player !== current {
                     controller.player = current
                     self.publishNowPlaying(for: current, model: model, video: video)
+                } else if let item = model.player?.currentItem, item.nowPlayingInfo == nil {
+                    // A new item for the same player, after a lapsed ticket.
+                    item.nowPlayingInfo = Self.nowPlayingInfo(for: video)
                 }
                 try? await Task.sleep(for: .milliseconds(250))
             }
@@ -81,10 +84,7 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
     /// The lock screen and Control Center: title, channel, play and pause,
     /// the same 15 s / 30 s skips as on screen, and dragging the timeline.
     private func publishNowPlaying(for player: AVPlayer, model: PlayerModel, video: Video) {
-        player.currentItem?.nowPlayingInfo = [
-            MPMediaItemPropertyTitle: video.title,
-            MPMediaItemPropertyArtist: video.channelTitle,
-        ]
+        player.currentItem?.nowPlayingInfo = Self.nowPlayingInfo(for: video)
         let session = MPNowPlayingSession(players: [player])
         session.automaticallyPublishesNowPlayingInfo = true
         let commands = session.remoteCommandCenter
@@ -119,6 +119,10 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
         }
         session.becomeActiveIfPossible { _ in }
         nowPlaying = session
+    }
+
+    private static func nowPlayingInfo(for video: Video) -> [String: Any] {
+        [MPMediaItemPropertyTitle: video.title, MPMediaItemPropertyArtist: video.channelTitle]
     }
 
     private func controllerDisappeared() {
