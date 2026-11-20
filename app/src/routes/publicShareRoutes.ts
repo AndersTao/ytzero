@@ -1,4 +1,5 @@
 import { existsSync, statSync } from "node:fs";
+import { setResponseHeader } from "../responseHeaders";
 import { Hono } from "hono";
 import { database } from "../database";
 import { getSetting } from "../db";
@@ -268,12 +269,13 @@ export function createPublicShareRouter(uiDir: string) {
   router.use("*", async (c, next) => {
     const startedAt = Date.now();
     await next();
-    c.header("Cache-Control", "private, no-store");
-    c.header("Referrer-Policy", "no-referrer");
-    c.header("X-Robots-Tag", "noindex, nofollow, noarchive");
-    c.header("X-Content-Type-Options", "nosniff");
-    c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
-    c.header("Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'self' https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src https://www.youtube-nocookie.com");
+    // In place, so a file range keeps its length (see setResponseHeader).
+    setResponseHeader(c, "Cache-Control", "private, no-store");
+    setResponseHeader(c, "Referrer-Policy", "no-referrer");
+    setResponseHeader(c, "X-Robots-Tag", "noindex, nofollow, noarchive");
+    setResponseHeader(c, "X-Content-Type-Options", "nosniff");
+    setResponseHeader(c, "Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+    setResponseHeader(c, "Content-Security-Policy", "default-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'self' https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-src https://www.youtube-nocookie.com");
     const ms = Date.now() - startedAt;
     if (c.res.status >= 500) log.error("public_share.request_failed", { path: diagnosticRequestPath(c.req.path), method: c.req.method, status: c.res.status, ms });
     else if (ms >= 2_000) log.warn("public_share.request_slow", { path: diagnosticRequestPath(c.req.path), method: c.req.method, status: c.res.status, ms });

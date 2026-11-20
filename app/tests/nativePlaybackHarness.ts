@@ -62,6 +62,12 @@ try {
   assert.equal(network.status, 206);
   assert.equal(network.headers.get("content-range"), "bytes 0-1/16");
   assert.equal(await network.text(), "01");
+  // From the middle, as an HLS segment is asked for: exactly that range.
+  const middle = await fetch(new URL(first.url.replace("compat=1", "compat=0"), server.url), {
+    headers: { Range: "bytes=4-7" }, signal: AbortSignal.timeout(3000),
+  });
+  assert.equal(middle.status, 206);
+  assert.equal(await middle.text(), "4567");
 } finally { server.stop(true); }
 const fileUrl = `http://localhost${first.url.replace("compat=1", "compat=0")}`;
 for (const [range, expected] of [["bytes=-4", "cdef"], ["bytes=12-", "cdef"], ["bytes=14-99", "ef"]]) {

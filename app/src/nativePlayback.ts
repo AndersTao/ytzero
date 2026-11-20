@@ -1,4 +1,5 @@
 import type { Context, Next } from "hono";
+import { setResponseHeader } from "./responseHeaders";
 import { existsSync, statSync } from "node:fs";
 import { validateSession } from "./auth";
 import { childStatus, type ChildStatus } from "./childTime";
@@ -106,6 +107,7 @@ export async function serveMediaTicket(c: Context, next: Next): Promise<Response
       c.res = c.json({ error: "unsupported media playlist" }, 502);
     }
   }
-  c.header("Cache-Control", "private, no-store");
-  c.header("Referrer-Policy", "no-referrer");
+  // In place: see setResponseHeader for what c.header() did to file ranges.
+  setResponseHeader(c, "Cache-Control", "private, no-store");
+  setResponseHeader(c, "Referrer-Policy", "no-referrer");
 }
