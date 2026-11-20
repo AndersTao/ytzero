@@ -152,8 +152,12 @@ nonisolated struct APIClient: Sendable {
         try expectSuccess(data, response)
     }
 
-    func releaseTicket(_ id: String, ticket: String) async {
-        _ = try? await send(request("/videos/\(id)/playback-ticket", method: "DELETE", body: ["ticket": ticket]))
+    /// Let a stream's ticket go. `reason`, when the player gave up on the
+    /// stream, ends up in the server's log.
+    func releaseTicket(_ id: String, ticket: String, reason: String? = nil) async {
+        var body = ["ticket": ticket]
+        if let reason { body["reason"] = reason }
+        _ = try? await send(request("/videos/\(id)/playback-ticket", method: "DELETE", body: body))
     }
 
     // MARK: Images

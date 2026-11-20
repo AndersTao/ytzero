@@ -59,6 +59,7 @@
 		D6367919D853C10B7BFCD0E6 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6333A58D19FFA2EEF31EA35 /* ProgressBar.swift */; };
 		D83E312F8A1263C08B3DD4F0 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8BA03B68DF52B7EAD16554 /* Keychain.swift */; };
 		D8ED259D4462E710355D1396 /* HomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */; };
+		E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */; };
 		EEF4C3F8B80E2419A947CAFB /* ServerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC406C7A47EF1CE669DE3EE /* ServerSetupView.swift */; };
 		F38CF3CF6422C113C5951689 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB15556285CC9AA3C8DF066 /* APIModels.swift */; };
 		FC349A29C312B3F7054D9444 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C18844637E24D6235137EF6 /* AppSession.swift */; };
@@ -120,6 +121,7 @@
 		E38BA03DEC7C6FDB40049ADF /* Thumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thumbnail.swift; sourceTree = "<group>"; };
 		E4970AE5A60B47F9E03DBD67 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		E4BCC82706B4DC64C733441A /* YTZeroTVUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = YTZeroTVUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryUITests.swift; sourceTree = "<group>"; };
 		EEA048127B291914DBB67DD0 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		EEF4BE31D9BAD400EA1BE2EB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F09C8EC732004967BF246378 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
@@ -333,6 +335,7 @@
 			isa = PBXGroup;
 			children = (
 				6ABDEB5980A218417D5E5951 /* PlaybackUITests.swift */,
+				E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */,
 			);
 			path = YTZeroiOSUITests;
 			sourceTree = "<group>";
@@ -419,7 +422,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					3D12B7D4E1A587F50B434CF6 = {
 						DevelopmentTeam = "$(YTZERO_DEVELOPMENT_TEAM)";
@@ -560,6 +563,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				78380E9E6D8794AE1E135539 /* PlaybackUITests.swift in Sources */,
+				E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
