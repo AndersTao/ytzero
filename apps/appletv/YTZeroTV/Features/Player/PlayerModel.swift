@@ -159,7 +159,7 @@ final class PlayerModel {
     /// or the server restarted and forgot it — or the stream broke off. Ask
     /// for a new ticket for the same kind of stream and carry on from the
     /// same place. A few times per video, not forever.
-    private func recover(video: Video, client: APIClient) async -> Bool {
+    private func recover(video: Video, client: APIClient, reason: String? = nil) async -> Bool {
         guard recoveries < 3, let player else { return false }
         recoveries += 1
         let at = position
@@ -172,7 +172,7 @@ final class PlayerModel {
             await client.releaseTicket(video.id, ticket: stream.ticket, reason: lastStreamError)
             return false
         }
-        if let old = ticket { await client.releaseTicket(video.id, ticket: old) }
+        if let old = ticket { await client.releaseTicket(video.id, ticket: old, reason: reason) }
         ticket = stream.ticket
         if video.liveStatus != "live", at > 0 {
             await player.seek(to: CMTime(seconds: at, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
@@ -246,6 +246,20 @@ final class PlayerModel {
                         }
                     } catch {}
                 }
+                // Stuck with a ticket the server still takes: something else
+                // broke, which on an iPad on iOS 17 has looked like a black
+                // picture and a spinner for good, while the same stream plays
+                // on elsewhere. Load it again from the same place, as closing
+                // and reopening the video does, and tell the server what
+                // AVPlayer saw so the cause can be found.
+                if (isBuffering || starved), ContinuousClock.now - since >= .seconds(12),
+                   let item = player.currentItem,
+                   await recover(video: video, client: client, reason: "stalled 12 s: " + Self.stallReport(item)) {
+                    lastRenewal = .now
+                    stalledSince = nil
+                    seenErrors = player.currentItem?.errorLog()?.events.count ?? 0
+                    continue
+                }
             } else {
                 stalledSince = nil
             }
@@ -302,6 +316,22 @@ final class PlayerModel {
             parts.append(line)
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// What the player was doing when it got stuck: status, buffer, and the
+    /// last entries of its error and access logs.
+    static func stallReport(_ item: AVPlayerItem) -> String {
+        var parts = ["status \(item.status.rawValue)", "empty \(item.isPlaybackBufferEmpty)", "keepUp \(item.isPlaybackLikelyToKeepUp)"]
+        if let range = item.loadedTimeRanges.last?.timeRangeValue {
+            parts.append("loaded \(Int(range.start.seconds))–\(Int(range.end.seconds)) s")
+        }
+        if let report = report(item) { parts.append(report) }
+        if let access = item.accessLog()?.events.last {
+            var line = "access: stalls \(access.numberOfStalls) segments \(access.numberOfMediaRequests) bytes \(access.numberOfBytesTransferred)"
+            if let uri = access.uri, let path = URL(string: uri)?.path { line += " \(path)" }
+            parts.append(line)
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// Captions stay off; YouTube's streams may mark a track as default.
