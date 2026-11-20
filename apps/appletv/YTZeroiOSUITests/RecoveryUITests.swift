@@ -22,11 +22,13 @@ final class RecoveryUITests: XCTestCase {
         sleep(12)
         let start = shownPosition(app)
         print("RECOVERY start", start)
-        sleep(170)
+        // YTZERO_UITEST_PLAY_SECONDS: longer, to play through a fetch finishing.
+        let seconds = UInt32(env["YTZERO_UITEST_PLAY_SECONDS"] ?? "") ?? 170
+        sleep(seconds)
         let end = shownPosition(app)
         print("RECOVERY end", end)
         XCTAssertFalse(app.staticTexts["Videoen kunne ikke afspilles."].exists, "playback should not fail")
-        XCTAssertGreaterThan(end - start, 140, "it should have kept playing through the restart")
+        XCTAssertGreaterThan(end - start, Int(seconds) - 30, "it should have kept playing through the restart")
     }
 
     private func shownPosition(_ app: XCUIApplication) -> Int {
