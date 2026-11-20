@@ -136,6 +136,13 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
         isPresenting = false
         attach?.cancel()
         playback?.cancel()
+        // Stop it now, while everything watching the player is still there.
+        // Paused later — after the lock screen session and picture in picture
+        // had let go of it — the rate change reached an observer that was
+        // being removed, and on iOS 17 that is an exception: the app crashed
+        // on Close.
+        model?.player?.pause()
+        if let player = model?.player { nowPlaying?.removePlayer(player) }
         if dismissing, let controller, controller.presentingViewController != nil {
             controller.dismiss(animated: true)
         }

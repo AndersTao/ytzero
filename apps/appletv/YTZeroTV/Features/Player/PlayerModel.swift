@@ -117,7 +117,10 @@ final class PlayerModel {
     /// Returns the video as far as it was watched, once the server has it.
     @discardableResult
     func stop(video: Video, client: APIClient) async -> Video {
-        player?.pause()
+        // Already paused by whoever closed the screen, as a rule (see the iOS
+        // PlayerPresenter): pausing again only notifies observers again.
+        if let player, player.rate != 0 { player.pause() }
+        wantsToPlay = false
         var watched = video
         if !finished, duration > 0, position >= 1 {
             try? await client.saveProgress(video.id, position: position, duration: duration)
