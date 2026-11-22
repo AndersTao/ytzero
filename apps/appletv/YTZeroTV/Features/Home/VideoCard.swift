@@ -1,14 +1,14 @@
 import SwiftUI
 
 /// Thumbnail, channel and title. Select plays; a long press offers
-/// "Mark as watched" and "Reject".
+/// "Mark as watched", and "Reject" where the list has new videos to reject.
 struct VideoCard: View {
     let video: Video
     let client: APIClient?
     let focus: FocusState<String?>.Binding
     let play: () -> Void
     let markWatched: () -> Void
-    let reject: () -> Void
+    var reject: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -38,7 +38,9 @@ struct VideoCard: View {
             .focused(focus, equals: video.id)
             .contextMenu {
                 Button("Mark as watched", systemImage: "eye", action: markWatched)
-                Button("Reject", systemImage: "xmark.circle", role: .destructive, action: reject)
+                if let reject {
+                    Button("Reject", systemImage: "xmark.circle", role: .destructive, action: reject)
+                }
             }
             .accessibilityLabel(Text("\(video.title), \(video.channelTitle)"))
 

@@ -3,11 +3,19 @@
 En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-siden
 `/tv.html`:
 
+- **Sidebjælke:** Apples egen sidebjælke (`TabView` med `.sidebarAdaptable`)
+  med Main, Anbefalinger, Shorts, Planlagt og Abonnementer og, under "Mine
+  playlister", profilens egne playlister. Den foldes ind til en knap øverst
+  til venstre. Op fra øverste række (via Opdater) åbner den, og Select på et
+  sted folder den ind igen. Anbefalinger, Shorts, Planlagt og Abonnementer
+  viser "Kommer snart" indtil videre.
 - **Forside:** "Fortsæt med at se" øverst og Main nedenunder. Hvert kort viser
   miniature, kanal og titel. Klik afspiller.
-- **Langt tryk på et kort:** Markér som set eller Afvis.
-- **Øverst:** Hvem der ser med, Opdater, som tjekker abonnementerne og henter
-  igen, og Indstillinger med profiler, log ud og skift server.
+- **Playliste:** Videoerne i et gitter, senest tilføjet først. Klik afspiller.
+- **Langt tryk på et kort:** Markér som set eller Afvis (i en playliste kun
+  Markér som set).
+- **Øverst til højre:** Opdater, som tjekker abonnementerne og henter igen, og
+  billedet af den, der ser med, som åbner profilerne og log ud.
 - **Afspiller i fuld skærm:**
   - Højre spoler 30 s frem, og venstre 15 s tilbage.
   - Klik eller Play/Pause sætter pause og starter igen.
@@ -122,6 +130,8 @@ iPad-simulator, med de samme to miljøvariabler som herunder).
 
 `YTZeroTVUITests` trykker sig gennem forsiden, menuen ved langt tryk og
 afspilleren med Siri Remote og gemmer et skærmbillede af hvert trin.
+`testSidebarOpensAPlaylist` åbner sidebjælken og en playliste og kræver, at
+profilen har en playliste ved navn "Weekend" med mindst én video.
 `ProfilesUITests` (på begge platforme) skifter profil i Indstillinger og skal
 også have `YTZERO_UITEST_TOKENS`: sessioner for flere profiler, parret sammen
 med den første (kommasepareret, den første en børneprofil). Testen

@@ -19,10 +19,9 @@ final class ProfilesUITests: XCTestCase {
         app.launchArguments += ["-AppleLanguages", "(da)", "-AppleLocale", "da_DK"]
         app.launch()
         let remote = XCUIRemote.shared
-        sleep(6)
+        app.waitForVideoFocus()
 
-        // Up to the header, right to the profile picture.
-        remote.press(.up); sleep(1)
+        // Up to the header (once: again goes on to the sidebar), right to the profile picture.
         remote.press(.up); sleep(1)
         remote.press(.right); sleep(1)
         XCTAssertTrue(app.buttons["profile-button"].hasFocus, "Right from Refresh should reach the profile picture")
@@ -44,11 +43,10 @@ final class ProfilesUITests: XCTestCase {
         let picture = app.buttons["profile-button"]
         let showsChild = NSPredicate(format: "label == 'Lille'")
         XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: showsChild, object: picture)], timeout: 10), .completed, "the profile picture should be the child's")
-        sleep(4)
+        app.waitForVideoFocus()
         snapshot("02-child-home")
 
         // Leaving the child profile asks for the child lock PIN.
-        remote.press(.up); sleep(1)
         remote.press(.up); sleep(1)
         remote.press(.right); sleep(1)
         remote.press(.select)

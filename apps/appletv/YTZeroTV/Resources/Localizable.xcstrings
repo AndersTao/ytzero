@@ -41,6 +41,16 @@
         }
       }
     },
+    "Could not load the playlist" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlisten kunne ikke hentes"
+          }
+        }
+      }
+    },
     "Enter the address of your YT Zero server, for example ytzero.example.com." : {
       "localizations" : {
         "da" : {
@@ -65,6 +75,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Main"
+          }
+        }
+      }
+    },
+    "No videos in this playlist" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen videoer i denne playliste"
           }
         }
       }

@@ -1,9 +1,11 @@
 import SwiftUI
 
 /// Continue watching and Main, nothing else. Select plays full screen.
+/// Up from the top row reaches the header, and Up again the sidebar.
 struct HomeView: View {
     @Environment(AppSession.self) private var session
-    @State private var model = HomeModel()
+    /// Loaded by the tab view before it shows: see MainTabView.
+    let model: HomeModel
     @State private var profiles = ProfilesModel()
     @State private var playing: Video?
     @State private var showingSettings = false
@@ -36,7 +38,7 @@ struct HomeView: View {
         .defaultFocus($focusedVideo, firstVideoID)
         .task {
             guard let client = session.client else { return }
-            await model.loadFirstPage(client: client)
+            if !model.hasLoaded { await model.loadFirstPage(client: client) }
             focusedVideo = firstVideoID
             // Who is watching, for the header: names and pictures come from the server.
             await profiles.load(session: session)
@@ -76,10 +78,10 @@ struct HomeView: View {
         }
     }
 
+    /// Refresh and who is watching, at the right. No title: the sidebar's
+    /// folded button at the top left already names the place.
     private var header: some View {
         HStack(spacing: 28) {
-            Text("YT Zero")
-                .font(.title2.bold())
             Spacer()
             // Never disabled: the server takes half a minute to check the
             // channels, and a focused button that turns disabled leaves the

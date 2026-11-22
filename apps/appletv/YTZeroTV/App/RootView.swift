@@ -12,7 +12,7 @@ struct RootView: View {
             PairingView()
         case .ready:
             // A new library for each profile: nothing of the one before stays.
-            HomeView()
+            MainTabView()
                 .id(session.generation)
         }
     }
