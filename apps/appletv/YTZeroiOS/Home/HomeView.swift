@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Continue watching and Main. Tap plays; touch and hold to mark as watched or
-/// reject. Pulling down and the toolbar button both have the server check the
-/// channels for new videos, then reload the lists.
+/// reject. Pulling down has the server check the channels for new videos,
+/// then reloads the lists.
 struct HomeView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.scenePhase) private var scenePhase
@@ -90,32 +90,41 @@ struct HomeView: View {
             .accessibilityAddTraits(.isHeader)
     }
 
+    /// Settings, with who is watching. There is no Refresh button: pulling the
+    /// lists down does the same.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            Button {
-                run { client in await model.refresh(client: client) }
-            } label: {
-                if model.isRefreshing {
-                    ProgressView()
-                } else {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
-            }
-            // Settings, with who is watching: the button is their picture once known.
+        if #available(iOS 26, *) {
+            // The picture on its own, not inside a glass capsule.
+            ToolbarItem(placement: .topBarTrailing) { settingsButton }
+                .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .topBarTrailing) { settingsButton }
+        }
+    }
+
+    /// The profile's picture once it is known, else a gear. The picture is a
+    /// view that takes a tap rather than a Button's label: the navigation bar
+    /// draws a button's image as a one-colour template, which made it a white
+    /// square.
+    @ViewBuilder
+    private var settingsButton: some View {
+        if let profile = session.activeProfile, !profile.name.isEmpty {
+            ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 34)
+                .contentShape(.circle)
+                .onTapGesture { showingSettings = true }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Settings"))
+                .accessibilityValue(Text(verbatim: profile.name))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("profile-button")
+        } else {
             Button {
                 showingSettings = true
             } label: {
-                if let profile = session.activeProfile, !profile.name.isEmpty {
-                    Label {
-                        Text("Settings")
-                    } icon: {
-                        ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 28)
-                    }
-                } else {
-                    Label("Settings", systemImage: "gearshape")
-                }
+                Label("Settings", systemImage: "gearshape")
             }
+            .accessibilityIdentifier("profile-button")
         }
     }
 
