@@ -73,13 +73,17 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
 
     /// "1 hr. ago", in the app's language.
     var publishedAgo: String? {
-        guard let publishedAt else { return nil }
+        publishedAt.map(Self.ago)
+    }
+
+    /// "1 hr. ago" for any moment, such as a channel's latest upload.
+    static func ago(_ date: Date) -> String {
         let now = Date.now
-        if now.timeIntervalSince(publishedAt) < 60 { return String(localized: "just now") }
+        if now.timeIntervalSince(date) < 60 { return String(localized: "just now") }
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
         formatter.dateTimeStyle = .numeric
-        return formatter.localizedString(for: min(publishedAt, now), relativeTo: now)
+        return formatter.localizedString(for: min(date, now), relativeTo: now)
     }
 
     enum LiveBadge { case live, recording }

@@ -36,6 +36,39 @@ nonisolated enum APIModels {
         }
     }
 
+    /// A followed channel, as the Subscriptions screen lists it.
+    struct Channel: Decodable, Identifiable, Hashable, Sendable {
+        let id: String
+        let title: String
+        let thumbnail: String?
+        let subscriberCount: String?
+        let latestVideoAt: String?
+        let subscribedAt: String?
+        let followed: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case id = "channel_id"
+            case title, thumbnail, followed
+            case subscriberCount = "subscriber_count"
+            case latestVideoAt = "latest_video_at"
+            case subscribedAt = "subscribed_at"
+        }
+
+        var latestVideo: Date? { latestVideoAt.flatMap(Video.parseTimestamp) }
+        var subscribed: Date? { subscribedAt.flatMap(Video.parseTimestamp) }
+
+        /// "26.6M" as a number, for sorting by size.
+        var subscriberNumber: Double {
+            guard let text = subscriberCount?.trimmingCharacters(in: .whitespaces).uppercased(), !text.isEmpty else { return 0 }
+            let scale: Double = text.hasSuffix("B") ? 1e9 : text.hasSuffix("M") ? 1e6 : text.hasSuffix("K") ? 1e3 : 1
+            return (Double(text.filter { $0.isNumber || $0 == "." }) ?? 0) * scale
+        }
+    }
+
+    struct ChannelList: Decodable, Sendable {
+        let channels: [Channel]
+    }
+
     /// One of the profile's own playlists, as the side menu lists them.
     struct UserPlaylist: Decodable, Identifiable, Hashable, Sendable {
         let id: Int

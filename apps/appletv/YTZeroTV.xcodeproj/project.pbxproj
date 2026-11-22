@@ -58,7 +58,9 @@
 		A1D6DFCF146A5A4B041D8199 /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7638AC4988AA6D8308B670 /* PairingView.swift */; };
 		A392C9C3536A325209D77EE3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B260288B1DF469CB6DA178DA /* Assets.xcassets */; };
 		A4A6AF15D9F31C3BD1E559C9 /* DayGroups.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C6C33091E391B595350B86 /* DayGroups.swift */; };
+		A53E525AE99DD99640DD663A /* SubscriptionsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC12862A7FD9F3C73548EB55 /* SubscriptionsUITests.swift */; };
 		A7ABD25DD33A310EDEB24E9A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70260E8723718AA433731D2B /* RootView.swift */; };
+		A9D796DC5218B2ECFFD20FF9 /* SubscriptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1B3AAA0CBA5CF1FDB0100F /* SubscriptionsView.swift */; };
 		A9F477620D456EC37D9D6ECB /* Thumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38BA03DEC7C6FDB40049ADF /* Thumbnail.swift */; };
 		AC00C05C09A15778AAAA1D4A /* LiveBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F14179E2C77DF98908F235 /* LiveBadge.swift */; };
 		B552FD0F801F9DF9D7F2DE60 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E4970AE5A60B47F9E03DBD67 /* Localizable.xcstrings */; };
@@ -109,6 +111,7 @@
 		30E18D91AD2316F9F1B7AD24 /* ServerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSetupView.swift; sourceTree = "<group>"; };
 		318C97BBC14FF6A3A1AD246F /* SideMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenu.swift; sourceTree = "<group>"; };
 		33A445E323359909E630C92C /* YTZeroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YTZeroApp.swift; sourceTree = "<group>"; };
+		3D1B3AAA0CBA5CF1FDB0100F /* SubscriptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsView.swift; sourceTree = "<group>"; };
 		453095E065922EC6521795E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		498FCB0C904585E17D491E3E /* ProfileAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatar.swift; sourceTree = "<group>"; };
 		4A273A0861CEDEB84A088577 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -133,6 +136,7 @@
 		B260288B1DF469CB6DA178DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B486D70CC870516246D0DC18 /* YTZeroiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C918DEB7589DAA31AEF3E6A2 /* PlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerLayerView.swift; sourceTree = "<group>"; };
+		CC12862A7FD9F3C73548EB55 /* SubscriptionsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsUITests.swift; sourceTree = "<group>"; };
 		CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshUITests.swift; sourceTree = "<group>"; };
 		D1829D1ADAD013419FDA5EEE /* YTZeroTV.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8C6C33091E391B595350B86 /* DayGroups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGroups.swift; sourceTree = "<group>"; };
@@ -190,6 +194,14 @@
 				FFC406C7A47EF1CE669DE3EE /* ServerSetupView.swift */,
 			);
 			path = Setup;
+			sourceTree = "<group>";
+		};
+		2B0E77DB6762F9A08D1BF0F6 /* Subscriptions */ = {
+			isa = PBXGroup;
+			children = (
+				3D1B3AAA0CBA5CF1FDB0100F /* SubscriptionsView.swift */,
+			);
+			path = Subscriptions;
 			sourceTree = "<group>";
 		};
 		51BC3E8BA358F7CE1F9DB485 /* Home */ = {
@@ -307,6 +319,7 @@
 				7F73C89B8A6BA20885E51BF0 /* Player */,
 				5D2F01C0ECEF765160DCCEAA /* Resources */,
 				17778F846CA0A9AA6457246D /* Setup */,
+				2B0E77DB6762F9A08D1BF0F6 /* Subscriptions */,
 			);
 			path = YTZeroiOS;
 			sourceTree = "<group>";
@@ -384,6 +397,7 @@
 				CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */,
 				E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */,
 				AF17AEF8F21E2E9F784CFDF3 /* SideMenuUITests.swift */,
+				CC12862A7FD9F3C73548EB55 /* SubscriptionsUITests.swift */,
 			);
 			path = YTZeroiOSUITests;
 			sourceTree = "<group>";
@@ -574,6 +588,7 @@
 				EEF4C3F8B80E2419A947CAFB /* ServerSetupView.swift in Sources */,
 				D04ECD8468E6482D13819A3A /* SettingsView.swift in Sources */,
 				99DF51AA1BA6DBBCC8B8CD31 /* SideMenu.swift in Sources */,
+				A9D796DC5218B2ECFFD20FF9 /* SubscriptionsView.swift in Sources */,
 				6C3E17602ACAD9E05957FC49 /* Thumbnail.swift in Sources */,
 				9A982959F74BFDF9BE0C4966 /* ThumbnailCache.swift in Sources */,
 				4953565B4CFE4C7EF934CB33 /* Video.swift in Sources */,
@@ -626,6 +641,7 @@
 				1460A8A2DEFD8C672C4F86CF /* PullToRefreshUITests.swift in Sources */,
 				E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */,
 				758A9A92587E25A0A13E013C /* SideMenuUITests.swift in Sources */,
+				A53E525AE99DD99640DD663A /* SubscriptionsUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

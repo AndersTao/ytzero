@@ -106,6 +106,8 @@ struct SideMenuContainer: View {
         switch destination {
         case .main:
             HomeView()
+        case .subscriptions:
+            SubscriptionsView()
         default:
             ComingSoonView(destination: destination)
         }
