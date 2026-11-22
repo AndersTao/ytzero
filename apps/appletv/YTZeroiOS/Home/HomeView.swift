@@ -74,6 +74,7 @@ struct HomeView: View {
 
     @ToolbarContentBuilder
     private var titleItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) { MenuButton() }
         if #available(iOS 26, *) {
             // Plain text, not a button in a glass capsule.
             ToolbarItem(placement: .topBarLeading) { appName }

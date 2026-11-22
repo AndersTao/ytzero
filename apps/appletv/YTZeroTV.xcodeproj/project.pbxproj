@@ -38,6 +38,7 @@
 		731B709F7CF8639EEF246707 /* VideoCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3637D1E525F99F041708296 /* VideoCard.swift */; };
 		73C88E631396D0B3EC7B2F3F /* Video.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6F034DC770F07251FE5AE1 /* Video.swift */; };
 		744AEE2B701376CE4486E575 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C18844637E24D6235137EF6 /* AppSession.swift */; };
+		758A9A92587E25A0A13E013C /* SideMenuUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF17AEF8F21E2E9F784CFDF3 /* SideMenuUITests.swift */; };
 		75EBB6099DF95DD423808006 /* ProfilesUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D64197ADB2228CEEED29E34 /* ProfilesUITests.swift */; };
 		78380E9E6D8794AE1E135539 /* PlaybackUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ABDEB5980A218417D5E5951 /* PlaybackUITests.swift */; };
 		7BF19F2A55A1962235C6A3AD /* ProfileAvatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498FCB0C904585E17D491E3E /* ProfileAvatar.swift */; };
@@ -49,6 +50,7 @@
 		90F08EBA0E3DF73CC933B771 /* VideoCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BCDA559E6E047E5D7EE7656 /* VideoCard.swift */; };
 		95714918071D910B17A21429 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6333A58D19FFA2EEF31EA35 /* ProgressBar.swift */; };
 		95C178331387B696D5B3E239 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453095E065922EC6521795E8 /* HomeView.swift */; };
+		99DF51AA1BA6DBBCC8B8CD31 /* SideMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 318C97BBC14FF6A3A1AD246F /* SideMenu.swift */; };
 		9A2B074C8C920D53C2F86AC4 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E4970AE5A60B47F9E03DBD67 /* Localizable.xcstrings */; };
 		9A982959F74BFDF9BE0C4966 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E5BBDB6FE84B3E6829A48C /* ThumbnailCache.swift */; };
 		9DEC550C4803DF3AA59C1D50 /* DayGroups.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C6C33091E391B595350B86 /* DayGroups.swift */; };
@@ -105,6 +107,7 @@
 		1A86F19622DAACA636623E97 /* YTZeroiOSUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = YTZeroiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesUITests.swift; sourceTree = "<group>"; };
 		30E18D91AD2316F9F1B7AD24 /* ServerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSetupView.swift; sourceTree = "<group>"; };
+		318C97BBC14FF6A3A1AD246F /* SideMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenu.swift; sourceTree = "<group>"; };
 		33A445E323359909E630C92C /* YTZeroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YTZeroApp.swift; sourceTree = "<group>"; };
 		453095E065922EC6521795E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		498FCB0C904585E17D491E3E /* ProfileAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatar.swift; sourceTree = "<group>"; };
@@ -126,6 +129,7 @@
 		AB6EFD5BB8CDAA2E8AB8556F /* ProfilesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesModel.swift; sourceTree = "<group>"; };
 		ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeModel.swift; sourceTree = "<group>"; };
 		AE1D959238F7E64A3705011B /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		AF17AEF8F21E2E9F784CFDF3 /* SideMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuUITests.swift; sourceTree = "<group>"; };
 		B260288B1DF469CB6DA178DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B486D70CC870516246D0DC18 /* YTZeroiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C918DEB7589DAA31AEF3E6A2 /* PlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerLayerView.swift; sourceTree = "<group>"; };
@@ -231,6 +235,14 @@
 			path = Player;
 			sourceTree = "<group>";
 		};
+		85637C14D50806CB1265EB50 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				318C97BBC14FF6A3A1AD246F /* SideMenu.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
 		8D95CB27A4D094299F452BFB = {
 			isa = PBXGroup;
 			children = (
@@ -290,6 +302,7 @@
 				EEF4BE31D9BAD400EA1BE2EB /* Info.plist */,
 				AE2294973C9975982A1FFF2D /* App */,
 				51BC3E8BA358F7CE1F9DB485 /* Home */,
+				85637C14D50806CB1265EB50 /* Navigation */,
 				96C6917B9A09697E24FFCC8D /* Pairing */,
 				7F73C89B8A6BA20885E51BF0 /* Player */,
 				5D2F01C0ECEF765160DCCEAA /* Resources */,
@@ -370,6 +383,7 @@
 				2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */,
 				CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */,
 				E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */,
+				AF17AEF8F21E2E9F784CFDF3 /* SideMenuUITests.swift */,
 			);
 			path = YTZeroiOSUITests;
 			sourceTree = "<group>";
@@ -559,6 +573,7 @@
 				52BF4987D611C3ADFC86A887 /* QRCode.swift in Sources */,
 				EEF4C3F8B80E2419A947CAFB /* ServerSetupView.swift in Sources */,
 				D04ECD8468E6482D13819A3A /* SettingsView.swift in Sources */,
+				99DF51AA1BA6DBBCC8B8CD31 /* SideMenu.swift in Sources */,
 				6C3E17602ACAD9E05957FC49 /* Thumbnail.swift in Sources */,
 				9A982959F74BFDF9BE0C4966 /* ThumbnailCache.swift in Sources */,
 				4953565B4CFE4C7EF934CB33 /* Video.swift in Sources */,
@@ -610,6 +625,7 @@
 				EA0EB7C783FF66CBA9A92029 /* ProfilesUITests.swift in Sources */,
 				1460A8A2DEFD8C672C4F86CF /* PullToRefreshUITests.swift in Sources */,
 				E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */,
+				758A9A92587E25A0A13E013C /* SideMenuUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

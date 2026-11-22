@@ -509,6 +509,86 @@
         }
       }
     },
+    "Recommendations" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbefalinger"
+          }
+        }
+      }
+    },
+    "Shorts" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shorts"
+          }
+        }
+      }
+    },
+    "Scheduled" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planlagt"
+          }
+        }
+      }
+    },
+    "Subscriptions" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementer"
+          }
+        }
+      }
+    },
+    "My playlists" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mine playlister"
+          }
+        }
+      }
+    },
+    "No playlists yet" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen playlister endnu"
+          }
+        }
+      }
+    },
+    "Coming soon" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer snart"
+          }
+        }
+      }
+    },
+    "Menu" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu"
+          }
+        }
+      }
+    },
     "YT Zero" : {
       "shouldTranslate" : false
     },
