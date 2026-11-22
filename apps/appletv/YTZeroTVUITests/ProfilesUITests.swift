@@ -56,7 +56,9 @@ final class ProfilesUITests: XCTestCase {
             remote.press(.up); sleep(1)
         }
         remote.press(.select)
-        XCTAssertTrue(app.staticTexts["Børnesikringens PIN-kode"].waitForExistence(timeout: 10), "leaving the child should ask for the PIN")
+        // The PIN is asked for in an alert, with a secure field to type it in.
+        XCTAssertTrue(app.alerts["Børnesikringens PIN-kode"].waitForExistence(timeout: 10), "leaving the child should ask for the PIN")
+        XCTAssertTrue(app.secureTextFields.firstMatch.exists, "the PIN is typed in a secure field")
         sleep(1)
         snapshot("03-child-lock-pin")
     }
