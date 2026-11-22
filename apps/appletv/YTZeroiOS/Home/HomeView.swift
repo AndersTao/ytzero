@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Continue watching and Main. Tap plays; touch and hold to mark as watched or
-/// reject. Pull down reloads the lists; the toolbar button also has the server
-/// check the channels, which takes it half a minute.
+/// reject. Pulling down and the toolbar button both have the server check the
+/// channels for new videos, then reload the lists.
 struct HomeView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.scenePhase) private var scenePhase
@@ -20,10 +20,21 @@ struct HomeView: View {
                 }
                 .padding(.vertical, 12)
             }
+            // Pulling down does what Refresh does: the server checks the
+            // channels for new videos, then the lists load again, with the
+            // same notice. It used to reload the lists only, which changed
+            // nothing visible and looked like it did not work.
+            //
+            // In a task of its own that the pull only waits for: SwiftUI
+            // cancels the pull's task when the lists redraw under it, which
+            // cut the server's check off halfway and left the lists as they
+            // were.
             .refreshable {
                 guard let client = session.client else { return }
-                await model.loadFirstPage(client: client)
+                await Task { await model.refresh(client: client) }.value
             }
+            // Also when everything fits on one screen.
+            .scrollBounceBehavior(.always)
             .overlay {
                 if model.hasLoaded && model.main.isEmpty && model.continueWatching.isEmpty {
                     ContentUnavailableView("No new videos", systemImage: "checkmark.circle")
