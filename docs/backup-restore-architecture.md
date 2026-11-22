@@ -193,6 +193,9 @@ than portable download state. They are intentionally excluded from every
 backup section. Durable `auth_sessions`, including profile- or account-scoped
 bearer sessions issued to a paired television with a rolling 30-day inactivity
 expiry, remain instance-local authentication state and are likewise excluded.
+So is `auth_sessions.device_group`, which ties together the profile-pinned
+sessions one television paired (one per profile) so it can move between them;
+it is machine-bound and never restored.
 Device codes, bearer tokens, and the television's saved instance URL are never
 part of a portable backup.
 

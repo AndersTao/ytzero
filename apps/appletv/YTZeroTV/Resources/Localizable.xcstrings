@@ -511,6 +511,206 @@
     },
     "YT Zero" : {
       "shouldTranslate" : false
+    },
+    "Add profile" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilføj profil"
+          }
+        }
+      }
+    },
+    "Who is watching?" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvem ser med?"
+          }
+        }
+      }
+    },
+    "Each profile signs in on its own: Add profile shows a code to approve on the phone of the person being added. Hold a profile to remove it." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hver profil logger ind for sig: Tilføj profil viser en kode, som godkendes på telefonen hos den, der tilføjes. Hold en profil nede for at fjerne den."
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Færdig"
+          }
+        }
+      }
+    },
+    "PIN" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PIN-kode"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuller"
+          }
+        }
+      }
+    },
+    "A parent enters the child lock PIN to leave the child profile." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En voksen indtaster børnesikringens PIN-kode for at forlade børneprofilen."
+          }
+        }
+      }
+    },
+    "Enter the PIN of %@." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indtast PIN-koden for %@."
+          }
+        }
+      }
+    },
+    "Profile" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil"
+          }
+        }
+      }
+    },
+    "In use" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I brug"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern"
+          }
+        }
+      }
+    },
+    "Profile PIN" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilens PIN-kode"
+          }
+        }
+      }
+    },
+    "Child lock PIN" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Børnesikringens PIN-kode"
+          }
+        }
+      }
+    },
+    "Wrong PIN – try again." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forkert PIN-kode – prøv igen."
+          }
+        }
+      }
+    },
+    "The child profile is locked. A parent can unlock it." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Børneprofilen er låst. En voksen kan låse den op."
+          }
+        }
+      }
+    },
+    "Add this profile again to switch to it." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilføj profilen igen for at skifte til den."
+          }
+        }
+      }
+    },
+    "Add a profile" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilføj en profil"
+          }
+        }
+      }
+    },
+    "Scan the QR code with the phone of the person to add, and sign in there as them." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan QR-koden med telefonen hos den, der skal tilføjes, og log ind der som vedkommende."
+          }
+        }
+      }
+    },
+    "Scan the code with the phone of the person to add and sign in there as them, or approve here if this phone is signed in as them." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan koden med telefonen hos den, der skal tilføjes, og log ind der som vedkommende – eller godkend her, hvis denne telefon er logget ind som vedkommende."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

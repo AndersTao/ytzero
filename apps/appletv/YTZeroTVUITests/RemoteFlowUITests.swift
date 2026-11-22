@@ -69,7 +69,9 @@ final class RemoteFlowUITests: XCTestCase {
         let refresh = app.buttons["Opdater"]
         let settings = app.buttons["Indstillinger"]
         let focused = { app.descendants(matching: .any).element(matching: NSPredicate(format: "hasFocus == true")) }
-        let onHeader = { refresh.hasFocus || settings.hasFocus || focused().label.hasPrefix("Opdaterer") }
+        // While a refresh runs the button is "Opdaterer…" and "Opdater" is not
+        // there at all: asking it for focus then fails the test instead of answering.
+        let onHeader = { (refresh.exists && refresh.hasFocus) || settings.hasFocus || focused().label.hasPrefix("Opdaterer") }
         sleep(5)
 
         remote.press(.up); sleep(1)

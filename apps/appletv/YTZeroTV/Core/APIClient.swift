@@ -72,8 +72,20 @@ nonisolated struct APIClient: Sendable {
     }
 
     /// The session token once the code is approved; `.pending` until then.
-    func exchange(deviceCode: String) async throws -> String {
-        let (data, response) = try await send(request("/auth/device/token", method: "POST", body: ["device_code": deviceCode]))
+    /// `link` adds a profile: the new session joins the one this client has,
+    /// so the server lets this device move between them.
+    func exchange(deviceCode: String, link: Bool = false) async throws -> String {
+        struct Body: Encodable, Sendable {
+            let deviceCode: String
+            let linkSession: Bool?
+
+            enum CodingKeys: String, CodingKey {
+                case deviceCode = "device_code"
+                case linkSession = "link_session"
+            }
+        }
+        let body = Body(deviceCode: deviceCode, linkSession: link ? true : nil)
+        let (data, response) = try await send(request("/auth/device/token", method: "POST", body: body))
         switch response.statusCode {
         case 428: throw APIError.pending
         case 400: throw APIError.expired
@@ -81,9 +93,96 @@ nonisolated struct APIClient: Sendable {
         }
     }
 
-    func isAuthenticated() async throws -> Bool {
+    func authStatus() async throws -> APIModels.AuthStatus {
         let (data, response) = try await send(request("/auth/status"))
-        return try decode(APIModels.AuthStatus.self, from: data, status: response.statusCode).authenticated
+        return try decode(APIModels.AuthStatus.self, from: data, status: response.statusCode)
+    }
+
+    func isAuthenticated() async throws -> Bool {
+        try await authStatus().authenticated
+    }
+
+    /// Ends this client's session on the server.
+    func signOut() async {
+        _ = try? await send(request("/auth/logout", method: "POST", body: [String: String]()))
+    }
+
+    // MARK: Profiles
+
+    /// The profiles paired on this device (each with a session of its own),
+    /// and which one this session is.
+    func deviceProfiles() async throws -> APIModels.ProfileList {
+        let (data, response) = try await send(request("/auth/device/profiles"))
+        return try decode(APIModels.ProfileList.self, from: data, status: response.statusCode)
+    }
+
+    /// Asks the server whether this device may move to another of its paired
+    /// profiles; the switch itself is using that profile's session.
+    func switchDeviceProfile(to id: Int, childLockPin: String?) async throws -> APIModels.SwitchResult {
+        struct Body: Encodable, Sendable {
+            let id: Int
+            let childLockPin: String?
+
+            enum CodingKeys: String, CodingKey {
+                case id
+                case childLockPin = "child_lock_pin"
+            }
+        }
+        return try await switchResult(request("/auth/device/profiles/switch", method: "POST", body: Body(id: id, childLockPin: childLockPin)))
+    }
+
+    /// Signs the profile out on this device, on the server too.
+    func removeDeviceProfile(_ id: Int) async throws {
+        let (data, response) = try await send(request("/auth/device/profiles/\(id)", method: "DELETE"))
+        if response.statusCode == 404 { return }
+        try expectSuccess(data, response)
+    }
+
+    /// Every profile, where this session may switch between them by itself.
+    func profiles() async throws -> APIModels.ProfileList {
+        let (data, response) = try await send(request("/profiles"))
+        return try decode(APIModels.ProfileList.self, from: data, status: response.statusCode)
+    }
+
+    /// Switches this session itself to another profile.
+    func switchProfile(to id: Int, childLockPin: String?, pin: String?) async throws -> APIModels.SwitchResult {
+        struct Body: Encodable, Sendable {
+            let id: Int
+            let childLockPin: String?
+            let pin: String?
+
+            enum CodingKeys: String, CodingKey {
+                case id, pin
+                case childLockPin = "child_lock_pin"
+            }
+        }
+        return try await switchResult(request("/profiles/switch", method: "POST", body: Body(id: id, childLockPin: childLockPin, pin: pin)))
+    }
+
+    /// Both switches answer alike. A 401 here is the PIN, not the session.
+    private func switchResult(_ request: URLRequest) async throws -> APIModels.SwitchResult {
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let body = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        switch status {
+        case 200..<300 where body["requires_relogin"] as? Bool != true: return .switched
+        case 401 where body["pin_locked"] as? Bool == true: return .locked
+        case 401 where body["pin_required"] as? Bool == true: return .needsPin
+        case 401 where body["error"] as? String == "invalid PIN": return .wrongPin
+        case 401: throw APIError.unauthorized
+        case 404: return .notPaired
+        default: throw APIError.server(status: status, message: body["error"] as? String)
+        }
+    }
+
+    /// A profile picture: `path` is the server's own, with its version query.
+    func avatarData(_ path: String) async throws -> Data {
+        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw APIError.invalidAddress }
+        var request = URLRequest(url: url, timeoutInterval: 20)
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        let (data, response) = try await send(request)
+        try expectSuccess(data, response)
+        return data
     }
 
     // MARK: Library

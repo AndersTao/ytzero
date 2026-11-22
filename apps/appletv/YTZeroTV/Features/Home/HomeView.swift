@@ -4,6 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppSession.self) private var session
     @State private var model = HomeModel()
+    @State private var profiles = ProfilesModel()
     @State private var playing: Video?
     @State private var showingSettings = false
     @Environment(\.scenePhase) private var scenePhase
@@ -37,6 +38,8 @@ struct HomeView: View {
             guard let client = session.client else { return }
             await model.loadFirstPage(client: client)
             focusedVideo = firstVideoID
+            // Who is watching, for the header: names and pictures come from the server.
+            await profiles.load(session: session)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, model.isStale, playing == nil {
@@ -56,9 +59,9 @@ struct HomeView: View {
                 reloadShelf()
             }
         }
-        .confirmationDialog("Settings", isPresented: $showingSettings) {
-            Button("Sign out", role: .destructive) { session.signOut() }
-            Button("Use another server", role: .destructive) { session.forgetServer() }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(model: profiles)
+                .environment(session)
         }
     }
 
@@ -66,6 +69,16 @@ struct HomeView: View {
         HStack {
             Text("YT Zero")
                 .font(.title2.bold())
+            if let profile = session.activeProfile, !profile.name.isEmpty {
+                // Who is watching; switched in Settings.
+                HStack(spacing: 16) {
+                    ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 44)
+                    Text(profile.name)
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.leading, 24)
+            }
             Spacer()
             // Never disabled: the server takes half a minute to check the
             // channels, and a focused button that turns disabled leaves the

@@ -74,7 +74,7 @@ export function registerAuthRoutes(api: Api, access: AuthRouteAccess): void {
 // ---------- authentication ----------
 
 const OIDC_FLOW_COOKIE = "ytzero_oidc_flow";
-registerDeviceAuthRoutes(api, { canSwitchProfiles, currentUserId });
+registerDeviceAuthRoutes(api, { canSwitchProfiles, currentUserId, sessionToken });
 registerAuthStatusRoute(api, { canDelegateProfileAdmins, canSwitchProfiles, hideOtherProfilesInPicker, isAdmin, isPrimaryUser, sessionToken });
 
 api.post("/auth/password/login", async (c) => {
