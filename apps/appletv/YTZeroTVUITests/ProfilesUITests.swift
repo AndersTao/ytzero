@@ -21,11 +21,11 @@ final class ProfilesUITests: XCTestCase {
         let remote = XCUIRemote.shared
         sleep(6)
 
-        // Up to the header, right to Settings.
+        // Up to the header, right to the profile picture.
         remote.press(.up); sleep(1)
         remote.press(.up); sleep(1)
         remote.press(.right); sleep(1)
-        XCTAssertTrue(app.buttons["Indstillinger"].hasFocus, "Right from Refresh should reach Settings")
+        XCTAssertTrue(app.buttons["profile-button"].hasFocus, "Right from Refresh should reach the profile picture")
         remote.press(.select)
         XCTAssertTrue(app.staticTexts["Hvem ser med?"].waitForExistence(timeout: 10), "Settings should open on the profiles")
         let child = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Lille'")).firstMatch
@@ -41,7 +41,9 @@ final class ProfilesUITests: XCTestCase {
         XCTAssertTrue(focused().label.hasPrefix("Lille"), "focus should reach the child's profile, is on \(focused().label)")
         remote.press(.select)
         // A new library for the child, with the child named in the header.
-        XCTAssertTrue(app.staticTexts["Lille"].waitForExistence(timeout: 10), "the header should show the child")
+        let picture = app.buttons["profile-button"]
+        let showsChild = NSPredicate(format: "label == 'Lille'")
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: showsChild, object: picture)], timeout: 10), .completed, "the profile picture should be the child's")
         sleep(4)
         snapshot("02-child-home")
 

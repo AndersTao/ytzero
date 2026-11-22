@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Who is watching first, since that is what Settings is mostly opened for:
-/// choose a profile, add one by pairing again, remove one. Then signing out
-/// and changing server. Shared by the Apple TV and the iPhone and iPad app.
+/// choose a profile, add one by pairing again, remove one. Then signing out,
+/// and on the iPhone and iPad also changing server. On the Apple TV it opens
+/// from the profile picture and holds only the profiles and signing out.
 struct SettingsView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
@@ -33,9 +34,11 @@ struct SettingsView: View {
                 } header: {
                     Text("Who is watching?")
                 } footer: {
+                    #if !os(tvOS)
                     if model.hasLoaded && !model.switchesInSession {
                         Text("Each profile signs in on its own: Add profile shows a code to approve on the phone of the person being added. Hold a profile to remove it.")
                     }
+                    #endif
                 }
                 Section {
                     Button("Sign out", role: .destructive) {
@@ -44,12 +47,19 @@ struct SettingsView: View {
                         Task { await client?.signOut() }
                         dismiss()
                     }
+                    // On the TV this list is opened from the profile picture
+                    // and holds only profiles and signing out; another server
+                    // is chosen from the sign-in screen.
+                    #if !os(tvOS)
                     Button("Use another server", role: .destructive) {
                         session.forgetServer()
                     }
+                    #endif
                 }
             }
+            #if !os(tvOS)
             .navigationTitle("Settings")
+            #endif
             #if os(iOS)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
