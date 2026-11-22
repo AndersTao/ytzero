@@ -15,7 +15,11 @@ En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-side
 - **Langt tryk på et kort:** Markér som set eller Afvis (i en playliste kun
   Markér som set).
 - **Øverst til højre:** Opdater, som tjekker abonnementerne og henter igen, og
-  billedet af den, der ser med, som åbner profilerne og log ud.
+  billedet af den, der ser med, som åbner "Hvem ser med?".
+- **Hvem ser med?** fylder hele skærmen: store runde profilbilleder, der
+  løfter sig med systemets lys og skygge, når fjernbetjeningen står på dem,
+  "Tilføj profil" til sidst og "Log ud" nedenunder. Et langt tryk på en profil
+  fjerner den fra Apple TV'et.
 - **Afspiller i fuld skærm:**
   - Højre spoler 30 s frem, og venstre 15 s tilbage.
   - Klik eller Play/Pause sætter pause og starter igen.
@@ -50,8 +54,8 @@ Byg den som Apple TV-appen. Vælg skemaet **YTZeroiOS**, og sæt
 
 ## Profiler
 
-Indstillinger starter med "Hvem ser med?": vælg en profil, og forsiden
-begynder forfra som den profil.
+"Hvem ser med?" (på Apple TV hele skærmen, på iPhone og iPad øverst i
+Indstillinger): vælg en profil, og forsiden begynder forfra som den profil.
 
 - **Server, hvor en session kan skifte profil** (intet login, fælles login,
   OIDC via gateway): listen er serverens profiler, og sessionen skifter selv.

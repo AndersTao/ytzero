@@ -67,6 +67,7 @@
 		BDCB810527D1D125D65DD161 /* PlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C696F5C8CE77C72E827D2A9 /* PlaylistView.swift */; };
 		BF9631016243C4D533560FD0 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EEA048127B291914DBB67DD0 /* InfoPlist.xcstrings */; };
 		CCD3D53ECB3B91C7921FAAC5 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935C1E5B61141FDA2C2D95CB /* APIError.swift */; };
+		CEBA92659B33D6483692777A /* ProfilePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA5BA805658EEBD7E174391 /* ProfilePickerView.swift */; };
 		D04ECD8468E6482D13819A3A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE312D45691D46B45EBE8B7 /* SettingsView.swift */; };
 		D4F9E73803DBCBF2BB58B440 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA6869E5E8D57AF63B4DBA1 /* HomeView.swift */; };
 		D5C8CC2F2BB2B55B837080E7 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A273A0861CEDEB84A088577 /* APIClient.swift */; };
@@ -126,6 +127,7 @@
 		7F7638AC4988AA6D8308B670 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
 		8D64197ADB2228CEEED29E34 /* ProfilesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesUITests.swift; sourceTree = "<group>"; };
 		8E6F034DC770F07251FE5AE1 /* Video.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Video.swift; sourceTree = "<group>"; };
+		8EA5BA805658EEBD7E174391 /* ProfilePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePickerView.swift; sourceTree = "<group>"; };
 		9261E6B8BE81C91F88595AD4 /* PairingModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingModel.swift; sourceTree = "<group>"; };
 		935C1E5B61141FDA2C2D95CB /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		9E8A982F7084ECA86DF6DD54 /* YTZeroTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YTZeroTVApp.swift; sourceTree = "<group>"; };
@@ -225,6 +227,7 @@
 			isa = PBXGroup;
 			children = (
 				498FCB0C904585E17D491E3E /* ProfileAvatar.swift */,
+				8EA5BA805658EEBD7E174391 /* ProfilePickerView.swift */,
 				DAE312D45691D46B45EBE8B7 /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -619,6 +622,7 @@
 				8FCF6146F5EF08392997B650 /* PlayerView.swift in Sources */,
 				BDCB810527D1D125D65DD161 /* PlaylistView.swift in Sources */,
 				7BF19F2A55A1962235C6A3AD /* ProfileAvatar.swift in Sources */,
+				CEBA92659B33D6483692777A /* ProfilePickerView.swift in Sources */,
 				6346590856DC369F083B817D /* ProfilesModel.swift in Sources */,
 				95714918071D910B17A21429 /* ProgressBar.swift in Sources */,
 				673D92E96A8736D4BB37EDA5 /* QRCode.swift in Sources */,

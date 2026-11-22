@@ -8,7 +8,7 @@ struct HomeView: View {
     let model: HomeModel
     @State private var profiles = ProfilesModel()
     @State private var playing: Video?
-    @State private var showingSettings = false
+    @State private var showingProfiles = false
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var focusedVideo: String?
 
@@ -61,8 +61,9 @@ struct HomeView: View {
                 reloadShelf()
             }
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(model: profiles)
+        // "Who is watching?" on the whole screen, as the Apple TV's own apps ask it.
+        .fullScreenCover(isPresented: $showingProfiles) {
+            ProfilePickerView(model: profiles)
                 .environment(session)
         }
     }
@@ -98,7 +99,7 @@ struct HomeView: View {
             // Who is watching, at the far right: the picture itself opens the
             // list of profiles to switch to.
             Button {
-                showingSettings = true
+                showingProfiles = true
             } label: {
                 profileBadge
             }

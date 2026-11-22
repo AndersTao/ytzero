@@ -1,6 +1,6 @@
 import XCTest
 
-/// The profile picker in Settings, with the remote: two profiles signed in,
+/// The full-screen profile picker, with the remote: two profiles signed in,
 /// moving to the child profile and asked for the child lock PIN to leave it.
 /// Needs a server whose two sessions are paired on the same device: the
 /// grown-up's (YTZERO_UITEST_TOKEN) and the child's (YTZERO_UITEST_TOKENS).
@@ -26,17 +26,19 @@ final class ProfilesUITests: XCTestCase {
         remote.press(.right); sleep(1)
         XCTAssertTrue(app.buttons["profile-button"].hasFocus, "Right from Refresh should reach the profile picture")
         remote.press(.select)
-        XCTAssertTrue(app.staticTexts["Hvem ser med?"].waitForExistence(timeout: 10), "Settings should open on the profiles")
+        XCTAssertTrue(app.staticTexts["Hvem ser med?"].waitForExistence(timeout: 10), "the profile picture should open the picker")
         let child = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Lille'")).firstMatch
         XCTAssertTrue(child.waitForExistence(timeout: 10), "the child's profile should be listed")
         XCTAssertTrue(app.buttons["Tilføj profil"].exists, "a profile can be added")
         snapshot("01-picker")
 
-        // The profile in use comes first; Down reaches the child's.
+        // The picker starts on the profile in use; Right reaches the child's.
         let focused = { app.descendants(matching: .any).element(matching: NSPredicate(format: "hasFocus == true")) }
+        XCTAssertFalse(focused().label.hasPrefix("Lille"), "the picker should start on the profile in use")
         for _ in 0..<4 where !focused().label.hasPrefix("Lille") {
-            remote.press(.down); sleep(1)
+            remote.press(.right); sleep(1)
         }
+        snapshot("01b-child-focused")
         XCTAssertTrue(focused().label.hasPrefix("Lille"), "focus should reach the child's profile, is on \(focused().label)")
         remote.press(.select)
         // A new library for the child, with the child named in the header.
@@ -53,7 +55,7 @@ final class ProfilesUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Hvem ser med?"].waitForExistence(timeout: 10))
         sleep(2)
         for _ in 0..<4 where !focused().label.hasPrefix("Far") {
-            remote.press(.up); sleep(1)
+            remote.press(.left); sleep(1)
         }
         remote.press(.select)
         // The PIN is asked for in an alert, with a secure field to type it in.
