@@ -192,6 +192,23 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
     }
 
+    /// The channels this profile follows.
+    func channels() async throws -> [APIModels.Channel] {
+        let (data, response) = try await send(request("/channels"))
+        return try decode(APIModels.ChannelList.self, from: data, status: response.statusCode).channels.filter { $0.followed != 0 }
+    }
+
+    /// One channel's videos, newest first, watched or not, as its page on the web shows them.
+    func channelVideos(_ channelID: String, page: Int) async throws -> [Video] {
+        let (data, response) = try await send(request("/feed", query: [
+            URLQueryItem(name: "channel", value: channelID),
+            URLQueryItem(name: "status", value: "all"),
+            URLQueryItem(name: "page", value: String(page)),
+            URLQueryItem(name: "limit", value: "40"),
+        ]))
+        return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
+    }
+
     /// The profile's own playlists, in the order the web client shows them.
     func playlists() async throws -> [APIModels.UserPlaylist] {
         let (data, response) = try await send(request("/playlists"))

@@ -619,6 +619,106 @@
         }
       }
     },
+    "Latest video" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seneste video"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navn"
+          }
+        }
+      }
+    },
+    "Recently subscribed" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senest abonneret"
+          }
+        }
+      }
+    },
+    "Most subscribers" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flest abonnenter"
+          }
+        }
+      }
+    },
+    "Sort" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortér"
+          }
+        }
+      }
+    },
+    "Search channels" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søg i kanaler"
+          }
+        }
+      }
+    },
+    "The channels could not be loaded." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kanalerne kunne ikke hentes."
+          }
+        }
+      }
+    },
+    "No subscriptions" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen abonnementer"
+          }
+        }
+      }
+    },
+    "%@ subscribers" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ abonnenter"
+          }
+        }
+      }
+    },
+    "No videos" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen videoer"
+          }
+        }
+      }
+    },
     "YT Zero" : {
       "shouldTranslate" : false
     },
