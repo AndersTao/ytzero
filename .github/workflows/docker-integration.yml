@@ -186,3 +186,17 @@ jobs:
       - name: Verify the published integration image manifest
         run: |
           docker buildx imagetools inspect "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:integration"
+
+  deploy:
+    # Optional: with a DEPLOY_WEBHOOK secret (a URL that redeploys the running
+    # stack, such as a Portainer stack webhook), the new image goes live as soon
+    # as it is published. Without the secret this job does nothing.
+    name: Redeploy the running stack
+    runs-on: ubuntu-latest
+    needs: merge
+    env:
+      DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK }}
+    steps:
+      - name: Call the deploy webhook
+        if: env.DEPLOY_WEBHOOK != ''
+        run: curl -fsS -X POST --retry 3 --retry-delay 10 --max-time 120 -o /dev/null -w "webhook answered %{http_code}\n" "$DEPLOY_WEBHOOK"
