@@ -29,17 +29,20 @@
     }
     #status { font-size: 28px; opacity: .55; min-height: 1.4em; }
     #status.error { color: #ff6b6b; opacity: .9; }
+    #back { margin-top: 28px; font-size: 26px; opacity: .55; }
+    #back[hidden] { display: none; }
   </style>
 </head>
 <body>
   <main>
     <div id="qr" class="empty"></div>
     <div class="text">
-      <h1>Log ind på YT Zero</h1>
-      <p>Scan QR-koden med telefonen, log ind og godkend TV'et.</p>
+      <h1 id="heading">Log ind på YT Zero</h1>
+      <p id="lead">Scan QR-koden med telefonen, log ind og godkend TV'et.</p>
       <p id="url"></p>
       <div id="code">····-····</div>
       <div id="status">Henter kode…</div>
+      <p id="back" hidden>Tryk Tilbage for at fortryde.</p>
     </div>
   </main>
 
@@ -2344,6 +2347,9 @@ var qrcode = function() {
   <script>
     (function () {
       var DEVICE_NAME = "LG TV";
+      // ?add=1: the TV is signed in already and adds another profile. The new
+      // session is linked to the one it has, so it can switch between them.
+      var ADDING = /[?&]add=1(&|$)/.test(window.location.search);
 
       var qrEl = document.getElementById("qr");
       var codeEl = document.getElementById("code");
@@ -2407,7 +2413,7 @@ var qrcode = function() {
       function poll(deviceCode, interval) {
         pollTimer = setTimeout(function () {
           // set_cookie: the server sets the usual HttpOnly session cookie itself.
-          post("/api/auth/device/token", { device_code: deviceCode, set_cookie: true })
+          post("/api/auth/device/token", { device_code: deviceCode, set_cookie: true, link_session: ADDING })
             .then(function (r) {
               if (r.status === 428) return poll(deviceCode, interval);   // venter stadig
               if (r.status === 400) return start();                      // koden er udløbet
@@ -2421,6 +2427,22 @@ var qrcode = function() {
               poll(deviceCode, interval * 2);
             });
         }, interval);
+      }
+
+      if (ADDING) {
+        document.getElementById("heading").textContent = "Tilføj en profil";
+        document.getElementById("lead").textContent = "Scan QR-koden med telefonen, og log ind som den, der skal tilføjes. TV'et kan derefter skifte mellem profilerne.";
+        document.getElementById("back").hidden = false;
+        // Back (or Escape) returns to the videos without adding anyone.
+        document.addEventListener("keydown", function (e) {
+          if (e.keyCode === 461 || e.keyCode === 27 || e.keyCode === 8) {
+            e.preventDefault();
+            stopTimers();
+            goHome();
+          }
+        });
+        start();
+        return;
       }
 
       // Allerede logget ind? Så direkte videre.

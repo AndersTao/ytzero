@@ -13,7 +13,9 @@ final class PairingModel {
 
     private(set) var state: State = .loading
 
-    func run(client: APIClient, deviceName: String = "Apple TV", onToken: (String) -> Void) async {
+    /// `link`: adding a profile on a device that is signed in already; the new
+    /// session joins the one `client` has.
+    func run(client: APIClient, deviceName: String = "Apple TV", link: Bool = false, onToken: (String) -> Void) async {
         while !Task.isCancelled {
             do {
                 let code = try await client.beginPairing(deviceName: deviceName)
@@ -22,7 +24,7 @@ final class PairingModel {
                 while ContinuousClock.now < deadline {
                     try await Task.sleep(for: .seconds(max(2, code.interval)))
                     do {
-                        onToken(try await client.exchange(deviceCode: code.deviceCode))
+                        onToken(try await client.exchange(deviceCode: code.deviceCode, link: link))
                         return
                     } catch APIError.pending {
                         continue

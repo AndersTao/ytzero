@@ -423,7 +423,7 @@ api.post("/profiles/switch", async (c) => {
   // Three wrong attempts lock the child profile.
   const current = await database.prepare("SELECT * FROM users WHERE id = ?").get(currentUserId(c)) as UserRow | null;
   if (current && current.id !== user.id && current.is_child === 1 && isChildLockEnabled()) {
-    if (!isSixDigitPin(child_lock_pin) || !(await verifyChildLockPin(child_lock_pin))) {
+    if (isPinLocked(current.id) || !isSixDigitPin(child_lock_pin) || !(await verifyChildLockPin(child_lock_pin))) {
       await registerChildLockFailure(current.id);
       publishAppEvent("child-status");
       publishAppEvent("child-watching");

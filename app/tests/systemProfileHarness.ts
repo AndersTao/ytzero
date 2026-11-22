@@ -3,6 +3,7 @@ const { api } = await import("../src/routes");
 const { createSession } = await import("../src/auth");
 const { database } = await import("../src/database");
 const { setSetting } = await import("../src/db");
+const { unlockChildProfile } = await import("../src/childTime");
 
 await setSetting("auth_method", "none");
 const token = await createSession(1, "account");
@@ -30,6 +31,13 @@ await database.prepare("UPDATE users SET is_child=1 WHERE id=?").run(profile.id)
 await setSetting("child_lock_enabled", "1");
 await setSetting("child_lock_pin_hash", await Bun.password.hash("246802"));
 assert.equal((await request("/profiles/switch", "POST", { id: 1 })).status, 401);
+// The third wrong PIN locks the child profile; while it is locked the right one is refused too.
+assert.equal((await request("/profiles/switch", "POST", { id: 1, child_lock_pin: "000000" })).status, 401);
+assert.equal((await request("/profiles/switch", "POST", { id: 1, child_lock_pin: "000000" })).status, 401);
+const lockedSwitch = await request("/profiles/switch", "POST", { id: 1, child_lock_pin: "246802" });
+assert.equal(lockedSwitch.status, 401);
+assert.equal((await lockedSwitch.json() as any).pin_locked, true);
+await unlockChildProfile(profile.id);
 assert.equal((await request("/profiles/switch", "POST", { id: 1, child_lock_pin: "246802" })).status, 200);
 
 await setSetting("auth_method", "per_profile");

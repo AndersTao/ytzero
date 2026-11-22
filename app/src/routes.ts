@@ -10,6 +10,7 @@ import { refreshAll } from "./refresher";
 import { log } from "./logger";
 import { registerRequestDiagnostics } from "./requestDiagnostics";
 import { isChildUser } from "./childTime";
+import { isChildLockEnabled, isSixDigitPin, verifyChildLockPin } from "./childLockPin";
 import { beginMutation, maintenanceStatus } from "./maintenance";
 import { permissionAreaForMutation, permissionAreasForSettings, PIN_PROTECTED_PERMISSION_AREAS, type ProfilePermissionArea } from "./profilePermissions";
 import { ensureAccessControl, hasPermission } from "./accessControl";
@@ -88,14 +89,6 @@ function parseCookies(header: string | undefined) {
   return cookies;
 }
 
-function isSixDigitPin(pin: unknown): pin is string {
-  return typeof pin === "string" && /^\d{6}$/.test(pin);
-}
-
-function isChildLockEnabled() {
-  return getSetting("child_lock_enabled") === "1" && Boolean(getSetting("child_lock_pin_hash"));
-}
-
 async function hasChildLockSession(c: any) {
   if (!isChildLockEnabled()) return true;
   const token = parseCookies(c.req.header("cookie"))[CHILD_LOCK_SESSION_COOKIE];
@@ -111,12 +104,6 @@ async function childLockStatus(c: any) {
     // other profiles and never hides settings from the primary/admin profile.
     locked: enabled && !isAdmin(c) && !await hasChildLockSession(c),
   };
-}
-
-async function verifyChildLockPin(pin: string) {
-  const hash = getSetting("child_lock_pin_hash");
-  if (!hash) return false;
-  return Bun.password.verify(pin, hash);
 }
 
 async function hashChildLockPin(pin: string) {

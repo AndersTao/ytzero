@@ -9,7 +9,8 @@
     A view-only television page: "Continue watching" and the Main feed (thumbnail,
     channel, title) and a full-screen player. Remote keys only:
       browse  arrows move, OK plays, OK held opens a menu (watched / reject),
-              Up from the top row reaches Refresh in the top right, Back leaves the app
+              Up from the top row reaches Refresh in the top right, Left from it the
+              profile button (switch profile, add one by pairing again), Back leaves the app
       player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
       numbers 1 rejects, 2 marks as watched, 3 refreshes: shortcuts, not shown.
               (The colour keys are taken by the LG TV itself.)
@@ -32,6 +33,46 @@
     /* Drawn, not a character: the TV's font has no ⟳ and showed a box. */
     #refreshBtn svg { width: 24px; height: 24px; }
     #refreshBtn.focused { background: #3a3a3a; color: var(--fg); box-shadow: 0 0 0 4px var(--accent); transform: scale(1.06); }
+    #topbar { gap: 20px; }
+    #profileBtn {
+      font: inherit; font-size: 24px; font-weight: 600; color: #d6d6d6; background: #272727;
+      border: 0; border-radius: 999px; padding: 6px 28px 6px 6px; cursor: pointer; outline: none;
+      display: inline-flex; align-items: center; gap: 14px;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    #profileBtn[hidden] { display: none; }
+    #profileBtn.focused { background: #3a3a3a; color: var(--fg); box-shadow: 0 0 0 4px var(--accent); transform: scale(1.06); }
+    .avatar {
+      flex: none; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #555;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: #fff;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    #profiles { position: fixed; inset: 0; z-index: 16; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.78); }
+    #profiles[hidden] { display: none; }
+    #profilesBox { width: 760px; padding: 40px 44px 32px; border-radius: 26px; background: #1f1f1f; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+    #profilesTitle { margin: 0 8px 24px; font-size: 32px; font-weight: 600; }
+    #profilesHint { margin: -12px 8px 24px; font-size: 24px; line-height: 1.35; color: var(--muted); }
+    #profilesHint:empty { display: none; }
+    .profile-item {
+      display: flex; align-items: center; gap: 22px; width: 100%; margin: 0 0 10px; padding: 16px 24px; border: 0; border-radius: 16px;
+      font: inherit; font-size: 30px; font-weight: 600; text-align: left; color: var(--fg); background: transparent;
+      cursor: pointer; outline: none;
+    }
+    .profile-item .avatar { width: 56px; height: 56px; font-size: 28px; }
+    .profile-item .note { margin-left: auto; font-size: 22px; font-weight: 600; color: var(--muted); }
+    .profile-item.action { padding-left: 28px; }
+    .profile-item.focused { background: #333; box-shadow: inset 0 0 0 4px var(--accent); }
+    .profile-item.danger.focused { box-shadow: inset 0 0 0 4px #e5484d; }
+    #pinRow { display: flex; gap: 16px; justify-content: center; margin: 12px 0 32px; }
+    .pin-digit {
+      width: 84px; height: 108px; border-radius: 16px; background: #2b2b2b;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 56px; font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+    .pin-digit.focused { box-shadow: inset 0 0 0 4px var(--accent); background: #333; }
+    #pinRow[hidden] { display: none; }
 
     #menu { position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.72); }
     #menu[hidden] { display: none; }
@@ -127,7 +168,7 @@
   </style>
 </head>
 <body>
-  <div id="topbar"><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
+  <div id="topbar"><button id="profileBtn" type="button" tabindex="-1" hidden><span class="avatar" id="profileAvatar"></span><span id="profileName"></span></button><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
   <div id="grid" role="list"></div>
@@ -140,6 +181,15 @@
       <button class="menu-item" type="button" tabindex="-1" data-act="watched">Markér som set</button>
       <button class="menu-item" type="button" tabindex="-1" data-act="reject">Afvis</button>
       <button class="menu-item" type="button" tabindex="-1" data-act="cancel">Annuller</button>
+    </div>
+  </div>
+
+  <div id="profiles" role="dialog" aria-modal="true" hidden>
+    <div id="profilesBox">
+      <div id="profilesTitle"></div>
+      <div id="profilesHint"></div>
+      <div id="pinRow" hidden></div>
+      <div id="profilesList"></div>
     </div>
   </div>
 
@@ -501,14 +551,16 @@
 
     // Exactly one thing carries the mark; clear whatever had it.
     function clearMark() {
-      var marked = document.querySelectorAll(".card.focused, #refreshBtn.focused");
+      var marked = document.querySelectorAll(".card.focused, #refreshBtn.focused, #profileBtn.focused");
       for (var k = 0; k < marked.length; k++) marked[k].classList.remove("focused");
     }
 
-    function focusTop(quiet) {
+    // The top row: the profile button (0) and Refresh (1). Up lands on Refresh.
+    function focusTop(quiet, index) {
       clearMark();
-      focus = { s: "top", i: 0 };
-      refreshBtn.classList.add("focused");
+      var i = index === 0 && !profileBtn.hidden ? 0 : 1;
+      focus = { s: "top", i: i };
+      (i === 0 ? profileBtn : refreshBtn).classList.add("focused");
       if (!quiet) window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -548,7 +600,7 @@
           if (i >= 0) { setFocus(name, i, true); return; }
         }
       }
-      if (focus.s === "top") focusTop(true);
+      if (focus.s === "top") focusTop(true, focus.i);
       else if (sections[focus.s].cards.length) setFocus(focus.s, focus.i, true);
       else if (hasSection("cont")) setFocus("cont", 0, true);
       else if (hasSection("grid")) setFocus("grid", 0, true);
@@ -585,8 +637,10 @@
             if (hasSection("cont")) setFocus("cont", 0);
             else if (hasSection("grid")) setFocus("grid", 0);
             return true;
-          case KEY.LEFT: case KEY.RIGHT: case KEY.UP: return true;
-          case KEY.ENTER: refresh(); return true;
+          case KEY.LEFT: focusTop(true, 0); return true;
+          case KEY.RIGHT: focusTop(true, 1); return true;
+          case KEY.UP: return true;
+          case KEY.ENTER: if (i === 0) openProfiles(); else refresh(); return true;
         }
         return false;
       }
@@ -744,6 +798,331 @@
       }
       return false;
     }
+
+
+    // ---------- Profiles ----------
+
+    /*
+     * Who is watching, and switching to another profile. Where the instance
+     * lets a session switch by itself (no login, a shared login, OIDC through
+     * a gateway) this is the web client's profile switch. Where each session
+     * is pinned to one profile, the TV holds one session per profile, each
+     * paired on its own ("Tilføj profil" runs the pairing page again), and
+     * the server swaps the session cookie for another of them. Leaving a
+     * child profile asks for the child lock PIN either way.
+     */
+    var profileBtn = document.getElementById("profileBtn");
+    var profilesEl = document.getElementById("profiles");
+    var profilesListEl = document.getElementById("profilesList");
+    var pinRowEl = document.getElementById("pinRow");
+    var profileState = { canSwitch: false, activeId: 0, profiles: [] };
+    var profilesOpen = false;
+    var profilesOpenedAt = 0;
+    var profilesView = "list"; // list | remove | pin
+    var profileItems = [];
+    var profileIndex = 0;
+    var profilesBusy = false;
+    var pin = null; // { target, kind: "child" | "profile", childPin, digits, at, onRow }
+
+    // Unlike api(), a 401 here is an answer (a PIN), not a lost session.
+    function send(method, path, body) {
+      var options = { method: method, credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json" } };
+      if (body) options.body = JSON.stringify(body);
+      return fetch("/api" + path, options).then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (b) { return { status: r.status, body: b || {} }; });
+      });
+    }
+
+    function activeProfile() {
+      for (var k = 0; k < profileState.profiles.length; k++) {
+        if (profileState.profiles[k].id === profileState.activeId) return profileState.profiles[k];
+      }
+      return null;
+    }
+
+    function avatarEl(p, className) {
+      var el = document.createElement("span");
+      el.className = className || "avatar";
+      el.style.background = p.color || "#555";
+      var initial = document.createTextNode(String(p.name || "?").trim().charAt(0).toUpperCase() || "?");
+      if (p.avatar) {
+        var img = document.createElement("img");
+        img.alt = "";
+        img.onerror = function () { el.removeChild(img); el.appendChild(initial); };
+        img.src = p.avatar;
+        el.appendChild(img);
+      } else {
+        el.appendChild(initial);
+      }
+      return el;
+    }
+
+    function loadProfiles() {
+      return send("GET", "/auth/status").then(function (status) {
+        var canSwitch = Boolean(status.body.can_switch);
+        var hideOthers = Boolean(status.body.hide_other_profiles);
+        return send("GET", canSwitch ? "/profiles" : "/auth/device/profiles").then(function (r) {
+          if (r.status !== 200) return;
+          var activeId = r.body.active_id;
+          var list = (r.body.profiles || []).map(function (p) {
+            return { id: p.id, name: p.name || "", avatar: p.avatar || "", color: p.avatar_color || "", child: Boolean(p.is_child), hasPin: Boolean(p.has_pin) };
+          }).filter(function (p) { return !(canSwitch && hideOthers) || p.id === activeId; });
+          profileState = { canSwitch: canSwitch, activeId: activeId, profiles: list };
+          var active = activeProfile();
+          if (!active) return;
+          var avatar = avatarEl(active);
+          avatar.id = "profileAvatar";
+          profileBtn.replaceChild(avatar, document.getElementById("profileAvatar"));
+          document.getElementById("profileName").textContent = active.name;
+          profileBtn.hidden = false;
+        });
+      }).catch(function () {});
+    }
+
+    function profileItem(label, run, options) {
+      options = options || {};
+      var b = document.createElement("button");
+      b.type = "button";
+      b.tabIndex = -1;
+      b.className = "profile-item" + (options.profile ? "" : " action") + (options.danger ? " danger" : "");
+      if (options.profile) b.appendChild(avatarEl(options.profile));
+      var text = document.createElement("span");
+      text.textContent = label;
+      b.appendChild(text);
+      if (options.note) {
+        var note = document.createElement("span");
+        note.className = "note";
+        note.textContent = options.note;
+        b.appendChild(note);
+      }
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (Date.now() - profilesOpenedAt > 500) run();
+      });
+      profileItems.push({ el: b, run: run });
+      profilesListEl.appendChild(b);
+    }
+
+    function markProfile(index) {
+      profileIndex = Math.max(0, Math.min(profileItems.length - 1, index));
+      var onPin = pin && profilesView === "pin" && pin.onRow;
+      profileItems.forEach(function (item, k) { item.el.classList.toggle("focused", !onPin && k === profileIndex); });
+      renderPinDigits();
+    }
+
+    function renderPinDigits() {
+      if (!pin || profilesView !== "pin") return;
+      var boxes = pinRowEl.children;
+      for (var k = 0; k < boxes.length; k++) {
+        boxes[k].textContent = pin.digits[k] == null ? "–" : "•";
+        boxes[k].classList.toggle("focused", pin.onRow && k === pin.at);
+      }
+      // The digit being chosen with Up/Down shows; the others stay hidden.
+      if (pin.onRow && pin.digits[pin.at] != null) boxes[pin.at].textContent = String(pin.digits[pin.at]);
+    }
+
+    function renderProfiles(focusIndex) {
+      profileItems = [];
+      profilesListEl.innerHTML = "";
+      pinRowEl.hidden = profilesView !== "pin";
+      var title = document.getElementById("profilesTitle");
+      var hint = document.getElementById("profilesHint");
+      hint.textContent = "";
+      if (profilesView === "pin") {
+        title.textContent = pin.kind === "child" ? "Børnesikringens PIN" : "PIN for " + pin.target.name;
+        hint.textContent = pin.kind === "child"
+          ? "En voksen skal indtaste PIN-koden for at forlade børneprofilen."
+          : "Indtast profilens PIN-kode.";
+        pinRowEl.innerHTML = "";
+        for (var k = 0; k < 6; k++) {
+          var box = document.createElement("div");
+          box.className = "pin-digit";
+          pinRowEl.appendChild(box);
+        }
+        profileItem("Annuller", function () { profilesView = "list"; pin = null; renderProfiles(); });
+      } else if (profilesView === "remove") {
+        title.textContent = "Fjern profil";
+        hint.textContent = "Profilen logges ud på dette TV. Du kan tilføje den igen senere.";
+        profileState.profiles.forEach(function (p) {
+          if (p.id !== profileState.activeId) profileItem(p.name, function () { removeProfile(p); }, { profile: p, danger: true });
+        });
+        profileItem("Tilbage", function () { profilesView = "list"; renderProfiles(); });
+      } else {
+        title.textContent = "Hvem ser med?";
+        if (!profileState.canSwitch && profileState.profiles.length < 2) {
+          hint.textContent = "Tilføj en profil for at kunne skifte mellem flere på dette TV.";
+        }
+        profileState.profiles.forEach(function (p) {
+          profileItem(p.name, function () { switchProfile(p); }, { profile: p, note: p.id === profileState.activeId ? "I brug" : "" });
+        });
+        if (!profileState.canSwitch) {
+          profileItem("Tilføj profil", addProfile);
+          if (profileState.profiles.length > 1) profileItem("Fjern profil", function () { profilesView = "remove"; renderProfiles(); });
+        }
+        profileItem("Luk", leaveProfiles);
+      }
+      var start = focusIndex;
+      if (start == null) {
+        start = 0;
+        if (profilesView === "list") {
+          // Start on the profile in use, so OK by mistake changes nothing.
+          profileState.profiles.forEach(function (p, k) { if (p.id === profileState.activeId) start = k; });
+        }
+      }
+      markProfile(start);
+    }
+
+    function openProfiles() {
+      if (profilesOpen || current || menuOpen) return;
+      profilesOpen = true;
+      profilesOpenedAt = Date.now();
+      profilesView = "list";
+      pin = null;
+      renderProfiles();
+      profilesEl.hidden = false;
+      // Back closes it through history, like the menu.
+      history.pushState({ tvProfiles: true }, "");
+      loadProfiles().then(function () { if (profilesOpen && profilesView === "list") renderProfiles(profileIndex); });
+    }
+
+    function leaveProfiles() { if (profilesOpen) history.back(); }
+
+    function closeProfiles() {
+      profilesOpen = false;
+      profilesEl.hidden = true;
+      pin = null;
+      restoreFocus(null);
+    }
+
+    function askPin(target, kind, childPin) {
+      pin = { target: target, kind: kind, childPin: childPin || null, digits: [null, null, null, null, null, null], at: 0, onRow: true };
+      profilesView = "pin";
+      renderProfiles(0);
+    }
+
+    function submitPin() {
+      if (!pin) return;
+      for (var k = 0; k < 6; k++) if (pin.digits[k] == null) { pin.at = k; renderPinDigits(); return; }
+      var code = pin.digits.join("");
+      if (pin.kind === "child") switchProfile(pin.target, code, null);
+      else switchProfile(pin.target, pin.childPin, code);
+    }
+
+    function switchProfile(p, childPin, profilePin) {
+      if (p.id === profileState.activeId) { leaveProfiles(); return; }
+      if (profilesBusy) return;
+      profilesBusy = true;
+      var body = { id: p.id };
+      if (childPin) body.child_lock_pin = childPin;
+      if (profilePin) body.pin = profilePin;
+      send("POST", profileState.canSwitch ? "/profiles/switch" : "/auth/device/profiles/switch", body).then(function (r) {
+        profilesBusy = false;
+        if (r.status === 200 && !r.body.requires_relogin) {
+          toast("Skifter til " + p.name + "…", 0);
+          // Everything on the page belonged to the other profile: start over.
+          window.location.reload();
+          return;
+        }
+        if (r.status === 401) {
+          if (r.body.pin_locked) {
+            toast("Børneprofilen er låst. En voksen kan låse den op.", 4000);
+            profilesView = "list"; pin = null; renderProfiles();
+            return;
+          }
+          var active = activeProfile();
+          if (!childPin && (r.body.pin_required || (active && active.child))) { askPin(p, "child", null); return; }
+          if (profileState.canSwitch && p.hasPin && !profilePin) { askPin(p, "profile", childPin); return; }
+          toast("Forkert PIN-kode");
+          if (profilePin) askPin(p, "profile", childPin); else askPin(p, "child", null);
+          return;
+        }
+        if (r.status === 404) {
+          toast("Profilen er ikke logget ind på dette TV længere");
+          profilesView = "list"; pin = null;
+          loadProfiles().then(function () { if (profilesOpen) renderProfiles(); });
+          return;
+        }
+        toast("Det lykkedes ikke – prøv igen");
+      }).catch(function () {
+        profilesBusy = false;
+        toast("Det lykkedes ikke – prøv igen");
+      });
+    }
+
+    // The pairing page again, approved on the phone of whoever is added. It
+    // links the new session to this TV's and comes back here as that profile.
+    function addProfile() { window.location.replace("/tv-login.html?add=1"); }
+
+    function removeProfile(p) {
+      if (profilesBusy) return;
+      profilesBusy = true;
+      send("DELETE", "/auth/device/profiles/" + encodeURIComponent(p.id)).then(function (r) {
+        profilesBusy = false;
+        if (r.status !== 200 && r.status !== 404) { toast("Det lykkedes ikke – prøv igen"); return; }
+        toast(p.name + " er fjernet fra dette TV");
+        profilesView = "list";
+        return loadProfiles().then(function () { if (profilesOpen) renderProfiles(); });
+      }).catch(function () {
+        profilesBusy = false;
+        toast("Det lykkedes ikke – prøv igen");
+      });
+    }
+
+    function digitOf(code) {
+      if (code >= 48 && code <= 57) return code - 48;
+      if (code >= 96 && code <= 105) return code - 96;
+      return null;
+    }
+
+    function pinKey(code) {
+      var digit = digitOf(code);
+      if (digit != null) {
+        var at = pin.at;
+        pin.digits[at] = digit;
+        if (at < 5) pin.at = at + 1;
+        renderPinDigits();
+        // The sixth digit typed sends it, as a PIN pad does.
+        if (at === 5 && pin.digits.every(function (d) { return d != null; })) submitPin();
+        return true;
+      }
+      var value = pin.digits[pin.at];
+      switch (code) {
+        case KEY.UP: pin.digits[pin.at] = value == null ? 0 : (value + 1) % 10; renderPinDigits(); return true;
+        case KEY.DOWN:
+          if (value == null) { pin.onRow = false; markProfile(0); return true; }
+          pin.digits[pin.at] = (value + 9) % 10; renderPinDigits(); return true;
+        case KEY.LEFT: pin.at = Math.max(0, pin.at - 1); renderPinDigits(); return true;
+        case KEY.RIGHT: pin.at = Math.min(5, pin.at + 1); renderPinDigits(); return true;
+        case KEY.ENTER: submitPin(); return true;
+        case KEY.BACKSPACE: pin.digits[pin.at] = null; pin.at = Math.max(0, pin.at - 1); renderPinDigits(); return true;
+      }
+      return false;
+    }
+
+    function profilesKey(code, e) {
+      // The OK that opened the list, still held or repeating, must not pick from it.
+      if (code === KEY.ENTER && (e.repeat || Date.now() - profilesOpenedAt < 500)) return true;
+      if (code === KEY.BACK) {
+        // As in the menu: webOS may step back by itself.
+        clearTimeout(backTimer);
+        backTimer = setTimeout(function () { if (profilesOpen) history.back(); }, 300);
+        return true;
+      }
+      if (code === KEY.ESC) { leaveProfiles(); return true; }
+      if (pin && profilesView === "pin" && pin.onRow && pinKey(code)) return true;
+      switch (code) {
+        case KEY.UP:
+          if (pin && profilesView === "pin" && profileIndex === 0) { pin.onRow = true; markProfile(0); return true; }
+          markProfile(profileIndex - 1); return true;
+        case KEY.DOWN: markProfile(profileIndex + 1); return true;
+        case KEY.ENTER: if (profileItems[profileIndex]) profileItems[profileIndex].run(); return true;
+        case KEY.BACKSPACE: leaveProfiles(); return true;
+      }
+      return true; // nothing else reaches the page while the list is open
+    }
+
+    profileBtn.addEventListener("click", function () { focusTop(true, 0); openProfiles(); });
+    profilesEl.addEventListener("click", function (e) { if (e.target === profilesEl) leaveProfiles(); });
 
     // ---------- Player ----------
 
@@ -947,7 +1326,8 @@
     document.getElementById("clickLayer").addEventListener("click", togglePlay);
     window.addEventListener("popstate", function () {
       clearTimeout(backTimer);
-      if (menuOpen) closeMenu();
+      if (profilesOpen) closeProfiles();
+      else if (menuOpen) closeMenu();
       else closePlayer();
     });
 
@@ -971,6 +1351,10 @@
 
     document.addEventListener("keydown", function (e) {
       var code = e.keyCode;
+      if (profilesOpen) {
+        if (profilesKey(code, e)) e.preventDefault();
+        return;
+      }
       if (menuOpen) {
         // The OK still held from opening the menu must not pick its first line.
         if (code === KEY.ENTER && okIsRepeat(e)) { e.preventDefault(); return; }
@@ -997,7 +1381,7 @@
       okDown = false;
       okHeld = false;
       clearTimeout(okTimer);
-      if (pressed && !current && !menuOpen) openPlayer();
+      if (pressed && !current && !menuOpen && !profilesOpen) openPlayer();
     });
 
     /*
@@ -1011,10 +1395,11 @@
     document.addEventListener("mousemove", function (e) {
       var moved = !pointerAt || pointerAt.x !== e.screenX || pointerAt.y !== e.screenY;
       pointerAt = { x: e.screenX, y: e.screenY };
-      if (!moved || current || menuOpen) return;
+      if (!moved || current || menuOpen || profilesOpen) return;
       var target = e.target && e.target.closest ? e.target : null;
       if (!target) return;
-      if (target.closest("#refreshBtn")) { if (focus.s !== "top") focusTop(true); return; }
+      if (target.closest("#profileBtn")) { if (focus.s !== "top" || focus.i !== 0) focusTop(true, 0); return; }
+      if (target.closest("#refreshBtn")) { if (focus.s !== "top" || focus.i !== 1) focusTop(true, 1); return; }
       var card = target.closest(".card");
       if (!card) return;
       var name = card.dataset.section;
@@ -1025,6 +1410,7 @@
     window.addEventListener("pagehide", function () { saveProgress(true); });
 
     loadContinue().then(loadMore);
+    loadProfiles();
   })();
   </script>
 </body>

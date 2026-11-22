@@ -82,7 +82,10 @@ describe("HTTP route manifest", () => {
     const relayRoute = "GET /videos/:id/relay";
     // The same in full quality, as one HLS presentation of the separate tracks.
     const relayHlsRoute = "GET /videos/:id/relay-hls/:file";
-    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, ...providerRoutes, ...invidiousRoutes, ...dailymotionRoutes];
+    // A TV holding one paired session per profile moves between them.
+    const deviceProfileRoutes = ["GET /auth/device/profiles", "POST /auth/device/profiles/switch", "DELETE /auth/device/profiles/:id"];
+    for (const route of deviceProfileRoutes) expect(routes).toContain(route);
+    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, ...providerRoutes, ...deviceProfileRoutes, ...invidiousRoutes, ...dailymotionRoutes];
     const publicShareManagementRoutes = [
       "GET /public-shares", "PUT /public-shares/policy", "POST /public-shares",
       "PATCH /public-shares/:id", "POST /public-shares/:id/rotate", "DELETE /public-shares/:id",

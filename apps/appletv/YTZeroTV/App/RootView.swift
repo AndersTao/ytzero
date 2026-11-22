@@ -11,7 +11,9 @@ struct RootView: View {
         case .needsPairing:
             PairingView()
         case .ready:
+            // A new library for each profile: nothing of the one before stays.
             HomeView()
+                .id(session.generation)
         }
     }
 }
