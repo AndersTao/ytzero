@@ -65,20 +65,21 @@ struct HomeView: View {
         }
     }
 
+    @ViewBuilder
+    private var profileBadge: some View {
+        if let profile = session.activeProfile {
+            ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 64)
+        } else {
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var header: some View {
-        HStack {
+        HStack(spacing: 28) {
             Text("YT Zero")
                 .font(.title2.bold())
-            if let profile = session.activeProfile, !profile.name.isEmpty {
-                // Who is watching; switched in Settings.
-                HStack(spacing: 16) {
-                    ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 44)
-                    Text(profile.name)
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.leading, 24)
-            }
             Spacer()
             // Never disabled: the server takes half a minute to check the
             // channels, and a focused button that turns disabled leaves the
@@ -92,10 +93,18 @@ struct HomeView: View {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
             }
-            Button("Settings", systemImage: "gearshape") {
+            // Who is watching, at the far right: the picture itself opens the
+            // list of profiles to switch to.
+            Button {
                 showingSettings = true
+            } label: {
+                profileBadge
             }
-            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel(Text(session.activeProfile?.name.isEmpty == false ? session.activeProfile!.name : String(localized: "Profiles")))
+            .accessibilityHint(Text("Switch profile"))
+            .accessibilityIdentifier("profile-button")
         }
         // Its own focus section: Up from any card in the grid lands here, not
         // only from a card that happens to sit below a button.
