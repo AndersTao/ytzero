@@ -5,3 +5,6 @@ YTZERO_DEVELOPMENT_TEAM = ABCDE12345
 YTZERO_BUNDLE_ID = com.example.ytzero.appletv
 // The same for the iPhone and iPad app.
 YTZERO_IOS_BUNDLE_ID = com.example.ytzero.ios
+// Optional: the App Group the Apple TV app and its Top Shelf share.
+// Defaults to group.<YTZERO_BUNDLE_ID>.
+// YTZERO_APP_GROUP = group.com.example.ytzero.appletv

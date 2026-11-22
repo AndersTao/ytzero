@@ -20,30 +20,41 @@ struct MainTabView: View {
     @State private var selection: Place = .main
     @State private var playlists: [APIModels.UserPlaylist] = []
     @State private var home = HomeModel()
+    /// A video the Top Shelf asked to play.
+    @State private var playRequest: String?
 
     var body: some View {
         // At launch the sidebar shows for a moment and then folds away onto
         // the screen beside it, but only if that screen has something to
         // focus, and not if its places change meanwhile. So Main and the
         // playlists are loaded first, and the remote ends up on the first video.
-        if home.hasLoaded {
-            tabs
-        } else {
-            ProgressView()
-                .task {
-                    guard let client = session.client else { return }
-                    async let playlistsLoaded: Void = loadPlaylists()
-                    await home.loadFirstPage(client: client)
-                    await playlistsLoaded
-                    if home.needsSignIn { session.signOut() }
-                }
+        Group {
+            if home.hasLoaded {
+                tabs
+            } else {
+                ProgressView()
+                    .task {
+                        guard let client = session.client else { return }
+                        async let playlistsLoaded: Void = loadPlaylists()
+                        await home.loadFirstPage(client: client)
+                        await playlistsLoaded
+                        if home.needsSignIn { session.signOut() }
+                    }
+            }
+        }
+        // Select or Play on the Top Shelf: Main plays the video, also when
+        // the app was not running and is still loading.
+        .onOpenURL { url in
+            guard let id = TopShelfSnapshot.videoID(from: url) else { return }
+            selection = .main
+            playRequest = id
         }
     }
 
     private var tabs: some View {
         TabView(selection: $selection) {
             Tab("Main", systemImage: "house", value: Place.main) {
-                HomeView(model: home)
+                HomeView(model: home, playRequest: $playRequest)
             }
             Tab("Recommendations", systemImage: "sparkles", value: Place.recommendations) {
                 ComingSoonView(title: "Recommendations", systemImage: "sparkles")

@@ -4,5 +4,8 @@
 YTZERO_BUNDLE_ID = app.ytzero.appletv
 YTZERO_IOS_BUNDLE_ID = app.ytzero.ios
 YTZERO_DEVELOPMENT_TEAM =
+// Shared by the Apple TV app and its Top Shelf. Follows the bundle id, so it
+// is your own once YTZERO_BUNDLE_ID is; set it in Local.xcconfig to choose another.
+YTZERO_APP_GROUP = group.$(YTZERO_BUNDLE_ID)
 
 #include? "Local.xcconfig"
