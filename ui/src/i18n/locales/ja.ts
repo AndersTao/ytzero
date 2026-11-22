@@ -551,6 +551,7 @@ export const ja: Locale = {
     "historyEmpty": "それでも新しいアプリの匂いがあります。",
     "historyEmptyHint": "シングルプレイではありません。 どこからでもスタート。",
     "historyToday": "今日更新",
+    "feedOlder": "それ以前",
     "historyYesterday": "昨日",
     "historyDayBeforeYesterday": "昨日の前日",
     "historyDaysAgo": "{days} 日前",

@@ -111,31 +111,35 @@ struct HomeView: View {
         .focusSection()
     }
 
+    /// A heading for each day with a line to the edge, as "Main" had, and
+    /// the day's videos under it. Each day is a full-width focus section of
+    /// its own, so Down from a short row still reaches the next day.
     private var mainGrid: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            if !model.continueWatching.isEmpty {
-                // As on the LG page: a line from the title to the edge keeps
-                // what is under way apart from everything else.
-                HStack(spacing: 28) {
-                    Text("Main")
-                        .font(.headline)
-                    Rectangle()
-                        .fill(.white.opacity(0.18))
-                        .frame(height: 2)
-                }
-            }
-            LazyVGrid(columns: columns, spacing: 56) {
-                ForEach(model.main) { video in
-                    card(for: video)
-                        .task {
-                            guard let client = session.client else { return }
-                            await model.videoAppeared(video, client: client)
+        VStack(alignment: .leading, spacing: 56) {
+            ForEach(model.mainByDay) { day in
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack(spacing: 28) {
+                        Text(verbatim: day.title)
+                            .font(.headline)
+                        Rectangle()
+                            .fill(.white.opacity(0.18))
+                            .frame(height: 2)
+                    }
+                    LazyVGrid(columns: columns, spacing: 56) {
+                        ForEach(day.videos) { video in
+                            card(for: video)
+                                .task {
+                                    guard let client = session.client else { return }
+                                    await model.videoAppeared(video, client: client)
+                                }
                         }
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .focusSection()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .focusSection()
     }
 
     /// Where the remote starts: the first video, not the Refresh button.

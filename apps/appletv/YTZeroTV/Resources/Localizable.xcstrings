@@ -489,6 +489,26 @@
         }
       }
     },
+    "Today" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I dag"
+          }
+        }
+      }
+    },
+    "Older" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ældre"
+          }
+        }
+      }
+    },
     "YT Zero" : {
       "shouldTranslate" : false
     }

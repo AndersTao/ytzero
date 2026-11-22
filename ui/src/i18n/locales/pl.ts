@@ -473,6 +473,7 @@ export const pl: Locale = {
     historyEmpty: "Tu jeszcze pachnie nowością.",
     historyEmptyHint: "Ani jednego odtworzenia. Od czegoś trzeba zacząć.",
     historyToday: "Dzisiaj",
+    feedOlder: "Starsze",
     historyYesterday: "Wczoraj",
     historyDayBeforeYesterday: "Przedwczoraj",
     historyDaysAgo: "{days} dni temu",

@@ -79,6 +79,7 @@
 }
 
 .time-section { margin-bottom: 8px; }
+.feed-day-section + .feed-day-section { margin-top: 32px; }
 .time-section-header {
   display: flex; align-items: center; gap: 8px;
   font-size: 14px; font-weight: 600; margin-bottom: 14px; color: var(--text-2);

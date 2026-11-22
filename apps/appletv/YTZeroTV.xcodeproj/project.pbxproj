@@ -44,9 +44,11 @@
 		95C178331387B696D5B3E239 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453095E065922EC6521795E8 /* HomeView.swift */; };
 		9A2B074C8C920D53C2F86AC4 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = E4970AE5A60B47F9E03DBD67 /* Localizable.xcstrings */; };
 		9A982959F74BFDF9BE0C4966 /* ThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E5BBDB6FE84B3E6829A48C /* ThumbnailCache.swift */; };
+		9DEC550C4803DF3AA59C1D50 /* DayGroups.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C6C33091E391B595350B86 /* DayGroups.swift */; };
 		A0E698E94497F6D40C789736 /* PlaybackTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 104E8568EE1BEB6646433D37 /* PlaybackTime.swift */; };
 		A1D6DFCF146A5A4B041D8199 /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7638AC4988AA6D8308B670 /* PairingView.swift */; };
 		A392C9C3536A325209D77EE3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B260288B1DF469CB6DA178DA /* Assets.xcassets */; };
+		A4A6AF15D9F31C3BD1E559C9 /* DayGroups.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C6C33091E391B595350B86 /* DayGroups.swift */; };
 		A7ABD25DD33A310EDEB24E9A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70260E8723718AA433731D2B /* RootView.swift */; };
 		A9F477620D456EC37D9D6ECB /* Thumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38BA03DEC7C6FDB40049ADF /* Thumbnail.swift */; };
 		AC00C05C09A15778AAAA1D4A /* LiveBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F14179E2C77DF98908F235 /* LiveBadge.swift */; };
@@ -114,6 +116,7 @@
 		B486D70CC870516246D0DC18 /* YTZeroiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C918DEB7589DAA31AEF3E6A2 /* PlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerLayerView.swift; sourceTree = "<group>"; };
 		D1829D1ADAD013419FDA5EEE /* YTZeroTV.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8C6C33091E391B595350B86 /* DayGroups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGroups.swift; sourceTree = "<group>"; };
 		D9F14179E2C77DF98908F235 /* LiveBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveBadge.swift; sourceTree = "<group>"; };
 		DB8BA03B68DF52B7EAD16554 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationBadge.swift; sourceTree = "<group>"; };
@@ -271,6 +274,7 @@
 		C4E0DB837CBE8CEB5AA8614D /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				D8C6C33091E391B595350B86 /* DayGroups.swift */,
 				DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */,
 				ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */,
 				0BA6869E5E8D57AF63B4DBA1 /* HomeView.swift */,
@@ -505,6 +509,7 @@
 				CCD3D53ECB3B91C7921FAAC5 /* APIError.swift in Sources */,
 				F38CF3CF6422C113C5951689 /* APIModels.swift in Sources */,
 				744AEE2B701376CE4486E575 /* AppSession.swift in Sources */,
+				A4A6AF15D9F31C3BD1E559C9 /* DayGroups.swift in Sources */,
 				181272339AF09923C8FF98D4 /* DurationBadge.swift in Sources */,
 				D8ED259D4462E710355D1396 /* HomeModel.swift in Sources */,
 				95C178331387B696D5B3E239 /* HomeView.swift in Sources */,
@@ -535,6 +540,7 @@
 				49183A9D50C8AF01BFC8A7F1 /* APIError.swift in Sources */,
 				7307E694F49FFE0F16C5EE49 /* APIModels.swift in Sources */,
 				FC349A29C312B3F7054D9444 /* AppSession.swift in Sources */,
+				9DEC550C4803DF3AA59C1D50 /* DayGroups.swift in Sources */,
 				43A6869FE354D290B8A2DC7E /* DurationBadge.swift in Sources */,
 				4550D3D210F2A7785BF2CC56 /* HomeModel.swift in Sources */,
 				D4F9E73803DBCBF2BB58B440 /* HomeView.swift in Sources */,

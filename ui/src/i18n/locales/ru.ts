@@ -551,6 +551,7 @@ export const ru: Locale = {
     "historyEmpty": "Всё ещё пахнет новым приложением.",
     "historyEmptyHint": "Ещё ни одного просмотра. С чего-то надо начинать.",
     "historyToday": "Сегодня",
+    "feedOlder": "Ранее",
     "historyYesterday": "Вчера",
     "historyDayBeforeYesterday": "Позавчера",
     "historyDaysAgo": "{days} дн. назад",

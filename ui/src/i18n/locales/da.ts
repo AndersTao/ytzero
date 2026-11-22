@@ -1088,6 +1088,7 @@ export const da: Locale = {
     "historyEmpty": "Lugter stadig af ny app.",
     "historyEmptyHint": "Ikke en eneste afspilning endnu. Man skal jo starte et sted.",
     "historyToday": "I dag",
+    "feedOlder": "Ældre",
     "historyYesterday": "I går",
     "historyDayBeforeYesterday": "I forgårs",
     "historyDaysAgo": "For {days} dage siden",

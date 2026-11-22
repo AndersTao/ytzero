@@ -551,6 +551,7 @@ export const ptBR: Locale = {
     "historyEmpty": "Ainda tem aquele cheiro novo.",
     "historyEmptyHint": "Nem uma única jogada ainda. Tenho de começar por algum lado.",
     "historyToday": "Hoje",
+    "feedOlder": "Mais antigos",
     "historyYesterday": "Ontem",
     "historyDayBeforeYesterday": "Anteontem",
     "historyDaysAgo": "{days} dias atrás",

@@ -576,6 +576,7 @@ export const fr: Locale = {
     "historyEmpty": "Il a toujours cette odeur de nouvelle application.",
     "historyEmptyHint": "Pas encore une seule lecture. Il faut bien commencer.",
     "historyToday": "Aujourd'hui",
+    "feedOlder": "Plus anciens",
     "historyYesterday": "Hier",
     "historyDayBeforeYesterday": "Avant-hier",
     "historyDaysAgo": "Il y a {days} jours",

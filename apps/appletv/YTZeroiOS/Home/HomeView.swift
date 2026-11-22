@@ -111,30 +111,34 @@ struct HomeView: View {
         }
     }
 
+    /// A heading for each day with a line to the edge, as "Main" had,
+    /// and the day's videos under it.
     private var mainGrid: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if !model.continueWatching.isEmpty {
-                // As on the TV: a line from the title to the edge keeps what
-                // is under way apart from everything else.
-                HStack(spacing: 14) {
-                    Text("Main")
-                        .font(.title3.bold())
-                    Rectangle()
-                        .fill(.white.opacity(0.18))
-                        .frame(height: 1)
-                }
-                .padding(.horizontal)
-            }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16, alignment: .top)], spacing: 22) {
-                ForEach(model.main) { video in
-                    card(for: video, compact: false)
-                        .task {
-                            guard let client = session.client else { return }
-                            await model.videoAppeared(video, client: client)
+        VStack(alignment: .leading, spacing: 28) {
+            ForEach(model.mainByDay) { day in
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 14) {
+                        Text(verbatim: day.title)
+                            .font(.title3.bold())
+                        Rectangle()
+                            .fill(.white.opacity(0.18))
+                            .frame(height: 1)
+                    }
+                    .padding(.horizontal)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16, alignment: .top)], spacing: 22) {
+                        ForEach(day.videos) { video in
+                            card(for: video, compact: false)
+                                .task {
+                                    guard let client = session.client else { return }
+                                    await model.videoAppeared(video, client: client)
+                                }
                         }
+                    }
+                    .padding(.horizontal)
                 }
             }
-            .padding(.horizontal)
         }
     }
 

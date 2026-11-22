@@ -483,6 +483,7 @@ export const hu: Locale = {
     historyEmpty: "Még érződik rajta az újdonság illata.",
     historyEmptyHint: "Egyetlen lejátszás sem történt még. Valahol el kell kezdeni.",
     historyToday: "Ma",
+    feedOlder: "Régebbi",
     historyYesterday: "Tegnap",
     historyDayBeforeYesterday: "Tegnapelőtt",
     historyDaysAgo: "{days} napja",

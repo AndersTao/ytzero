@@ -473,6 +473,7 @@ export const en = {
     historyEmpty: "Still has that new-app smell.",
     historyEmptyHint: "Not a single play yet. Gotta start somewhere.",
     historyToday: "Today",
+    feedOlder: "Older",
     historyYesterday: "Yesterday",
     historyDayBeforeYesterday: "The day before yesterday",
     historyDaysAgo: "{days} days ago",

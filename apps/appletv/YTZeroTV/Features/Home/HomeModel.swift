@@ -44,6 +44,9 @@ final class HomeModel {
         hasLoaded = true
     }
 
+    /// Main cut into days: today, the six before it, and older.
+    var mainByDay: [DaySection] { DayGroups.sections(main) }
+
     /// Back on screen after a while: what was listed may be long out of date.
     var isStale: Bool {
         guard let loadedAt else { return false }

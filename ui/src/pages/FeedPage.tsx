@@ -16,7 +16,8 @@ import VideoCard from "../components/VideoCard";
 import { keepsCard, videoAfterFeedback, WATCHED_FEEDBACK, type CardFeedback } from "../videoCardKeep";
 import { VideoGridSkeleton } from "../components/LoadingState";
 import { GRID_SIZES, persistGridSize, readGridSize, type GridSize } from "../gridSize";
-import { Button, ButtonLink, Divider, EmptyState, IconButton, RevealRegion } from "../components/ui";
+import { Button, ButtonLink, Divider, EmptyState, IconButton, RevealRegion, SectionHeader } from "../components/ui";
+import { FEED_DAYS, feedDays, feedWeekday } from "../feedDays";
 import { parseAppTimestamp } from "../dateTime";
 import type { PlaybackQueueContext, PlayVideo } from "../playbackQueue";
 import { filterChannelsByTags } from "./feedChannelFilter";
@@ -142,7 +143,7 @@ export default function FeedPage({
   keepWatchedInFeed: boolean;
   showTopChannels: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale, timeZone } = useI18n();
   useDocumentTitle();
   const [videos, setVideos] = useState<Video[]>([]);
   const [queued, setQueued] = useState<Video[]>([]);
@@ -619,19 +620,28 @@ export default function FeedPage({
         )
       ) : (
         <>
-          <div className={`video-grid video-grid--${gridSize}`}>
-            {feedVideos.map((v) => (
-              <VideoCard
-                key={v.video_id}
-                video={v}
-                onPlay={handleFeedPlay}
-                onChanged={handleFeedCardChanged}
-                keepAfter={keepWatchedInFeed ? WATCHED_FEEDBACK : undefined}
-                entering={v.video_id === enteringFeedVideoId}
-                showFoundTime={feedSort === "arrival"}
+          {/* One heading per day the feed is sorted on: today, the six days before, older. */}
+          {feedDays(feedVideos, feedSort, timeZone).map((day) => (
+            <section key={day.daysAgo} className="feed-day-section">
+              <SectionHeader
+                level={3}
+                title={day.daysAgo === 0 ? t("historyToday") : day.daysAgo >= FEED_DAYS ? t("feedOlder") : feedWeekday(day.daysAgo, locale, timeZone)}
               />
-            ))}
-          </div>
+              <div className={`video-grid video-grid--${gridSize}`}>
+                {day.videos.map((v) => (
+                  <VideoCard
+                    key={v.video_id}
+                    video={v}
+                    onPlay={handleFeedPlay}
+                    onChanged={handleFeedCardChanged}
+                    keepAfter={keepWatchedInFeed ? WATCHED_FEEDBACK : undefined}
+                    entering={v.video_id === enteringFeedVideoId}
+                    showFoundTime={feedSort === "arrival"}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
           {loadingMore && <VideoGridSkeleton count={4} gridSize={gridSize} />}
           {hasMore && !loadingMore && (
             <div className="load-more">

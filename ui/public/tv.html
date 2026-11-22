@@ -49,9 +49,12 @@
 
     .section-title { margin: 8px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
     .section-title[hidden], #continueRow[hidden] { display: none; }
-    /* A rule beside "Main" separates what is under way from what is new. */
-    #gridTitle:not([hidden]) { display: flex; align-items: center; gap: 28px; }
-    #gridTitle::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: rgba(255,255,255,.18); }
+    /* The main list is cut into days, each under its name with a rule to the edge. */
+    .day-title {
+      grid-column: 1 / -1; display: flex; align-items: center; gap: 28px; margin-bottom: -24px;
+      font-size: 28px; font-weight: 600; color: #d6d6d6;
+    }
+    .day-title::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: rgba(255,255,255,.18); }
     #continueRow {
       position: relative; display: flex; gap: 40px; overflow-x: auto; scrollbar-width: none;
       padding: 28px 80px 36px; scroll-padding: 0 80px;
@@ -127,7 +130,6 @@
   <div id="topbar"><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
-  <div id="gridTitle" class="section-title" hidden>Main</div>
   <div id="grid" role="list"></div>
   <div id="message">Henter videoer…</div>
   <div id="toast" role="status"></div>
@@ -257,6 +259,58 @@
       return "for " + Math.floor(months / 12) + " år siden";
     }
 
+    // Calendar days back from today for when a video came out: 0 today, 1–6
+    // the days before, 7 for a week or more ago (or no date at all).
+    var DAYS = 7;
+    var WEEKDAYS = ["Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag"];
+    function dayIndex(v) {
+      var at = parseStamp(v.published_at);
+      if (!at) return DAYS;
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var then = new Date(at.getFullYear(), at.getMonth(), at.getDate());
+      var back = Math.round((today - then) / 86400000);
+      return Math.max(0, Math.min(DAYS, back));
+    }
+    function dayTitle(index) {
+      if (index === 0) return "I dag";
+      if (index >= DAYS) return "Ældre";
+      var day = new Date();
+      day.setDate(day.getDate() - index);
+      return WEEKDAYS[day.getDay()];
+    }
+
+    // The grid in the rows it is drawn in: each day starts a row of its own,
+    // so moving up and down follows those rows rather than steps of four.
+    function gridRows() {
+      var rows = [], row = null, last = null, items = sections.grid.items;
+      for (var k = 0; k < items.length; k++) {
+        var key = dayIndex(items[k]);
+        if (!row || key !== last || row.length === COLUMNS) { row = []; rows.push(row); }
+        row.push(k);
+        last = key;
+      }
+      return rows;
+    }
+
+    // Day headings go in front of the first card of each day; drawn again
+    // whenever cards come or go, so a day left empty loses its heading.
+    function drawDayTitles() {
+      var old = gridEl.querySelectorAll(".day-title");
+      for (var k = 0; k < old.length; k++) old[k].remove();
+      var last = null, items = sections.grid.items, cards = sections.grid.cards;
+      for (var n = 0; n < items.length; n++) {
+        var key = dayIndex(items[n]);
+        if (key === last) continue;
+        var title = document.createElement("div");
+        title.className = "day-title";
+        title.setAttribute("role", "heading");
+        title.textContent = dayTitle(key);
+        gridEl.insertBefore(title, cards[n]);
+        last = key;
+      }
+    }
+
     function playable(v) {
       return v && v.video_id && !removed[v.video_id] && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
     }
@@ -345,6 +399,7 @@
       sec.items.push(v);
       sec.cards.push(card);
       sec.el.appendChild(card);
+      if (sectionName === "grid") drawDayTitles();
     }
 
     function clearSection(sectionName) {
@@ -360,7 +415,6 @@
       var hasCont = hasSection("cont");
       continueEl.hidden = !hasCont;
       document.getElementById("continueTitle").hidden = !hasCont;
-      document.getElementById("gridTitle").hidden = !hasCont || !hasSection("grid");
       if (!hasCont && !hasSection("grid") && !loading) {
         messageEl.textContent = "Ingen nye videoer";
         messageEl.hidden = false;
@@ -507,6 +561,7 @@
       card.remove();
       sec.cards.splice(index, 1);
       sec.items.splice(index, 1);
+      if (sectionName === "grid") drawDayTitles();
       if (focus.s === sectionName && focus.i > index) focus.i -= 1;
       if (!quiet) restoreFocus(null);
     }
@@ -540,21 +595,27 @@
           case KEY.LEFT: setFocus("cont", i - 1); return true;
           case KEY.RIGHT: setFocus("cont", i + 1); return true;
           case KEY.UP: focusTop(); return true;
-          case KEY.DOWN: if (hasSection("grid")) setFocus("grid", Math.min(i, COLUMNS - 1)); return true;
+          case KEY.DOWN:
+            if (hasSection("grid")) { var first = gridRows()[0]; setFocus("grid", first[Math.min(i, first.length - 1)]); }
+            return true;
         }
       } else {
-        var n = sections.grid.cards.length;
+        var rows = gridRows(), r = 0, c = 0;
+        for (var rr = 0; rr < rows.length; rr++) {
+          var at = rows[rr].indexOf(i);
+          if (at >= 0) { r = rr; c = at; break; }
+        }
+        var row = rows[r] || [];
         switch (code) {
-          case KEY.LEFT: if (i % COLUMNS > 0) setFocus("grid", i - 1); return true;
-          case KEY.RIGHT: if (i % COLUMNS < COLUMNS - 1 && i + 1 < n) setFocus("grid", i + 1); return true;
+          case KEY.LEFT: if (c > 0) setFocus("grid", row[c - 1]); return true;
+          case KEY.RIGHT: if (c + 1 < row.length) setFocus("grid", row[c + 1]); return true;
           case KEY.UP:
-            if (i >= COLUMNS) setFocus("grid", i - COLUMNS);
-            else if (hasSection("cont")) setFocus("cont", Math.min(i, sections.cont.cards.length - 1));
+            if (r > 0) setFocus("grid", rows[r - 1][Math.min(c, rows[r - 1].length - 1)]);
+            else if (hasSection("cont")) setFocus("cont", Math.min(c, sections.cont.cards.length - 1));
             else focusTop();
             return true;
           case KEY.DOWN:
-            if (i + COLUMNS < n) setFocus("grid", i + COLUMNS);
-            else if (Math.floor(i / COLUMNS) < Math.floor((n - 1) / COLUMNS)) setFocus("grid", n - 1);
+            if (r + 1 < rows.length) setFocus("grid", rows[r + 1][Math.min(c, rows[r + 1].length - 1)]);
             return true;
         }
       }

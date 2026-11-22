@@ -473,6 +473,7 @@ export const de: Locale = {
     historyEmpty: "Hier riecht noch alles nach frisch installiert.",
     historyEmptyHint: "Noch kein einziges Video abgespielt. Irgendwo muss man anfangen.",
     historyToday: "Heute",
+    feedOlder: "Älter",
     historyYesterday: "Gestern",
     historyDayBeforeYesterday: "Vorgestern",
     historyDaysAgo: "vor {days} Tagen",

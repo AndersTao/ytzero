@@ -555,6 +555,7 @@ export const es: Locale = {
     historyEmpty: "Aún huele a aplicación nueva.",
     historyEmptyHint: "Todavía no has reproducido nada. Por algo hay que empezar.",
     historyToday: "Hoy",
+    feedOlder: "Más antiguos",
     historyYesterday: "Ayer",
     historyDayBeforeYesterday: "Anteayer",
     historyDaysAgo: "Hace {days} días",
