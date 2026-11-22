@@ -17,9 +17,15 @@ struct RootView: View {
                     .id(session.generation)
             }
         }
-        // Signed out: nothing of the profile stays on the Top Shelf.
-        .onChange(of: session.stage) { _, stage in
+        // Signed out, also found so at launch: nothing of the profile stays
+        // on the Top Shelf.
+        .onChange(of: session.stage, initial: true) { _, stage in
             if stage != .ready { TopShelfPublisher.clear() }
+        }
+        // Another profile: nothing of the one before shows (a child's Top
+        // Shelf is not a parent's) until the new library has published its own.
+        .onChange(of: session.generation) {
+            TopShelfPublisher.clear()
         }
     }
 }
