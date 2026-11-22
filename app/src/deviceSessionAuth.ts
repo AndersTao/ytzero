@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { AUTH_SESSION_COOKIE, validateSession } from "./auth";
+import { AUTH_SESSION_COOKIE, requestOrigin, validateSession } from "./auth";
 import { database } from "./database";
 
 type ApiEnvironment = {
@@ -20,6 +20,15 @@ interface BearerAuthAccess {
 export function bearerSessionToken(header: string | undefined): string | undefined {
   const match = header?.match(/^Bearer\s+([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
   return match?.[1];
+}
+
+/** A JSON fetch from this instance's own origin: forms cannot send JSON, and other origins differ. */
+export function isSameOriginJsonRequest(c: ApiContext): boolean {
+  if (!(c.req.header("content-type") ?? "").toLowerCase().startsWith("application/json")) return false;
+  const fetchSite = c.req.header("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin") return false;
+  const origin = c.req.header("origin");
+  return Boolean(origin) && origin === requestOrigin(c);
 }
 
 export function authSessionToken(

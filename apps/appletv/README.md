@@ -6,8 +6,8 @@ En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-side
 - **Forside:** "Fortsæt med at se" øverst og Main nedenunder. Hvert kort viser
   miniature, kanal og titel. Klik afspiller.
 - **Langt tryk på et kort:** Markér som set eller Afvis.
-- **Øverst:** Opdater, som tjekker abonnementerne og henter igen, og
-  Indstillinger med log ud og skift server.
+- **Øverst:** Hvem der ser med, Opdater, som tjekker abonnementerne og henter
+  igen, og Indstillinger med profiler, log ud og skift server.
 - **Afspiller i fuld skærm:**
   - Højre spoler 30 s frem, og venstre 15 s tilbage.
   - Klik eller Play/Pause sætter pause og starter igen.
@@ -39,6 +39,21 @@ hurtige start, 1080p og fortsæt. Kun skærmene er lavet til touch:
 
 Byg den som Apple TV-appen. Vælg skemaet **YTZeroiOS**, og sæt
 `YTZERO_IOS_BUNDLE_ID` i `Config/Local.xcconfig`.
+
+## Profiler
+
+Indstillinger starter med "Hvem ser med?": vælg en profil, og forsiden
+begynder forfra som den profil.
+
+- **Server, hvor en session kan skifte profil** (intet login, fælles login,
+  OIDC via gateway): listen er serverens profiler, og sessionen skifter selv.
+- **Server, hvor hver session hører til én profil** (login pr. profil, OIDC i
+  "mapped"-tilstand): appen har en session pr. profil i Keychain. **Tilføj
+  profil** viser en ny kode, som godkendes på telefonen hos den, der skal
+  tilføjes. Serveren knytter den nye session til enhedens andre, så den ved,
+  hvilke profiler der er parret her. **Fjern** logger profilen ud på enheden.
+- **Børneprofil:** At forlade en børneprofil kræver børnesikringens PIN-kode.
+  Serveren tjekker den og tæller forkerte forsøg, som i webklienten.
 
 ## Sådan virker det
 
@@ -106,7 +121,10 @@ spille og lukker den igen (skemaet `YTZeroiOS` og en iPhone- eller
 iPad-simulator, med de samme to miljøvariabler som herunder).
 
 `YTZeroTVUITests` trykker sig gennem forsiden, menuen ved langt tryk og
-afspilleren med Siri Remote og gemmer et skærmbillede af hvert trin. Testen
+afspilleren med Siri Remote og gemmer et skærmbillede af hvert trin.
+`ProfilesUITests` (på begge platforme) skifter profil i Indstillinger og skal
+også have `YTZERO_UITEST_TOKENS`: sessioner for flere profiler, parret sammen
+med den første (kommasepareret, den første en børneprofil). Testen
 skal bruge en server og en session til den, fx en testserver og en token fra
 TV-pairing:
 

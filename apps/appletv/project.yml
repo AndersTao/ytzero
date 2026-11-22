@@ -58,6 +58,9 @@ targets:
       - path: YTZeroTV/Features/Home/Thumbnail.swift
       - path: YTZeroTV/Features/Home/ThumbnailCache.swift
       - path: YTZeroTV/Features/Pairing/PairingModel.swift
+      - path: YTZeroTV/Features/Pairing/QRCode.swift
+      - path: YTZeroTV/Features/Settings/ProfileAvatar.swift
+      - path: YTZeroTV/Features/Settings/SettingsView.swift
       - path: YTZeroTV/Features/Player/PlayerModel.swift
       - path: YTZeroTV/Features/Player/PlaybackTime.swift
       - path: YTZeroTV/Features/Player/PlayerLayerView.swift

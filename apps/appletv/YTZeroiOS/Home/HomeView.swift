@@ -8,6 +8,8 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = HomeModel()
     @State private var player = PlayerPresenter()
+    @State private var profiles = ProfilesModel()
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
@@ -54,6 +56,11 @@ struct HomeView: View {
         .task {
             guard let client = session.client else { return }
             await model.loadFirstPage(client: client)
+            await profiles.load(session: session)
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(model: profiles)
+                .environment(session)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, model.isStale, !player.isPresenting {
@@ -95,11 +102,19 @@ struct HomeView: View {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
             }
-            Menu {
-                Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { session.signOut() }
-                Button("Use another server", systemImage: "server.rack", role: .destructive) { session.forgetServer() }
+            // Settings, with who is watching: the button is their picture once known.
+            Button {
+                showingSettings = true
             } label: {
-                Label("Settings", systemImage: "gearshape")
+                if let profile = session.activeProfile, !profile.name.isEmpty {
+                    Label {
+                        Text("Settings")
+                    } icon: {
+                        ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 28)
+                    }
+                } else {
+                    Label("Settings", systemImage: "gearshape")
+                }
             }
         }
     }

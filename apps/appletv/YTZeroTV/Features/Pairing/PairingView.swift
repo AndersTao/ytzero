@@ -1,22 +1,36 @@
 import SwiftUI
 
-/// Scan the code with a phone, sign in there and approve this Apple TV.
+/// Scan the code with a phone, sign in there and approve this Apple TV. From
+/// Settings it adds another profile: whoever approves is the one added.
 struct PairingView: View {
     @Environment(AppSession.self) private var session
     @State private var model = PairingModel()
+    private let adding: Bool
+    private let onDone: () -> Void
+
+    init(adding: Bool = false, onDone: @escaping () -> Void = {}) {
+        self.adding = adding
+        self.onDone = onDone
+    }
 
     var body: some View {
         HStack(spacing: 100) {
             qrCode
             VStack(alignment: .leading, spacing: 28) {
-                Text("Sign in to YT Zero")
+                (adding ? Text("Add a profile") : Text("Sign in to YT Zero"))
                     .font(.title)
-                Text("Scan the QR code with your phone, sign in and approve this Apple TV.")
+                (adding
+                    ? Text("Scan the QR code with the phone of the person to add, and sign in there as them.")
+                    : Text("Scan the QR code with your phone, sign in and approve this Apple TV."))
                     .font(.headline)
                     .foregroundStyle(.secondary)
                 content
-                Button("Use another server", role: .destructive) {
-                    session.forgetServer()
+                if adding {
+                    Button("Cancel", action: onDone)
+                } else {
+                    Button("Use another server", role: .destructive) {
+                        session.forgetServer()
+                    }
                 }
             }
             .frame(maxWidth: 900, alignment: .leading)
@@ -24,8 +38,13 @@ struct PairingView: View {
         .padding(80)
         .task {
             guard let client = session.client else { return }
-            await model.run(client: client) { token in
-                session.signedIn(with: token)
+            await model.run(client: client, link: adding) { token in
+                if adding {
+                    session.added(token: token)
+                    onDone()
+                } else {
+                    session.signedIn(with: token)
+                }
             }
         }
     }
