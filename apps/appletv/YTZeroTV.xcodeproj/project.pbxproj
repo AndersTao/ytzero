@@ -10,6 +10,7 @@
 		04670B6A2A573F015133E1AE /* PlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17275C609051ADB5288EBCD6 /* PlayerModel.swift */; };
 		09BBC489493172E8C10848E1 /* YTZeroApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A445E323359909E630C92C /* YTZeroApp.swift */; };
 		0E50BD283F61E3ABFA10AAD8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DCCDB2580C2205957548C6C2 /* Assets.xcassets */; };
+		1460A8A2DEFD8C672C4F86CF /* PullToRefreshUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */; };
 		181272339AF09923C8FF98D4 /* DurationBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */; };
 		1A3360B30C402D981E84760A /* PairingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9261E6B8BE81C91F88595AD4 /* PairingModel.swift */; };
 		25F6E6066A9883D3EFFEB007 /* ProfilesModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB6EFD5BB8CDAA2E8AB8556F /* ProfilesModel.swift */; };
@@ -128,6 +129,7 @@
 		B260288B1DF469CB6DA178DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B486D70CC870516246D0DC18 /* YTZeroiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C918DEB7589DAA31AEF3E6A2 /* PlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerLayerView.swift; sourceTree = "<group>"; };
+		CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshUITests.swift; sourceTree = "<group>"; };
 		D1829D1ADAD013419FDA5EEE /* YTZeroTV.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8C6C33091E391B595350B86 /* DayGroups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayGroups.swift; sourceTree = "<group>"; };
 		D9F14179E2C77DF98908F235 /* LiveBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveBadge.swift; sourceTree = "<group>"; };
@@ -366,6 +368,7 @@
 			children = (
 				6ABDEB5980A218417D5E5951 /* PlaybackUITests.swift */,
 				2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */,
+				CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */,
 				E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */,
 			);
 			path = YTZeroiOSUITests;
@@ -605,6 +608,7 @@
 			files = (
 				78380E9E6D8794AE1E135539 /* PlaybackUITests.swift in Sources */,
 				EA0EB7C783FF66CBA9A92029 /* ProfilesUITests.swift in Sources */,
+				1460A8A2DEFD8C672C4F86CF /* PullToRefreshUITests.swift in Sources */,
 				E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
