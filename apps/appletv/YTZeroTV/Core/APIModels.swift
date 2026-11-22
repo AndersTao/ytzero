@@ -36,6 +36,22 @@ nonisolated enum APIModels {
         }
     }
 
+    /// One of the profile's own playlists, as the side menu lists them.
+    struct UserPlaylist: Decodable, Identifiable, Hashable, Sendable {
+        let id: Int
+        let name: String
+        let videoCount: Int
+
+        enum CodingKeys: String, CodingKey {
+            case id, name
+            case videoCount = "video_count"
+        }
+    }
+
+    struct UserPlaylists: Decodable, Sendable {
+        let playlists: [UserPlaylist]
+    }
+
     struct AuthStatus: Decodable, Sendable {
         let authenticated: Bool
         /// Whether this session may switch profile by itself. When it may not,
