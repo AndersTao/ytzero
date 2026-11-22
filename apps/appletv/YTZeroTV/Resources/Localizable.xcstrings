@@ -89,6 +89,16 @@
         }
       }
     },
+    "That video is no longer here." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den video er her ikke længere."
+          }
+        }
+      }
+    },
     "just now" : {
       "localizations" : {
         "da" : {

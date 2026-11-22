@@ -25,9 +25,25 @@ targets:
     platform: tvOS
     sources:
       - path: YTZeroTV
+      - path: YTZeroTopShelf/Shared
+    dependencies:
+      - target: YTZeroTopShelf
     scheme:
       testTargets:
         - YTZeroTVUITests
+    info:
+      path: YTZeroTV/Info.plist
+      properties:
+        # Where the Top Shelf finds what to show (see TopShelfSnapshot).
+        YTZeroAppGroup: $(YTZERO_APP_GROUP)
+        # ytzero://play?v=… from the Top Shelf plays a video.
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes: [ytzero]
+    entitlements:
+      path: YTZeroTV/YTZeroTV.entitlements
+      properties:
+        com.apple.security.application-groups: [$(YTZERO_APP_GROUP)]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(YTZERO_BUNDLE_ID)
@@ -40,6 +56,35 @@ targets:
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: "YT Zero connects to your own YT Zero server on the local network."
         ASSETCATALOG_COMPILER_APPICON_NAME: App Icon & Top Shelf Image
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+  # The Top Shelf above the app on the Apple TV's Home Screen. It only reads
+  # what the app saved in the App Group: no server, no session.
+  YTZeroTopShelf:
+    type: app-extension
+    platform: tvOS
+    sources:
+      - path: YTZeroTopShelf
+    info:
+      path: YTZeroTopShelf/Info.plist
+      properties:
+        CFBundleDisplayName: YT Zero
+        YTZeroAppGroup: $(YTZERO_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.tv-top-shelf
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ContentProvider
+    entitlements:
+      path: YTZeroTopShelf/YTZeroTopShelf.entitlements
+      properties:
+        com.apple.security.application-groups: [$(YTZERO_APP_GROUP)]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(YTZERO_BUNDLE_ID).topshelf
+        DEVELOPMENT_TEAM: $(YTZERO_DEVELOPMENT_TEAM)
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "3"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
   # iPhone and iPad. Server, pairing, library and playback logic are the Apple

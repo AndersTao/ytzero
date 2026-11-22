@@ -6,6 +6,8 @@ struct HomeView: View {
     @Environment(AppSession.self) private var session
     /// Loaded by the tab view before it shows: see MainTabView.
     let model: HomeModel
+    /// A video to play as soon as it is found, e.g. from the Top Shelf.
+    @Binding var playRequest: String?
     @State private var profiles = ProfilesModel()
     @State private var playing: Video?
     @State private var showingProfiles = false
@@ -48,6 +50,12 @@ struct HomeView: View {
                 run { client in await model.loadFirstPage(client: client) }
             }
         }
+        // What the Top Shelf shows follows the two lists.
+        .task(id: topShelfKey) {
+            guard let client = session.client else { return }
+            await TopShelfPublisher.publish(continueWatching: model.continueWatching, main: model.main, client: client)
+        }
+        .task(id: playRequest) { await playRequested() }
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
         }
@@ -197,6 +205,28 @@ struct HomeView: View {
                     if model.notice == notice { model.notice = nil }
                 }
         }
+    }
+
+    /// Changes when a video on the Top Shelf would change: which, and how far watched.
+    private var topShelfKey: [String] {
+        (model.continueWatching + model.main.prefix(10)).map { "\($0.id) \(Int(($0.progress ?? 0) * 100))" }
+    }
+
+    /// Plays the video asked for, looking for it again in Continue watching
+    /// when it is not on screen (watched further elsewhere since).
+    private func playRequested() async {
+        guard let id = playRequest, let client = session.client else { return }
+        var video = (model.continueWatching + model.main).first { $0.id == id }
+        if video == nil {
+            await model.loadContinue(client: client)
+            video = model.continueWatching.first { $0.id == id }
+        }
+        playRequest = nil
+        guard let video else {
+            model.notice = String(localized: "That video is no longer here.")
+            return
+        }
+        playing = video
     }
 
     private func reloadShelf() {

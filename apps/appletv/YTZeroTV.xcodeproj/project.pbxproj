@@ -47,8 +47,10 @@
 		831F812C72F224B04DF69ED2 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065B1633CD44D244644D1C47 /* MainTabView.swift */; };
 		858C5A9AD84B11C66CFCEEBC /* PlayerLayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C918DEB7589DAA31AEF3E6A2 /* PlayerLayerView.swift */; };
 		880D743B4D0FDA70FB5CA7D1 /* RemoteFlowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77D5A8381CF5BD840D6BC758 /* RemoteFlowUITests.swift */; };
+		88F764C4CA89313CD0DD7F3B /* TopShelfUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FC9D33CF12841A607EEA80 /* TopShelfUITests.swift */; };
 		8FCF6146F5EF08392997B650 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1D959238F7E64A3705011B /* PlayerView.swift */; };
 		90F08EBA0E3DF73CC933B771 /* VideoCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BCDA559E6E047E5D7EE7656 /* VideoCard.swift */; };
+		93570B61E978BAAA2D29A155 /* ContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42C51EAE99DB98A44A2CFD2D /* ContentProvider.swift */; };
 		95714918071D910B17A21429 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6333A58D19FFA2EEF31EA35 /* ProgressBar.swift */; };
 		95C178331387B696D5B3E239 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453095E065922EC6521795E8 /* HomeView.swift */; };
 		99DF51AA1BA6DBBCC8B8CD31 /* SideMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 318C97BBC14FF6A3A1AD246F /* SideMenu.swift */; };
@@ -66,6 +68,9 @@
 		B8B4CD531DD1A5E01E55C5CA /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A273A0861CEDEB84A088577 /* APIClient.swift */; };
 		BDCB810527D1D125D65DD161 /* PlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C696F5C8CE77C72E827D2A9 /* PlaylistView.swift */; };
 		BF9631016243C4D533560FD0 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EEA048127B291914DBB67DD0 /* InfoPlist.xcstrings */; };
+		C09CDB2B021FEF34CA98B094 /* TopShelfSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6354CFC73B199EBDF39A0B /* TopShelfSnapshot.swift */; };
+		C4AF5F321DF4CD9A42F3126E /* YTZeroTopShelf.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E887ACF36AF7EB04D445F1D5 /* YTZeroTopShelf.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C7C54B5136BB4CCD8F638484 /* TopShelfPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FAA42C9F92083D863AD83D4 /* TopShelfPublisher.swift */; };
 		CCD3D53ECB3B91C7921FAAC5 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935C1E5B61141FDA2C2D95CB /* APIError.swift */; };
 		CEBA92659B33D6483692777A /* ProfilePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA5BA805658EEBD7E174391 /* ProfilePickerView.swift */; };
 		D04ECD8468E6482D13819A3A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE312D45691D46B45EBE8B7 /* SettingsView.swift */; };
@@ -74,6 +79,7 @@
 		D6367919D853C10B7BFCD0E6 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6333A58D19FFA2EEF31EA35 /* ProgressBar.swift */; };
 		D83E312F8A1263C08B3DD4F0 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB8BA03B68DF52B7EAD16554 /* Keychain.swift */; };
 		D8ED259D4462E710355D1396 /* HomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */; };
+		D9DE4EE4A4D76775C162057A /* TopShelfSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6354CFC73B199EBDF39A0B /* TopShelfSnapshot.swift */; };
 		E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */; };
 		EA0EB7C783FF66CBA9A92029 /* ProfilesUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */; };
 		EEF4C3F8B80E2419A947CAFB /* ServerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC406C7A47EF1CE669DE3EE /* ServerSetupView.swift */; };
@@ -83,6 +89,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		0642A3128B5384116ED2E48D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7D8F3950F08DC3A87B70E5DC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03193130FF2452D80BA81A13;
+			remoteInfo = YTZeroTopShelf;
+		};
 		50627E7EBCF9A663DCCF3604 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 7D8F3950F08DC3A87B70E5DC /* Project object */;
@@ -99,6 +112,20 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		6FED32575F7951B92198BE30 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C4AF5F321DF4CD9A42F3126E /* YTZeroTopShelf.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		039435606D1D08212CD45443 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
 		065B1633CD44D244644D1C47 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
@@ -108,22 +135,27 @@
 		104E8568EE1BEB6646433D37 /* PlaybackTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackTime.swift; sourceTree = "<group>"; };
 		15E5BBDB6FE84B3E6829A48C /* ThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCache.swift; sourceTree = "<group>"; };
 		17275C609051ADB5288EBCD6 /* PlayerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerModel.swift; sourceTree = "<group>"; };
+		173D88D5A7D76DBE61CB31F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1A86F19622DAACA636623E97 /* YTZeroiOSUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = YTZeroiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesUITests.swift; sourceTree = "<group>"; };
 		30E18D91AD2316F9F1B7AD24 /* ServerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSetupView.swift; sourceTree = "<group>"; };
 		318C97BBC14FF6A3A1AD246F /* SideMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenu.swift; sourceTree = "<group>"; };
 		33A445E323359909E630C92C /* YTZeroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YTZeroApp.swift; sourceTree = "<group>"; };
+		42C51EAE99DB98A44A2CFD2D /* ContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentProvider.swift; sourceTree = "<group>"; };
 		453095E065922EC6521795E8 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		498FCB0C904585E17D491E3E /* ProfileAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAvatar.swift; sourceTree = "<group>"; };
 		4A273A0861CEDEB84A088577 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		4B0353FB858AA59E6F40B98E /* PlayerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerPresenter.swift; sourceTree = "<group>"; };
+		4B6354CFC73B199EBDF39A0B /* TopShelfSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopShelfSnapshot.swift; sourceTree = "<group>"; };
 		4C696F5C8CE77C72E827D2A9 /* PlaylistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistView.swift; sourceTree = "<group>"; };
 		5DB15556285CC9AA3C8DF066 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
+		5FAA42C9F92083D863AD83D4 /* TopShelfPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopShelfPublisher.swift; sourceTree = "<group>"; };
 		67A410103AA0F9C7C588FB43 /* PlayerControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControls.swift; sourceTree = "<group>"; };
 		6ABDEB5980A218417D5E5951 /* PlaybackUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackUITests.swift; sourceTree = "<group>"; };
 		6C18844637E24D6235137EF6 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 		70260E8723718AA433731D2B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		77D5A8381CF5BD840D6BC758 /* RemoteFlowUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteFlowUITests.swift; sourceTree = "<group>"; };
+		79FC9D33CF12841A607EEA80 /* TopShelfUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopShelfUITests.swift; sourceTree = "<group>"; };
 		7F7638AC4988AA6D8308B670 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
 		8D64197ADB2228CEEED29E34 /* ProfilesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesUITests.swift; sourceTree = "<group>"; };
 		8E6F034DC770F07251FE5AE1 /* Video.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Video.swift; sourceTree = "<group>"; };
@@ -132,12 +164,14 @@
 		935C1E5B61141FDA2C2D95CB /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		9E8A982F7084ECA86DF6DD54 /* YTZeroTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YTZeroTVApp.swift; sourceTree = "<group>"; };
 		A3637D1E525F99F041708296 /* VideoCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCard.swift; sourceTree = "<group>"; };
+		A8399D411748826E1053D9B2 /* YTZeroTopShelf.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YTZeroTopShelf.entitlements; sourceTree = "<group>"; };
 		AB6EFD5BB8CDAA2E8AB8556F /* ProfilesModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesModel.swift; sourceTree = "<group>"; };
 		ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeModel.swift; sourceTree = "<group>"; };
 		AE1D959238F7E64A3705011B /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		AF17AEF8F21E2E9F784CFDF3 /* SideMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuUITests.swift; sourceTree = "<group>"; };
 		B260288B1DF469CB6DA178DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B486D70CC870516246D0DC18 /* YTZeroiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B6A23B3ADD661A78D8E6DAAC /* YTZeroTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YTZeroTV.entitlements; sourceTree = "<group>"; };
 		C918DEB7589DAA31AEF3E6A2 /* PlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerLayerView.swift; sourceTree = "<group>"; };
 		CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshUITests.swift; sourceTree = "<group>"; };
 		D1829D1ADAD013419FDA5EEE /* YTZeroTV.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,9 +182,11 @@
 		DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationBadge.swift; sourceTree = "<group>"; };
 		DCCDB2580C2205957548C6C2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E38BA03DEC7C6FDB40049ADF /* Thumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thumbnail.swift; sourceTree = "<group>"; };
+		E46B229E44D5D45AA3CF45A9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E4970AE5A60B47F9E03DBD67 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		E4BCC82706B4DC64C733441A /* YTZeroTVUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = YTZeroTVUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryUITests.swift; sourceTree = "<group>"; };
+		E887ACF36AF7EB04D445F1D5 /* YTZeroTopShelf.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = YTZeroTopShelf.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEA048127B291914DBB67DD0 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		EEF4BE31D9BAD400EA1BE2EB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F09C8EC732004967BF246378 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
@@ -162,12 +198,25 @@
 		021B8239127624CAF438D977 /* YTZeroTV */ = {
 			isa = PBXGroup;
 			children = (
+				E46B229E44D5D45AA3CF45A9 /* Info.plist */,
+				B6A23B3ADD661A78D8E6DAAC /* YTZeroTV.entitlements */,
 				D4C299DB672CE5AFC6139445 /* App */,
 				8EDDA63B96F1FFE4D9201CA9 /* Core */,
 				E24A77781F9B050681B6F11F /* Features */,
 				C9B265065E085227BDE747E3 /* Resources */,
 			);
 			path = YTZeroTV;
+			sourceTree = "<group>";
+		};
+		1250268DBBDAB02CE9A7CED2 /* YTZeroTopShelf */ = {
+			isa = PBXGroup;
+			children = (
+				42C51EAE99DB98A44A2CFD2D /* ContentProvider.swift */,
+				173D88D5A7D76DBE61CB31F9 /* Info.plist */,
+				A8399D411748826E1053D9B2 /* YTZeroTopShelf.entitlements */,
+				D8A5AF82E39C894DDC93B6D5 /* Shared */,
+			);
+			path = YTZeroTopShelf;
 			sourceTree = "<group>";
 		};
 		150940E84C70E781825477DC /* Player */ = {
@@ -186,6 +235,7 @@
 			children = (
 				8D64197ADB2228CEEED29E34 /* ProfilesUITests.swift */,
 				77D5A8381CF5BD840D6BC758 /* RemoteFlowUITests.swift */,
+				79FC9D33CF12841A607EEA80 /* TopShelfUITests.swift */,
 			);
 			path = YTZeroTVUITests;
 			sourceTree = "<group>";
@@ -256,6 +306,7 @@
 				CD809388467010762725BA68 /* Config */,
 				B8B4610004BDD07903F6B743 /* YTZeroiOS */,
 				E62347FBFB4551C0BD09FFA1 /* YTZeroiOSUITests */,
+				1250268DBBDAB02CE9A7CED2 /* YTZeroTopShelf */,
 				021B8239127624CAF438D977 /* YTZeroTV */,
 				1544A868532BF2107D0825E3 /* YTZeroTVUITests */,
 				A6C8293C1E8E2A7A2B87CD1F /* Products */,
@@ -289,10 +340,19 @@
 			children = (
 				B486D70CC870516246D0DC18 /* YTZeroiOS.app */,
 				1A86F19622DAACA636623E97 /* YTZeroiOSUITests.xctest */,
+				E887ACF36AF7EB04D445F1D5 /* YTZeroTopShelf.appex */,
 				D1829D1ADAD013419FDA5EEE /* YTZeroTV.app */,
 				E4BCC82706B4DC64C733441A /* YTZeroTVUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AE0F1D0D519F9F36BF976680 /* TopShelf */ = {
+			isa = PBXGroup;
+			children = (
+				5FAA42C9F92083D863AD83D4 /* TopShelfPublisher.swift */,
+			);
+			path = TopShelf;
 			sourceTree = "<group>";
 		};
 		AE2294973C9975982A1FFF2D /* App */ = {
@@ -372,6 +432,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		D8A5AF82E39C894DDC93B6D5 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				4B6354CFC73B199EBDF39A0B /* TopShelfSnapshot.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		E24A77781F9B050681B6F11F /* Features */ = {
 			isa = PBXGroup;
 			children = (
@@ -381,6 +449,7 @@
 				FB999E673D4FFA85EAF68E7E /* Playlists */,
 				7C452C72F4BC36382BC03ABC /* Settings */,
 				7483A918179500BC8EDFAC75 /* Setup */,
+				AE0F1D0D519F9F36BF976680 /* TopShelf */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -408,6 +477,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		03193130FF2452D80BA81A13 /* YTZeroTopShelf */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 28B1E4EA71689167FA4E4FEB /* Build configuration list for PBXNativeTarget "YTZeroTopShelf" */;
+			buildPhases = (
+				2F84FA57A538D65BCD499EBB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = YTZeroTopShelf;
+			packageProductDependencies = (
+			);
+			productName = YTZeroTopShelf;
+			productReference = E887ACF36AF7EB04D445F1D5 /* YTZeroTopShelf.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		3D12B7D4E1A587F50B434CF6 /* YTZeroiOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A6E412904B7BDC46E36326E5 /* Build configuration list for PBXNativeTarget "YTZeroiOS" */;
@@ -450,10 +536,12 @@
 			buildPhases = (
 				6698134E7197000CC60168B4 /* Sources */,
 				88A9E9A0DF6B7D669D7A4C6F /* Resources */,
+				6FED32575F7951B92198BE30 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				662BBDA2DE0560210D930FB3 /* PBXTargetDependency */,
 			);
 			name = YTZeroTV;
 			packageProductDependencies = (
@@ -489,6 +577,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					03193130FF2452D80BA81A13 = {
+						DevelopmentTeam = "$(YTZERO_DEVELOPMENT_TEAM)";
+						ProvisioningStyle = Automatic;
+					};
 					3D12B7D4E1A587F50B434CF6 = {
 						DevelopmentTeam = "$(YTZERO_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Automatic;
@@ -523,6 +615,7 @@
 			projectRoot = "";
 			targets = (
 				B173D66E711BF6B14F10FAA1 /* YTZeroTV */,
+				03193130FF2452D80BA81A13 /* YTZeroTopShelf */,
 				3D12B7D4E1A587F50B434CF6 /* YTZeroiOS */,
 				C92A15FDDFD541426BB48AAA /* YTZeroiOSUITests */,
 				68992AE3F810E7D25A434CB6 /* YTZeroTVUITests */,
@@ -560,6 +653,16 @@
 			files = (
 				75EBB6099DF95DD423808006 /* ProfilesUITests.swift in Sources */,
 				880D743B4D0FDA70FB5CA7D1 /* RemoteFlowUITests.swift in Sources */,
+				88F764C4CA89313CD0DD7F3B /* TopShelfUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2F84FA57A538D65BCD499EBB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93570B61E978BAAA2D29A155 /* ContentProvider.swift in Sources */,
+				D9DE4EE4A4D76775C162057A /* TopShelfSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -631,6 +734,8 @@
 				6C7A5EA4935E7117FFAFB235 /* SettingsView.swift in Sources */,
 				A9F477620D456EC37D9D6ECB /* Thumbnail.swift in Sources */,
 				61A25D57A628026688C74EFC /* ThumbnailCache.swift in Sources */,
+				C7C54B5136BB4CCD8F638484 /* TopShelfPublisher.swift in Sources */,
+				C09CDB2B021FEF34CA98B094 /* TopShelfSnapshot.swift in Sources */,
 				73C88E631396D0B3EC7B2F3F /* Video.swift in Sources */,
 				731B709F7CF8639EEF246707 /* VideoCard.swift in Sources */,
 				3D89FAF4D44FACF07B1F19C9 /* YTZeroTVApp.swift in Sources */,
@@ -657,6 +762,11 @@
 			target = B173D66E711BF6B14F10FAA1 /* YTZeroTV */;
 			targetProxy = 81DCD6848982A211B0792480 /* PBXContainerItemProxy */;
 		};
+		662BBDA2DE0560210D930FB3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03193130FF2452D80BA81A13 /* YTZeroTopShelf */;
+			targetProxy = 0642A3128B5384116ED2E48D /* PBXContainerItemProxy */;
+		};
 		7CC7875FBE2567AABAA82B43 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3D12B7D4E1A587F50B434CF6 /* YTZeroiOS */;
@@ -670,10 +780,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = YTZeroTV/YTZeroTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "$(YTZERO_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YTZeroTV/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "YT Zero";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "YT Zero connects to your own YT Zero server on the local network.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -798,6 +910,28 @@
 				TVOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
+		};
+		72ECE010A7C73B3C8A36CE65 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YTZeroTopShelf/YTZeroTopShelf.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(YTZERO_DEVELOPMENT_TEAM)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YTZeroTopShelf/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(YTZERO_BUNDLE_ID).topshelf";
+				SDKROOT = appletvos;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				TARGETED_DEVICE_FAMILY = 3;
+			};
+			name = Debug;
 		};
 		8133A6F30C1A86513C097C78 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -940,10 +1074,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = YTZeroTV/YTZeroTV.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "$(YTZERO_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YTZeroTV/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "YT Zero";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "YT Zero connects to your own YT Zero server on the local network.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -955,6 +1091,28 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(YTZERO_BUNDLE_ID)";
 				SDKROOT = appletvos;
+				TARGETED_DEVICE_FAMILY = 3;
+			};
+			name = Release;
+		};
+		BA1B6AD7667C64B732571E06 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YTZeroTopShelf/YTZeroTopShelf.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "$(YTZERO_DEVELOPMENT_TEAM)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YTZeroTopShelf/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(YTZERO_BUNDLE_ID).topshelf";
+				SDKROOT = appletvos;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
 				TARGETED_DEVICE_FAMILY = 3;
 			};
 			name = Release;
@@ -981,6 +1139,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		28B1E4EA71689167FA4E4FEB /* Build configuration list for PBXNativeTarget "YTZeroTopShelf" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				72ECE010A7C73B3C8A36CE65 /* Debug */,
+				BA1B6AD7667C64B732571E06 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		7501A4BF7FAC69FFCF8E4AF0 /* Build configuration list for PBXNativeTarget "YTZeroiOSUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

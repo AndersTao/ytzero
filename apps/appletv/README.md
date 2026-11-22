@@ -12,6 +12,10 @@ En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-side
 - **Forside:** "Fortsæt med at se" øverst og Main nedenunder. Hvert kort viser
   miniature, kanal og titel. Klik afspiller.
 - **Playliste:** Videoerne i et gitter, senest tilføjet først. Klik afspiller.
+- **Top Shelf:** Når YT Zero ligger i øverste række på Apple TV'ets
+  hjemmeskærm, viser feltet over den "Fortsæt med at se" (med hvor langt du
+  er nået) og det nyeste fra Main. Select eller Play på en video åbner appen og
+  afspiller den derfra, hvor du slap.
 - **Langt tryk på et kort:** Markér som set eller Afvis (i en playliste kun
   Markér som set).
 - **Øverst til højre:** Opdater, som tjekker abonnementerne og henter igen, og
@@ -69,6 +73,11 @@ Indstillinger): vælg en profil, og forsiden begynder forfra som den profil.
 
 ## Sådan virker det
 
+- **Top Shelf:** Udvidelsen `YTZeroTopShelf` henter intet selv. Appen gemmer
+  listerne og et billede pr. video i App Group'ens mappe, hver gang forsiden
+  ændrer sig, og beder systemet om at hente Top Shelf igen. Udvidelsen har
+  derfor hverken serveradresse eller session. Når du logger ud, ryddes
+  mappen.
 - **Første start:** Du skriver adressen på din YT Zero-server. Intet er bygget
   ind i appen.
 - **Login:** Appen bruger serverens TV-pairing. Den viser en QR-kode og en
@@ -102,7 +111,11 @@ Du skal bruge en Mac med Xcode (tvOS 26 SDK) og en Apple Developer-konto.
 
 1. **Signering:** Kopiér `Config/Local.xcconfig.example` til
    `Config/Local.xcconfig`, og udfyld dit team-id og et bundle-id under dit
-   eget domæne. Filen committes ikke.
+   eget domæne. Filen committes ikke. Appen og dens Top Shelf deler en App
+   Group, som hedder `group.<dit bundle-id>`, medmindre du sætter
+   `YTZERO_APP_GROUP`. Xcode opretter den på din konto første gang, du bygger
+   til et Apple TV (med automatisk signering; fra kommandolinjen med
+   `-allowProvisioningUpdates`).
 2. **Par Apple TV med Mac'en:**
    - På Apple TV: åbn *Indstillinger → Fjernbetjeninger og enheder →
      Fjern-app og enheder*.
@@ -136,7 +149,11 @@ iPad-simulator, med de samme to miljøvariabler som herunder).
 afspilleren med Siri Remote og gemmer et skærmbillede af hvert trin.
 `testSidebarOpensAPlaylist` åbner sidebjælken og en playliste og kræver, at
 profilen har en playliste ved navn "Weekend" med mindst én video.
-`ProfilesUITests` (på begge platforme) skifter profil i Indstillinger og skal
+`TopShelfUITests` går fra hjemmeskærmen op i YT Zeros Top Shelf, vælger den
+første video i "Fortsæt med at se" og ser, at appen afspiller den. Det kræver,
+at YT Zero ligger i øverste række på simulatorens hjemmeskærm. Den tester
+også linket `ytzero://play?v=…` direkte.
+`ProfilesUITests` (på begge platforme) skifter profil i "Hvem ser med?" og skal
 også have `YTZERO_UITEST_TOKENS`: sessioner for flere profiler, parret sammen
 med den første (kommasepareret, den første en børneprofil). Testen
 skal bruge en server og en session til den, fx en testserver og en token fra
