@@ -215,6 +215,12 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.UserPlaylists.self, from: data, status: response.statusCode).playlists
     }
 
+    /// The videos of one of the profile's playlists, the last added first.
+    func playlistVideos(_ id: Int) async throws -> [Video] {
+        let (data, response) = try await send(request("/playlists/\(id)", query: [URLQueryItem(name: "sort", value: "added-newest")]))
+        return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
+    }
+
     func inProgress() async throws -> [Video] {
         let (data, response) = try await send(request("/in-progress"))
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos

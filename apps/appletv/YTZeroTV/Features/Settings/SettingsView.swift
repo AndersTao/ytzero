@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Who is watching first, since that is what Settings is mostly opened for:
 /// choose a profile, add one by pairing again, remove one. Then signing out,
-/// and on the iPhone and iPad also changing server. On the Apple TV it opens
-/// from the profile picture and holds only the profiles and signing out.
+/// and on the iPhone and iPad also changing server. The Apple TV asks "Who is
+/// watching?" on the whole screen instead: see ProfilePickerView.
 struct SettingsView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
