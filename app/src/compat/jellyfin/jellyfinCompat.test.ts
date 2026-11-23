@@ -24,12 +24,11 @@ if (process.env[ISOLATION_FLAG] !== "1") {
   describe("what a Jellyfin client sends and reads", () => {
     test("finds the token where Rivulet puts it, and where other clients do", () => {
       const signedIn = new Headers({ Authorization: 'MediaBrowser Client="Rivulet", Device="Apple TV", DeviceId="abc", Version="1.0", Token="s3ss10n"' });
-      expect(presentedToken(signedIn, new URLSearchParams())).toBe("s3ss10n");
-      expect(presentedToken(new Headers({ "X-Emby-Token": "t" }), new URLSearchParams())).toBe("t");
-      expect(presentedToken(new Headers(), new URLSearchParams("ApiKey=k"))).toBe("k");
+      expect(presentedToken(signedIn)).toBe("s3ss10n");
+      expect(presentedToken(new Headers({ "X-Emby-Token": "t" }))).toBe("t");
       // Signed out: the header names the client but carries no token.
       const anonymous = new Headers({ Authorization: 'MediaBrowser Client="Rivulet", Device="Apple TV", DeviceId="abc", Version="1.0"' });
-      expect(presentedToken(anonymous, new URLSearchParams())).toBeNull();
+      expect(presentedToken(anonymous)).toBeNull();
     });
 
     test("writes dates with the fractions its clients insist on", () => {
@@ -120,6 +119,26 @@ if (process.env[ISOLATION_FLAG] !== "1") {
       for (const path of ["/UserViews", "/Items", "/Items/Latest", "/UserItems/Resume", "/Items/newest00001"]) {
         expect(`${path} -> ${(await app.request(`/jellyfin${path}`)).status}`).toBe(`${path} -> 401`);
       }
+    });
+
+    test("signs in to these routes only, for as long as the client token stands", async () => {
+      const app = server();
+      const response = await app.request("/jellyfin/Users/AuthenticateByName", {
+        method: "POST",
+        headers: { Authorization: client, "Content-Type": "application/json" },
+        body: JSON.stringify({ Username: name, Pw: await mintToken(1) }),
+      });
+      const { AccessToken } = await response.json() as { AccessToken: string };
+      // Not a session of the server: the rest of the API stays shut to it.
+      expect((await app.request("/api/feed", { headers: { Authorization: `Bearer ${AccessToken}` } })).status).toBe(401);
+      const headers = { Authorization: `${client}, Token="${AccessToken}"` };
+      expect((await app.request("/jellyfin/UserViews", { headers })).status).toBe(200);
+      // A tampered token is refused.
+      const tampered = { Authorization: `${client}, Token="${AccessToken.slice(0, -1)}${AccessToken.endsWith("0") ? "1" : "0"}"` };
+      expect((await app.request("/jellyfin/UserViews", { headers: tampered })).status).toBe(401);
+      // A new client token ends every sign-in made with the old one.
+      await mintToken(1);
+      expect((await app.request("/jellyfin/UserViews", { headers })).status).toBe(401);
     });
 
     test("shows Main as a film library, newest first", async () => {

@@ -3,8 +3,12 @@
  * no database.
  */
 
-/** Every place a Jellyfin client may put its token, in the order servers read them. */
-export function presentedToken(headers: Headers, query: URLSearchParams): string | null {
+/**
+ * Where a Jellyfin client puts its token: the MediaBrowser authorization
+ * header, or the token headers older clients send. Never the query string,
+ * where it would end up in logs; nothing this dialect serves needs it there.
+ */
+export function presentedToken(headers: Headers): string | null {
   for (const name of ["authorization", "x-emby-authorization"]) {
     const value = headers.get(name) ?? "";
     const match = /\bToken="([^"]+)"/i.exec(value);
@@ -14,7 +18,7 @@ export function presentedToken(headers: Headers, query: URLSearchParams): string
     const value = headers.get(name)?.trim();
     if (value) return value;
   }
-  return query.get("api_key") ?? query.get("ApiKey") ?? query.get("apiKey");
+  return null;
 }
 
 /** The fields of the MediaBrowser authorization header: Client, Device, DeviceId, Version. */

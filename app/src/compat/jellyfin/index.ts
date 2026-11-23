@@ -5,7 +5,7 @@ import { isAllowedRemoteImageUrl } from "../../imageCachePolicy";
 import { getCachedImage } from "../../imgcache";
 import { log } from "../../logger";
 import { mediaSecret } from "../invidious/media";
-import { presentedToken, signIn, signOut, userForSession, type JellyfinUser } from "./auth";
+import { presentedToken, signIn, userForAccessToken, type JellyfinUser } from "./auth";
 import { LIBRARY_ID, libraryView, queryResult, runTimeSeconds, seconds, thumbnailUrl, videoItem, type ApiVideo } from "./items";
 import { OwnApi } from "./ownApi";
 import { playbackInfo, reportProgress, reportStart, type PlaybackReport } from "./playback";
@@ -46,14 +46,15 @@ export function registerJellyfinCompat(app: Hono): void {
 
   jf.post("/Users/AuthenticateByName", async (c) => {
     const body = await c.req.json().catch(() => ({})) as { Username?: string; Pw?: string };
-    const user = await signIn(body.Username ?? "", body.Pw ?? "");
-    if (!user) {
+    const signedIn = await signIn(body.Username ?? "", body.Pw ?? "");
+    if (!signedIn) {
       log.info("jellyfin.sign_in_refused", { name: (body.Username ?? "").slice(0, 60) });
       return c.json({ error: "Invalid user name or password" }, 401);
     }
+    const { accessToken, user } = signedIn;
     log.info("jellyfin.signed_in", { userId: user.userId });
     const id = await serverId();
-    return c.json({ AccessToken: user.session, ServerId: id, User: await userDto(user), SessionInfo: { UserId: await userId(user) } });
+    return c.json({ AccessToken: accessToken, ServerId: id, User: await userDto(user), SessionInfo: { UserId: await userId(user) } });
   });
 
   // Quick Connect is not offered: signing in takes the profile's client token.
@@ -80,18 +81,15 @@ export function registerJellyfinCompat(app: Hono): void {
 
   // Everything below is for a signed-in profile.
   jf.use("*", async (c, next) => {
-    const url = new URL(c.req.url);
-    const user = await userForSession(presentedToken(c.req.raw.headers, url.searchParams));
+    const user = await userForAccessToken(presentedToken(c.req.raw.headers));
     if (!user) return c.json({ error: "unauthorised" }, 401);
     c.set("user", user);
     c.set("own", new OwnApi(app, user.session, ORIGIN));
     await next();
   });
 
-  jf.post("/Sessions/Logout", async (c) => {
-    await signOut(c.get("user").session);
-    return c.body(null, 204);
-  });
+  // Nothing to end: the access token lives as long as the profile's client token.
+  jf.post("/Sessions/Logout", (c) => c.body(null, 204));
 
   jf.get("/Users/Me", async (c) => c.json(await userDto(c.get("user"))));
   jf.get("/Users/:id", async (c) => c.json(await userDto(c.get("user"))));
