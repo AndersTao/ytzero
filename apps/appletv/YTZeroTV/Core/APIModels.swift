@@ -7,6 +7,20 @@ nonisolated enum APIModels {
         let videos: [Video]
     }
 
+    /// The server's own copy of a video (GET /videos/:id/download): "queued",
+    /// "downloading", "done", "error" or "deleted", with how far it is.
+    struct ServerDownload: Decodable, Sendable {
+        struct Download: Decodable, Sendable {
+            let status: String
+            let error: String?
+        }
+        struct Progress: Decodable, Sendable {
+            let percent: Double?
+        }
+        let download: Download?
+        let progress: Progress?
+    }
+
     /// A page of recommendations; `enabled` is false where the profile has them off.
     struct Recommendations: Decodable, Sendable {
         let enabled: Bool

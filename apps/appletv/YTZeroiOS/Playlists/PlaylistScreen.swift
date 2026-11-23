@@ -51,6 +51,7 @@ struct PlaylistScreen: View {
             }
         }
         .contextMenu {
+            DownloadMenuItem(video: video, client: session.client)
             Button("Mark as watched", systemImage: "eye") {
                 guard let client = session.client else { return }
                 Task {

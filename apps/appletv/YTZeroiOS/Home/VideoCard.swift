@@ -39,6 +39,7 @@ struct VideoCard: View {
                             .padding(8)
                     }
                 }
+                .overlay(alignment: .topTrailing) { OfflineBadge(id: video.id) }
                 .overlay(alignment: .bottomTrailing) {
                     if let length = video.durationText {
                         // Above the progress bar when there is one.
@@ -66,5 +67,33 @@ struct VideoCard: View {
     private var watchedText: Text {
         guard video.progress != nil, let position = video.watchPosition, let duration = video.watchDuration else { return Text(verbatim: "") }
         return Text("Watched \(PlaybackTime.text(position)) of \(PlaybackTime.text(duration))")
+    }
+}
+
+/// On a card whose video is kept on this device: a filled arrow when it is
+/// all here, a ring of how far it has come while it is on its way.
+struct OfflineBadge: View {
+    let id: String
+
+    var body: some View {
+        if let entry = OfflineStore.shared.entry(for: id), entry.state != .failed {
+            Group {
+                if entry.state == .ready {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.6))
+                } else {
+                    ProgressView(value: entry.state == .transferring ? entry.progress : entry.progress * 0.5)
+                        .progressViewStyle(.circular)
+                        .controlSize(.small)
+                        .tint(.white)
+                        .padding(3)
+                        .background(.black.opacity(0.6), in: .circle)
+                }
+            }
+            .padding(8)
+            .accessibilityLabel(Text(entry.state == .ready ? "Downloaded" : "Downloading"))
+        }
     }
 }

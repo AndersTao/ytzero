@@ -326,6 +326,25 @@ nonisolated struct APIClient: Sendable {
         _ = try? await send(request("/videos/\(id)/playback-ticket", method: "DELETE", body: body))
     }
 
+    // MARK: Downloads
+
+    /// Has the server fetch its own copy of the video, ahead of anything else
+    /// it is fetching: what a copy on this device is made from.
+    func requestServerDownload(_ id: String) async throws {
+        struct Body: Encodable, Sendable { let priority: Bool }
+        var asked = try request("/videos/\(id)/download", method: "POST", body: Body(priority: true))
+        // Importing a video the server has never seen can take a while.
+        asked.timeoutInterval = 60
+        let (data, response) = try await send(asked)
+        try expectSuccess(data, response)
+    }
+
+    /// How far the server's own copy of the video is.
+    func serverDownload(_ id: String) async throws -> APIModels.ServerDownload {
+        let (data, response) = try await send(request("/videos/\(id)/download"))
+        return try decode(APIModels.ServerDownload.self, from: data, status: response.statusCode)
+    }
+
     // MARK: Images
 
     /// Thumbnails go through the server's image proxy, which needs the session too.

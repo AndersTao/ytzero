@@ -133,6 +133,7 @@ struct HomeView: View {
             }
         }
         .contextMenu {
+            DownloadMenuItem(video: video, client: session.client)
             Button("Mark as watched", systemImage: "eye") {
                 run { client in await model.markWatched(video, client: client) }
             }

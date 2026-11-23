@@ -33,6 +33,8 @@ final class PlayerModel {
     /// "relay-hls", "relay", or nil for a stream that is live now.
     private var source: String?
     private var recoveries = 0
+    /// Playing a copy kept on this device, not a stream from the server.
+    private(set) var isLocal = false
     /// Playing as far as the viewer is concerned: started and not paused by
     /// them. AVPlayer pauses by itself when a stream runs dry.
     private var wantsToPlay = false
@@ -44,7 +46,15 @@ final class PlayerModel {
 
     // MARK: Lifecycle
 
-    func start(video: Video, client: APIClient) async {
+    /// Plays from the server, or from `localFile` when the video is kept on
+    /// this device: then nothing waits on the network, which may not be
+    /// there, and the server hears of the visit and the position only if it is.
+    func start(video: Video, client: APIClient, localFile: URL? = nil) async {
+        if let localFile {
+            Task { try? await client.recordVisit(video.id) }
+            await play(file: localFile, video: video, client: client)
+            return
+        }
         try? await client.recordVisit(video.id)
         do {
             // Always through the server, which fetches with yt-dlp and serves
@@ -113,6 +123,29 @@ final class PlayerModel {
         }
     }
 
+    /// A copy kept on this device: no ticket to renew and nothing to recover.
+    private func play(file: URL, video: Video, client: APIClient) async {
+        isLocal = true
+        guard let item = await playableItem(file, within: .seconds(15)), let player else {
+            phase = .failed(lastStreamError ?? String(localized: "The stream could not be loaded."))
+            return
+        }
+        if video.resumePosition > 0 {
+            await player.seek(to: CMTime(seconds: video.resumePosition, preferredTimescale: 600))
+        }
+        await turnOffCaptions(on: item)
+        player.play()
+        wantsToPlay = true
+        phase = .playing
+        hideOverlaySoon()
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.track(video: video, client: client, renewEvery: 0) }
+            group.addTask { await self.waitForEnd(video: video, client: client) }
+            await group.next()
+            group.cancelAll()
+        }
+    }
+
     /// Called when the player closes: last position, then let the stream go.
     /// Returns the video as far as it was watched, once the server has it.
     @discardableResult
@@ -163,7 +196,7 @@ final class PlayerModel {
     /// for a new ticket for the same kind of stream and carry on from the
     /// same place. A few times per video, not forever.
     private func recover(video: Video, client: APIClient, reason: String? = nil) async -> Bool {
-        guard recoveries < 3, let player else { return false }
+        guard !isLocal, recoveries < 3, let player else { return false }
         recoveries += 1
         let at = position
         let resume = wantsToPlay
