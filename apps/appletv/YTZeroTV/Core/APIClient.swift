@@ -246,6 +246,13 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.Recommendations.self, from: data, status: response.statusCode)
     }
 
+    /// Schedules a video, or moves it to another time: "today", "tonight",
+    /// "tomorrow", "tomorrow_evening" or "weekend".
+    func schedule(_ id: String, bucket: String) async throws {
+        let (data, response) = try await send(request("/videos/\(id)/queue", method: "POST", body: ["bucket": bucket]))
+        try expectSuccess(data, response)
+    }
+
     /// Takes a video off Scheduled, back to the feed.
     func unschedule(_ id: String) async throws {
         let (data, response) = try await send(request("/videos/\(id)/dequeue", method: "POST"))

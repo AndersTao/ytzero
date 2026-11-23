@@ -99,6 +99,8 @@ targets:
       - path: YTZeroTV/Features/Home/LiveBadge.swift
       - path: YTZeroTV/Features/Home/DurationBadge.swift
       - path: YTZeroTV/Features/Home/DayGroups.swift
+      - path: YTZeroTV/Features/Home/ShortFace.swift
+      - path: YTZeroTV/Features/Lists/VideoListModel.swift
       - path: YTZeroTV/Features/Home/ProgressBar.swift
       - path: YTZeroTV/Features/Home/Thumbnail.swift
       - path: YTZeroTV/Features/Home/ThumbnailCache.swift

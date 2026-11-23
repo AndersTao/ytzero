@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// Shorts, Scheduled or Recommendations from the side menu: the same cards and
-/// grid as Main, under the headings the kind of list has. Tap plays; touch and
+/// grid as Main, under the headings the kind of list has; Shorts upright, a
+/// row a day that is swiped through sideways. Tap plays; touch and
 /// hold for what can be done to a video. Pulling down loads the list again,
 /// and for Recommendations has the server work them out anew.
 struct VideoListScreen: View {
     let destination: MenuDestination
 
     @Environment(AppSession.self) private var session
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var model: VideoListModel
     @State private var player = PlayerPresenter()
 
@@ -23,18 +25,21 @@ struct VideoListScreen: View {
                     ForEach(model.sections) { section in
                         VStack(alignment: .leading, spacing: 12) {
                             if let title = section.title {
-                                SectionHeading(title: title)
+                                SectionHeading(title: title, systemImage: section.systemImage)
                             }
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16, alignment: .top)], spacing: 22) {
-                                ForEach(section.videos) { video in
-                                    card(for: video)
-                                        .task {
-                                            guard let client = session.client else { return }
-                                            await model.videoAppeared(video, client: client)
-                                        }
+                            if model.kind == .shorts {
+                                shortsRow(section.videos)
+                            } else if model.kind == .scheduled {
+                                scheduledList(section.videos)
+                            } else {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16, alignment: .top)], spacing: 22) {
+                                    ForEach(section.videos) { video in
+                                        card(for: video)
+                                            .task { await appeared(video) }
+                                    }
                                 }
+                                .padding(.horizontal)
                             }
-                            .padding(.horizontal)
                         }
                     }
                 }
@@ -84,14 +89,65 @@ struct VideoListScreen: View {
         }
     }
 
-    private func card(for video: Video) -> some View {
-        VideoCard(video: video, client: session.client, compact: false) {
-            guard let client = session.client else { return }
-            player.present(video: video, client: client) {
-                model.finished(video)
-            } onClose: { watched in
-                model.played(watched)
+    /// A day's Shorts in one row of upright cards, swiped through sideways
+    /// as YouTube's own app shows them.
+    private func shortsRow(_ videos: [Video]) -> some View {
+        ScrollView(.horizontal) {
+            LazyHStack(alignment: .top, spacing: 12) {
+                ForEach(videos) { video in
+                    card(for: video, tall: true)
+                        .frame(width: horizontalSizeClass == .regular ? 210 : 165)
+                        .task { await appeared(video) }
+                }
             }
+            .scrollTargetLayout()
+            .padding(.horizontal)
+        }
+        .scrollTargetBehavior(.viewAligned)
+        .scrollIndicators(.hidden)
+    }
+
+    /// Scheduled as the web lists it: a row a video, with the times it can
+    /// be moved to and a cross that takes it off.
+    private func scheduledList(_ videos: [Video]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(videos) { video in
+                ScheduledRow(video: video, client: session.client) {
+                    play(video)
+                } move: { bucket in
+                    run { client in await model.reschedule(video, to: bucket, client: client) }
+                } remove: {
+                    run { client in await model.unschedule(video, client: client) }
+                }
+                .padding(.vertical, 12)
+                .contextMenu {
+                    Button("Mark as watched", systemImage: "eye") {
+                        run { client in await model.markWatched(video, client: client) }
+                    }
+                }
+                Divider()
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private func play(_ video: Video) {
+        guard let client = session.client else { return }
+        player.present(video: video, client: client) {
+            model.finished(video)
+        } onClose: { watched in
+            model.played(watched)
+        }
+    }
+
+    private func appeared(_ video: Video) async {
+        guard let client = session.client else { return }
+        await model.videoAppeared(video, client: client)
+    }
+
+    private func card(for video: Video, tall: Bool = false) -> some View {
+        VideoCard(video: video, client: session.client, compact: tall, tall: tall) {
+            play(video)
         }
         .contextMenu {
             Button("Mark as watched", systemImage: "eye") {
@@ -131,14 +187,22 @@ struct VideoListScreen: View {
     }
 }
 
-/// A heading with a line to the edge, as Main's days have.
+/// A heading with a line to the edge, as Main's days have, and a symbol
+/// before it where the list has one.
 struct SectionHeading: View {
     let title: String
+    var systemImage: String? = nil
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(verbatim: title)
-                .font(.title3.bold())
+            HStack(spacing: 8) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .foregroundStyle(.secondary)
+                }
+                Text(verbatim: title)
+            }
+            .font(.title3.bold())
             Rectangle()
                 .fill(.white.opacity(0.18))
                 .frame(height: 1)
@@ -146,5 +210,6 @@ struct SectionHeading: View {
         .padding(.horizontal)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+        .accessibilityIdentifier("section-heading")
     }
 }

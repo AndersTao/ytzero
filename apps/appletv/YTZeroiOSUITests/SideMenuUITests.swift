@@ -94,7 +94,9 @@ final class SideMenuUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app.launch()
         XCTAssertTrue(app.staticTexts["I dag"].waitForExistence(timeout: 20), "the lists should load")
-        let heading = { (title: String) in app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", title)).firstMatch }
+        let heading = { (title: String) in
+            app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'section-heading' AND label ENDSWITH[c] %@", title)).firstMatch
+        }
 
         app.buttons["menu-button"].tap()
         app.buttons["Shorts"].tap()
@@ -102,7 +104,24 @@ final class SideMenuUITests: XCTestCase {
         XCTAssertTrue(short.waitForExistence(timeout: 10), "Shorts lists the Shorts")
         XCTAssertTrue(heading("I dag").exists, "Shorts has days like Main")
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Video 1 timer gammel'")).firstMatch.exists, "only Shorts")
+        // A day's Shorts side by side in one row, swiped through sideways.
+        let next = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Short 3 timer gammel'")).firstMatch
+        XCTAssertEqual(short.frame.minY, next.frame.minY, accuracy: 1, "the same day's Shorts share a row")
+        XCTAssertLessThan(short.frame.maxX, next.frame.minX, "the newest first, the next to its right")
+        XCTAssertGreaterThan(short.frame.height, short.frame.width, "Shorts are upright")
         snapshot("06-shorts")
+        let later = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Short 8 timer gammel'")).firstMatch
+        let rowY = short.frame.minY
+        let onScreen = { later.exists && app.frame.contains(CGPoint(x: later.frame.midX, y: later.frame.midY)) }
+        XCTAssertFalse(onScreen(), "the rest of the day waits to the right")
+        // Swiped on the row itself, which stays put while its cards move.
+        let row = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: app.frame.width * 0.7, dy: short.frame.midY))
+        for _ in 0..<6 where !onScreen() {
+            row.press(forDuration: 0.05, thenDragTo: row.withOffset(CGVector(dx: -app.frame.width * 0.6, dy: 0)))
+        }
+        XCTAssertTrue(onScreen(), "swiping left brings the rest of the day")
+        XCTAssertEqual(later.frame.minY, rowY, accuracy: 1, "still the same row")
+        snapshot("06b-shorts-swiped")
 
         app.buttons["menu-button"].tap()
         app.buttons["Planlagt"].tap()
@@ -112,11 +131,18 @@ final class SideMenuUITests: XCTestCase {
         XCTAssertTrue(heading("I morgen").exists, "tomorrow has its own heading")
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Short 2 timer gammel'")).firstMatch.exists)
         snapshot("07-scheduled")
-        tonight.press(forDuration: 1.2)
-        XCTAssertTrue(app.buttons["Fjern fra Planlagt"].waitForExistence(timeout: 5), "a scheduled video can be taken off")
-        XCTAssertFalse(app.buttons["Afvis"].exists, "not rejected from here")
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.97)).tap()
-        XCTAssertTrue(app.buttons["Fjern fra Planlagt"].waitForNonExistence(timeout: 5), "the menu of the card closes")
+        // As on the web: each row has the times it can be moved to, its own lit, and a cross.
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS ' kl. '")).firstMatch.exists, "when it is due")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == 'I aften' AND selected == true")).count, 1, "tonight is lit for the video due tonight")
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == 'Fjern fra Planlagt'")).count, 2, "a cross on each row")
+        // Moving it to the weekend moves it under Weekend.
+        app.buttons.matching(NSPredicate(format: "label == 'Weekend'")).firstMatch.tap()
+        XCTAssertTrue(heading("Weekend").waitForExistence(timeout: 10), "moved to the weekend")
+        snapshot("07b-scheduled-moved")
+        // The moved one is last now, under Weekend.
+        let tonightButtons = app.buttons.matching(NSPredicate(format: "label == 'I aften'"))
+        tonightButtons.element(boundBy: tonightButtons.count - 1).tap()
+        XCTAssertTrue(heading("Weekend").waitForNonExistence(timeout: 10), "and back to tonight")
 
         app.buttons["menu-button"].tap()
         XCTAssertTrue(app.buttons["Anbefalinger"].waitForExistence(timeout: 5))

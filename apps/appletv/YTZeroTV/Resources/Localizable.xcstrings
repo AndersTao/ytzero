@@ -1041,6 +1041,86 @@
           }
         }
       }
+    },
+    "Press Refresh to have the server look again." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tryk på Opdater for at få serveren til at kigge igen."
+          }
+        }
+      }
+    },
+    "%@ views" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ visninger"
+          }
+        }
+      }
+    },
+    "Rescheduled" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flyttet"
+          }
+        }
+      }
+    },
+    "Tonight" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I aften"
+          }
+        }
+      }
+    },
+    "Tomorrow evening" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I morgen aften"
+          }
+        }
+      }
+    },
+    "today at %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "i dag kl. %@"
+          }
+        }
+      }
+    },
+    "tomorrow at %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "i morgen kl. %@"
+          }
+        }
+      }
+    },
+    "%@ at %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ kl. %2$@"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

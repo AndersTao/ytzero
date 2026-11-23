@@ -95,8 +95,8 @@ final class RemoteFlowUITests: XCTestCase {
     }
 
     /// The app starts on Main with the sidebar folded away to a button at
-    /// the top left. Up from the header opens it; the places still to come
-    /// say so, and a playlist in "My playlists" shows its videos. Needs a
+    /// the top left. Up from the header opens it; a place still to come
+    /// says so, and a playlist in "My playlists" shows its videos. Needs a
     /// profile with a playlist named "Weekend" that has a video in it.
     func testSidebarOpensAPlaylist() throws {
         let environment = ProcessInfo.processInfo.environment
@@ -134,13 +134,79 @@ final class RemoteFlowUITests: XCTestCase {
         // Up from the playlist's top row opens the sidebar again; a place
         // still to come says so.
         remote.press(.up); sleep(2)
-        for _ in 0..<8 where place() != "Anbefalinger" {
+        for _ in 0..<8 where place() != "Abonnementer" {
             remote.press(.up); sleep(1)
         }
-        XCTAssertEqual(place(), "Anbefalinger", "Up should reach Recommendations")
+        XCTAssertEqual(place(), "Abonnementer", "Up should reach Subscriptions")
         remote.press(.select); sleep(2)
-        XCTAssertTrue(app.staticTexts["Kommer snart"].waitForExistence(timeout: 5), "Recommendations should say it is coming soon")
+        XCTAssertTrue(app.staticTexts["Kommer snart"].waitForExistence(timeout: 5), "Subscriptions should say it is coming soon")
         snapshot("sidebar-04-coming-soon")
+    }
+
+    /// Shorts and Scheduled from the sidebar, under headings as Main is
+    /// (Scheduled by when, as on the web), and Recommendations, which says
+    /// why it is empty. Needs the dev data's two Shorts and two scheduled
+    /// videos, and recommendations switched off.
+    func testSidebarLists() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let server = environment["YTZERO_UITEST_SERVER"], let token = environment["YTZERO_UITEST_TOKEN"] else {
+            throw XCTSkip("Set YTZERO_UITEST_SERVER and YTZERO_UITEST_TOKEN to run against a server.")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["YTZERO_UITEST_SERVER"] = server
+        app.launchEnvironment["YTZERO_UITEST_TOKEN"] = token
+        app.launchArguments += ["-AppleLanguages", "(da)", "-AppleLocale", "da_DK"]
+        app.launch()
+        let remote = XCUIRemote.shared
+        let focused = { app.descendants(matching: .any).element(matching: NSPredicate(format: "hasFocus == true")) }
+        let place = { focused().elementType == .cell ? focused().staticTexts.firstMatch.label : "" }
+        let heading = { (title: String) in app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", title)).firstMatch }
+        XCTAssertTrue(app.waitForVideoFocus(), "the remote should end up on a video with the sidebar folded away")
+
+        /// Up to the sidebar, along it to a place, and Select.
+        func open(_ name: String) {
+            for _ in 0..<3 where focused().elementType != .cell {
+                remote.press(.up); sleep(1)
+            }
+            sleep(1)
+            for _ in 0..<8 where place() != name {
+                remote.press(.down); sleep(1)
+            }
+            if place() != name {
+                for _ in 0..<8 where place() != name {
+                    remote.press(.up); sleep(1)
+                }
+            }
+            XCTAssertEqual(place(), name, "the sidebar should reach \(name)")
+            remote.press(.select); sleep(2)
+        }
+
+        open("Shorts")
+        XCTAssertTrue(app.waitForVideoFocus(), "a Short should have the focus")
+        XCTAssertTrue(focused().label.contains("Short 2 timer gammel"), "the newest Short first, focus is on \(focused().label)")
+        XCTAssertTrue(heading("I dag").exists, "Shorts has days like Main")
+        let first = focused().frame
+        remote.press(.right); sleep(1)
+        XCTAssertTrue(focused().label.contains("Short 3 timer gammel"), "Right moves along the day's row, focus is on \(focused().label)")
+        XCTAssertEqual(focused().frame.minY, first.minY, accuracy: 2, "the same day's Shorts share a row")
+        XCTAssertGreaterThan(first.height, first.width, "Shorts are upright")
+        snapshot("lists-01-shorts")
+
+        open("Planlagt")
+        XCTAssertTrue(app.waitForVideoFocus(), "a scheduled video should have the focus")
+        XCTAssertTrue(focused().label.contains("Planlagt til i aften"), "what is due first, focus is on \(focused().label)")
+        XCTAssertTrue(heading("I dag").exists, "tonight is under Today")
+        XCTAssertTrue(heading("I morgen").exists, "tomorrow has its own heading")
+        // As on the web: Right from the video reaches the times it can be moved to.
+        remote.press(.right); sleep(1)
+        XCTAssertEqual(focused().label, "I dag", "Right reaches the first time to move it to")
+        snapshot("lists-02-scheduled")
+        remote.press(.left); sleep(1)
+
+        open("Anbefalinger")
+        XCTAssertTrue(app.staticTexts["Anbefalinger er slået fra"].waitForExistence(timeout: 10), "Recommendations says they are off")
+        XCTAssertFalse(app.staticTexts["Kommer snart"].exists)
+        snapshot("lists-03-recommendations")
     }
 
     private func snapshot(_ name: String) {
