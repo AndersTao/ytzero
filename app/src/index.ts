@@ -7,6 +7,7 @@ import { repairStreamBadges } from "./streamVerification";
 import { warmPotProvider } from "./ytdlpPotProvider";
 import { provisionManagedYtdlp } from "./ytdlpProvision";
 import { registerInvidiousCompat } from "./compat/invidious";
+import { registerJellyfinCompat } from "./compat/jellyfin";
 import { db, getSetting, reloadSettingCache } from "./db";
 import { database, databaseConfig } from "./database";
 import { startSQLiteMaintenance } from "./sqliteMaintenance";
@@ -57,6 +58,8 @@ app.get("/api/health", async (c) => {
 // Declared before the API router for the same reason /api/health is: they must
 // answer without the session middleware, which no such client can satisfy.
 registerInvidiousCompat(app);
+// The same for Jellyfin clients (Rivulet on the Apple TV), under /jellyfin.
+registerJellyfinCompat(app);
 
 // Public bearer links live outside the authenticated API router. This router
 // never resolves a profile from cookies and exposes only its own allowlisted
