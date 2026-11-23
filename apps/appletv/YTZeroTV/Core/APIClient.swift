@@ -221,6 +221,37 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
     }
 
+    /// The Shorts feed: the same inbox as Main, Shorts only, newest first.
+    func shorts(page: Int) async throws -> [Video] {
+        let (data, response) = try await send(request("/feed", query: [
+            URLQueryItem(name: "only_shorts", value: "1"),
+            URLQueryItem(name: "page", value: String(page)),
+            URLQueryItem(name: "limit", value: "40"),
+        ]))
+        return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
+    }
+
+    /// What the profile has scheduled to watch ("Scheduled" on the web).
+    func watchlist() async throws -> [Video] {
+        let (data, response) = try await send(request("/watchlist"))
+        return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
+    }
+
+    /// One page of the server's recommendations, best first. `refresh` on the
+    /// first page has the server work them out again.
+    func recommendations(page: Int, refresh: Bool = false) async throws -> APIModels.Recommendations {
+        var query = [URLQueryItem(name: "page", value: String(page)), URLQueryItem(name: "limit", value: "40")]
+        if refresh { query.append(URLQueryItem(name: "refresh", value: "1")) }
+        let (data, response) = try await send(request("/recommendations", query: query))
+        return try decode(APIModels.Recommendations.self, from: data, status: response.statusCode)
+    }
+
+    /// Takes a video off Scheduled, back to the feed.
+    func unschedule(_ id: String) async throws {
+        let (data, response) = try await send(request("/videos/\(id)/dequeue", method: "POST"))
+        try expectSuccess(data, response)
+    }
+
     func inProgress() async throws -> [Video] {
         let (data, response) = try await send(request("/in-progress"))
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos

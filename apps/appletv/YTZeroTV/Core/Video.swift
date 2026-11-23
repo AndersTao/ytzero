@@ -15,6 +15,11 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
     /// As the server stores it: usually "12:34" or "1:02:03".
     let duration: String?
     let publishedAt: Date?
+    /// When it is scheduled to be watched: "today", "tonight", "tomorrow",
+    /// "tomorrow_evening" or "weekend"; nil when it is not.
+    let bucket: String?
+    /// From when a scheduled video is due.
+    let showFrom: Date?
 
     enum CodingKeys: String, CodingKey {
         case id = "video_id"
@@ -29,6 +34,8 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         case liveStatus = "live_status"
         case duration
         case publishedAt = "published_at"
+        case bucket
+        case showFrom = "show_from"
     }
 
     init(from decoder: any Decoder) throws {
@@ -45,6 +52,8 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         liveStatus = try container.decodeIfPresent(String.self, forKey: .liveStatus)
         duration = try? container.decodeIfPresent(String.self, forKey: .duration)
         publishedAt = (try? container.decodeIfPresent(String.self, forKey: .publishedAt)).flatMap(Self.parseTimestamp)
+        bucket = try? container.decodeIfPresent(String.self, forKey: .bucket)
+        showFrom = (try? container.decodeIfPresent(String.self, forKey: .showFrom)).flatMap(Self.parseTimestamp)
     }
 
     /// "2026-11-17T09:47:40Z", with or without fractions, or SQLite's
