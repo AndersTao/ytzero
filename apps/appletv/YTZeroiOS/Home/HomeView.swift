@@ -8,8 +8,6 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model = HomeModel()
     @State private var player = PlayerPresenter()
-    @State private var profiles = ProfilesModel()
-    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
@@ -48,19 +46,12 @@ struct HomeView: View {
             // The name sits on the same row as the buttons rather than a large
             // title under them, which left a band of empty bar above the lists.
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                titleItem
-                toolbar
-            }
+            // Who is watching and Settings are at the bottom of the side menu.
+            .toolbar { titleItem }
         }
         .task {
             guard let client = session.client else { return }
             await model.loadFirstPage(client: client)
-            await profiles.load(session: session)
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(model: profiles)
-                .environment(session)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, model.isStale, !player.isPresenting {
@@ -89,44 +80,6 @@ struct HomeView: View {
             .font(.title.bold())
             .fixedSize()
             .accessibilityAddTraits(.isHeader)
-    }
-
-    /// Settings, with who is watching. There is no Refresh button: pulling the
-    /// lists down does the same.
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        if #available(iOS 26, *) {
-            // The picture on its own, not inside a glass capsule.
-            ToolbarItem(placement: .topBarTrailing) { settingsButton }
-                .sharedBackgroundVisibility(.hidden)
-        } else {
-            ToolbarItem(placement: .topBarTrailing) { settingsButton }
-        }
-    }
-
-    /// The profile's picture once it is known, else a gear. The picture is a
-    /// view that takes a tap rather than a Button's label: the navigation bar
-    /// draws a button's image as a one-colour template, which made it a white
-    /// square.
-    @ViewBuilder
-    private var settingsButton: some View {
-        if let profile = session.activeProfile, !profile.name.isEmpty {
-            ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 34)
-                .contentShape(.circle)
-                .onTapGesture { showingSettings = true }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text("Settings"))
-                .accessibilityValue(Text(verbatim: profile.name))
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("profile-button")
-        } else {
-            Button {
-                showingSettings = true
-            } label: {
-                Label("Settings", systemImage: "gearshape")
-            }
-            .accessibilityIdentifier("profile-button")
-        }
     }
 
     private var continueShelf: some View {
