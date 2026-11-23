@@ -457,6 +457,7 @@ export default function FeedPage({
   const inProgressIds = new Set(inProgress.map((video) => video.video_id));
   const feedVideos = videos.filter((video) => !inProgressIds.has(video.video_id));
   const showQueuedSection = dueQueuedVideos.length > 0 && selectedTags.length === 0;
+  const hasFilterOnlyTags = tags.some((tag) => tag.filter_only === 1);
   const showFeedPreludeDivider = resumable.length > 0 || showQueuedSection;
   const inProgressQueue: PlaybackQueueContext = { version: 1, kind: "in-progress" };
   const dueQueuedQueue: PlaybackQueueContext = { version: 1, kind: "watchlist", sort: "schedule", dueOnly: true };
@@ -481,7 +482,10 @@ export default function FeedPage({
           selected={selectedTags}
           onToggle={toggleTag}
           onClearAll={clearTags}
-          suffix={
+          suffix={hasFilterOnlyTags || showAll ? (
+            // "Show all" lets videos with a filter-only tag into the feed. With
+            // no such tag it changed nothing, so it is offered only when there
+            // is one (or while it is still switched on from before).
             <button
               className={`chip${showAll ? " active" : ""}`}
               onClick={toggleShowAll}
@@ -490,7 +494,7 @@ export default function FeedPage({
               <Eye size={13} />
               {t("showAll")}
             </button>
-          }
+          ) : undefined}
         />
         <div className="toolbar-right" style={{ display: "flex", gap: 4, alignItems: "center" }}>
           <IconButton label={t("refresh")} icon={<RefreshCw className={refreshing ? "spin" : undefined} />} onClick={refresh} disabled={refreshing} />
