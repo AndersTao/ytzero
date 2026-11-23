@@ -71,8 +71,12 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
                 try? await Task.sleep(for: .milliseconds(250))
             }
         }
+        // A copy kept on this device plays from there, with its own position
+        // when that is further along than the server knew.
+        let localFile = OfflineStore.shared.playableFile(for: video.id)
+        let startAt = OfflineStore.shared.resumable(video)
         playback = Task { [weak self] in
-            await model.start(video: video, client: client)
+            await model.start(video: startAt, client: client, localFile: localFile)
             guard let self, !Task.isCancelled else { return }
             if model.finished {
                 self.onFinished?()
@@ -150,7 +154,13 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
         // sooner, the server answered with the old one.
         if let model, let video, let client {
             let onClose = onClose
-            Task { onClose?(await model.stop(video: video, client: client)) }
+            Task {
+                let watched = await model.stop(video: video, client: client)
+                // Kept on this device: the position is kept there too, and
+                // handed to the server once it can be reached.
+                OfflineStore.shared.played(watched, finished: model.finished, client: client)
+                onClose?(watched)
+            }
         }
         controller?.stopPictureInPicture()
         controller?.player = nil

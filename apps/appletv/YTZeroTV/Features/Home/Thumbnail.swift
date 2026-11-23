@@ -31,7 +31,10 @@ struct Thumbnail: View {
             image = cached
             return
         }
-        guard let data = try? await client.imageData(for: source), let original = UIImage(data: data) else { return }
+        // Kept on this device with an offline video, or fetched from the server.
+        var data = OfflineImages.data(for: source)
+        if data == nil { data = try? await client.imageData(for: source) }
+        guard let data, let original = UIImage(data: data) else { return }
         // Decoded once, in the background and at the size a card shows. A
         // JPEG handed straight to SwiftUI is decoded on the main thread the
         // first time it is drawn, at full size, which is what made scrolling

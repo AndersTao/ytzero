@@ -1121,6 +1121,176 @@
           }
         }
       }
+    },
+    "Delete" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet"
+          }
+        }
+      }
+    },
+    "Delete download" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet download"
+          }
+        }
+      }
+    },
+    "On this device" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På denne enhed"
+          }
+        }
+      }
+    },
+    "No downloads" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen downloads"
+          }
+        }
+      }
+    },
+    "Touch and hold a video and choose Download to watch it without a connection." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold fingeren på en video, og vælg Download for at se den uden forbindelse."
+          }
+        }
+      }
+    },
+    "Downloads" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads"
+          }
+        }
+      }
+    },
+    "Asking the server…" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørger serveren…"
+          }
+        }
+      }
+    },
+    "The server is fetching it… %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveren henter den… %@"
+          }
+        }
+      }
+    },
+    "Coming to this device… %@" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overføres til enheden… %@"
+          }
+        }
+      }
+    },
+    "Try again" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igen"
+          }
+        }
+      }
+    },
+    "The download failed." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download mislykkedes."
+          }
+        }
+      }
+    },
+    "Download" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download"
+          }
+        }
+      }
+    },
+    "Downloaded" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloadet"
+          }
+        }
+      }
+    },
+    "Downloading" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloader"
+          }
+        }
+      }
+    },
+    "The server no longer has the video." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveren har ikke længere videoen."
+          }
+        }
+      }
+    },
+    "The server could not fetch the video." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveren kunne ikke hente videoen."
+          }
+        }
+      }
+    },
+    "Downloads are off for this profile: turn on “Allow downloads for this profile” on the Downloads page on the web." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads er slået fra for denne profil: slå “Tillad downloads for denne profil” til på siden Downloads på web."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

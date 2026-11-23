@@ -1,7 +1,7 @@
 import Foundation
 
 /// A video as the YT Zero API returns it, reduced to what this app shows.
-nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
+nonisolated struct Video: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let title: String
     let channelTitle: String
@@ -62,6 +62,28 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         showFrom = (try? container.decodeIfPresent(String.self, forKey: .showFrom)).flatMap(Self.parseTimestamp)
         views = try? container.decodeIfPresent(Int.self, forKey: .views)
         channelThumbnail = (try? container.decodeIfPresent(String.self, forKey: .channelThumbnail)).flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    /// Written back as the server sends it, so a video kept for offline
+    /// viewing reads the same way when it is loaded again.
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(channelTitle, forKey: .channelTitle)
+        try container.encodeIfPresent(thumbnail, forKey: .thumbnail)
+        try container.encodeIfPresent(watchPosition, forKey: .watchPosition)
+        try container.encodeIfPresent(watchDuration, forKey: .watchDuration)
+        try container.encode(isShort ? 1 : 0, forKey: .isShort)
+        try container.encode(isUnavailable ? 1 : 0, forKey: .isUnavailable)
+        try container.encode(isPrivate ? 1 : 0, forKey: .isPrivate)
+        try container.encodeIfPresent(liveStatus, forKey: .liveStatus)
+        try container.encodeIfPresent(duration, forKey: .duration)
+        try container.encodeIfPresent(publishedAt?.ISO8601Format(), forKey: .publishedAt)
+        try container.encodeIfPresent(bucket, forKey: .bucket)
+        try container.encodeIfPresent(showFrom?.ISO8601Format(), forKey: .showFrom)
+        try container.encodeIfPresent(views, forKey: .views)
+        try container.encodeIfPresent(channelThumbnail, forKey: .channelThumbnail)
     }
 
     /// "2026-11-17T09:47:40Z", with or without fractions, or SQLite's

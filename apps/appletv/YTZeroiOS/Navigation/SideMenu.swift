@@ -7,6 +7,7 @@ enum MenuDestination: Hashable {
     case shorts
     case scheduled
     case subscriptions
+    case downloads
     case playlist(APIModels.UserPlaylist)
 
     var title: String {
@@ -16,6 +17,7 @@ enum MenuDestination: Hashable {
         case .shorts: String(localized: "Shorts")
         case .scheduled: String(localized: "Scheduled")
         case .subscriptions: String(localized: "Subscriptions")
+        case .downloads: String(localized: "Downloads")
         case .playlist(let playlist): playlist.name
         }
     }
@@ -27,6 +29,7 @@ enum MenuDestination: Hashable {
         case .shorts: "play.rectangle.on.rectangle"
         case .scheduled: "clock"
         case .subscriptions: "person.2"
+        case .downloads: "arrow.down.circle"
         case .playlist: "music.note.list"
         }
     }
@@ -106,6 +109,12 @@ struct SideMenuContainer: View {
         }
         // The names and pictures of the profiles, for the bottom of the panel.
         .task { await profiles.load(session: session) }
+        // Offline copies under way when the app was last closed carry on, and
+        // positions reached offline reach the server.
+        .task {
+            guard let client = session.client else { return }
+            await OfflineStore.shared.resume(client: client)
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView(model: profiles)
                 .environment(session)
@@ -125,6 +134,8 @@ struct SideMenuContainer: View {
             VideoListScreen(destination: .scheduled, kind: .scheduled)
         case .subscriptions:
             SubscriptionsView()
+        case .downloads:
+            DownloadsScreen()
         case .playlist(let playlist):
             // A fresh screen for each playlist, not the last one's videos.
             PlaylistScreen(playlist: playlist)
@@ -175,7 +186,7 @@ private struct SideMenuPanel: View {
     let choose: (MenuDestination) -> Void
     let openSettings: () -> Void
 
-    private let places: [MenuDestination] = [.main, .recommendations, .shorts, .scheduled, .subscriptions]
+    private let places: [MenuDestination] = [.main, .recommendations, .shorts, .scheduled, .subscriptions, .downloads]
 
     var body: some View {
         ScrollView {

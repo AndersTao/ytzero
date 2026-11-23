@@ -121,6 +121,7 @@ struct VideoListScreen: View {
                 }
                 .padding(.vertical, 12)
                 .contextMenu {
+                    DownloadMenuItem(video: video, client: session.client)
                     Button("Mark as watched", systemImage: "eye") {
                         run { client in await model.markWatched(video, client: client) }
                     }
@@ -150,6 +151,7 @@ struct VideoListScreen: View {
             play(video)
         }
         .contextMenu {
+            DownloadMenuItem(video: video, client: session.client)
             Button("Mark as watched", systemImage: "eye") {
                 run { client in await model.markWatched(video, client: client) }
             }
