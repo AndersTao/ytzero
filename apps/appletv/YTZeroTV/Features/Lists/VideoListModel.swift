@@ -18,6 +18,8 @@ struct VideoSection: Identifiable {
     let id: String
     let title: String?
     let videos: [Video]
+    /// A symbol before the heading, as Scheduled's sun and cup on the web.
+    var systemImage: String? = nil
 }
 
 /// One of the side menu's lists: loading it, the next page as the grid nears
@@ -115,6 +117,18 @@ final class VideoListModel {
         await act(on: video, success: String(localized: "Rejected")) { try await client.reject(video.id) }
     }
 
+    /// Moved to another time: the list follows the server's new order.
+    func reschedule(_ video: Video, to bucket: String, client: APIClient) async {
+        guard video.bucket != bucket else { return }
+        do {
+            try await client.schedule(video.id, bucket: bucket)
+            notice = String(localized: "Rescheduled")
+            videos = keep(try await client.watchlist())
+        } catch {
+            handle(error)
+        }
+    }
+
     func unschedule(_ video: Video, client: APIClient) async {
         await act(on: video, success: String(localized: "Removed from Scheduled")) { try await client.unschedule(video.id) }
     }
@@ -166,12 +180,33 @@ enum ScheduleGroups {
     static func sections(_ videos: [Video]) -> [VideoSection] {
         var sections: [VideoSection] = groups.compactMap { group in
             let inGroup = videos.filter { group.buckets.contains($0.bucket ?? "") }
-            return inGroup.isEmpty ? nil : VideoSection(id: group.id, title: title(group.id), videos: sorted(inGroup))
+            return inGroup.isEmpty ? nil : VideoSection(id: group.id, title: title(group.id), videos: sorted(inGroup),
+                                                        systemImage: group.id == "weekend" ? "cup.and.saucer" : "sun.max")
         }
         // A bucket this app does not know yet: last, under "Later".
         let unknown = videos.filter { !order.contains($0.bucket ?? "") }
         if !unknown.isEmpty { sections.append(VideoSection(id: "other", title: String(localized: "Later"), videos: unknown)) }
         return sections
+    }
+
+    /// The times a video can be moved to, as the web's picker groups them:
+    /// a day's two (morning and evening), and the weekend.
+    static let choices: [(title: String, buckets: [(bucket: String, systemImage: String, name: String)])] = [
+        (String(localized: "Today"), [("today", "sun.max", String(localized: "Today")), ("tonight", "moon", String(localized: "Tonight"))]),
+        (String(localized: "Tomorrow"), [("tomorrow", "sun.max", String(localized: "Tomorrow")), ("tomorrow_evening", "moon", String(localized: "Tomorrow evening"))]),
+        (String(localized: "Weekend"), [("weekend", "cup.and.saucer", String(localized: "Weekend"))]),
+    ]
+
+    /// When a scheduled video is due, as the web writes it: "today at 18:00",
+    /// "tomorrow at 06:00", or "Saturday 28 Nov at 00:00".
+    static func when(_ date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
+        let time = date.formatted(date: .omitted, time: .shortened)
+        if calendar.isDate(date, inSameDayAs: now) { return String(localized: "today at \(time)") }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
+            return String(localized: "tomorrow at \(time)")
+        }
+        let day = date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated))
+        return String(localized: "\(day) at \(time)")
     }
 
     private static func sorted(_ videos: [Video]) -> [Video] {

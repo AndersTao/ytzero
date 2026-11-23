@@ -5,13 +5,15 @@ import SwiftUI
 struct Thumbnail: View {
     let source: String?
     let client: APIClient?
+    /// Width to height: 16:9, or 9:16 for a Short, cut from the middle of its picture.
+    var aspectRatio: CGFloat = 16 / 9
 
     @State private var image: UIImage?
 
     var body: some View {
         Rectangle()
             .fill(.quaternary)
-            .aspectRatio(16 / 9, contentMode: .fit)
+            .aspectRatio(aspectRatio, contentMode: .fit)
             .overlay {
                 if let image {
                     Image(uiImage: image)

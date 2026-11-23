@@ -20,6 +20,10 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
     let bucket: String?
     /// From when a scheduled video is due.
     let showFrom: Date?
+    /// How often it was watched on YouTube, when the server knows.
+    let views: Int?
+    /// The channel's picture, for the Shorts cards.
+    let channelThumbnail: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "video_id"
@@ -36,6 +40,8 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         case publishedAt = "published_at"
         case bucket
         case showFrom = "show_from"
+        case views
+        case channelThumbnail = "channel_thumbnail"
     }
 
     init(from decoder: any Decoder) throws {
@@ -54,6 +60,8 @@ nonisolated struct Video: Decodable, Identifiable, Hashable, Sendable {
         publishedAt = (try? container.decodeIfPresent(String.self, forKey: .publishedAt)).flatMap(Self.parseTimestamp)
         bucket = try? container.decodeIfPresent(String.self, forKey: .bucket)
         showFrom = (try? container.decodeIfPresent(String.self, forKey: .showFrom)).flatMap(Self.parseTimestamp)
+        views = try? container.decodeIfPresent(Int.self, forKey: .views)
+        channelThumbnail = (try? container.decodeIfPresent(String.self, forKey: .channelThumbnail)).flatMap { $0.isEmpty ? nil : $0 }
     }
 
     /// "2026-11-17T09:47:40Z", with or without fractions, or SQLite's

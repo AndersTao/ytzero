@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The places of the app in the system sidebar, as the iPhone and iPad side
-/// menu has them: Main, the places still to come, and the profile's own
+/// menu has them: Main, Recommendations, Shorts, Scheduled, Subscriptions
+/// (still to come), and the profile's own
 /// playlists in a section of their own. The sidebar folds away to a button
 /// at the top left naming the place; Up from the top of a screen opens it,
 /// and Select on a place shows that place and folds it away again.
@@ -57,13 +58,13 @@ struct MainTabView: View {
                 HomeView(model: home, playRequest: $playRequest)
             }
             Tab("Recommendations", systemImage: "sparkles", value: Place.recommendations) {
-                ComingSoonView(title: "Recommendations", systemImage: "sparkles")
+                VideoListView(kind: .recommendations, systemImage: "sparkles")
             }
             Tab("Shorts", systemImage: "play.rectangle.on.rectangle", value: Place.shorts) {
-                ComingSoonView(title: "Shorts", systemImage: "play.rectangle.on.rectangle")
+                VideoListView(kind: .shorts, systemImage: "play.rectangle.on.rectangle")
             }
             Tab("Scheduled", systemImage: "clock", value: Place.scheduled) {
-                ComingSoonView(title: "Scheduled", systemImage: "clock")
+                VideoListView(kind: .scheduled, systemImage: "clock")
             }
             Tab("Subscriptions", systemImage: "person.2", value: Place.subscriptions) {
                 ComingSoonView(title: "Subscriptions", systemImage: "person.2")
