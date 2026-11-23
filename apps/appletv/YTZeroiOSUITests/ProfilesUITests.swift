@@ -19,9 +19,13 @@ final class ProfilesUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app.launch()
 
-        let settings = app.buttons["Indstillinger"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 15))
+        // Who is watching is at the bottom of the side menu.
+        let menu = app.buttons["menu-button"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 15))
         sleep(3)
+        menu.tap()
+        let settings = app.buttons["profile-button"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
         settings.tap()
         XCTAssertTrue(app.staticTexts["Hvem ser med?"].waitForExistence(timeout: 10), "Settings should open on the profiles")
         let child = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Lille'")).firstMatch
@@ -34,7 +38,9 @@ final class ProfilesUITests: XCTestCase {
         sleep(2)
         snapshot("02-child-home")
 
-        app.buttons["Indstillinger"].tap()
+        app.buttons["menu-button"].tap()
+        XCTAssertEqual(app.buttons["profile-button"].value as? String, "Lille", "the menu should show the child's profile")
+        app.buttons["profile-button"].tap()
         let grownUp = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Far'")).firstMatch
         XCTAssertTrue(grownUp.waitForExistence(timeout: 10))
         grownUp.tap()

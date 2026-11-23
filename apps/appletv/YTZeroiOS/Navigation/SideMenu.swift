@@ -46,7 +46,8 @@ extension EnvironmentValues {
 /// The screens with a panel that slides in from the left: a swipe from the
 /// left edge or the menu button opens it, a tap beside it or a swipe back
 /// closes it. The panel lists the main places and the profile's playlists,
-/// as the web client's sidebar does.
+/// as the web client's sidebar does, with who is watching at the bottom:
+/// tapping that opens Settings (switch, add, sign out, another server).
 struct SideMenuContainer: View {
     @Environment(AppSession.self) private var session
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -55,6 +56,8 @@ struct SideMenuContainer: View {
     /// How far the panel is being dragged, while a finger is on it.
     @State private var drag: CGFloat = 0
     @State private var playlists: [APIModels.UserPlaylist] = []
+    @State private var profiles = ProfilesModel()
+    @State private var showingSettings = false
 
     private var panelWidth: CGFloat { horizontalSizeClass == .regular ? 320 : 290 }
 
@@ -87,6 +90,9 @@ struct SideMenuContainer: View {
                 SideMenuPanel(destination: destination, playlists: playlists) { chosen in
                     destination = chosen
                     setOpen(false)
+                } openSettings: {
+                    setOpen(false)
+                    showingSettings = true
                 }
                 .frame(width: panelWidth)
                 .offset(x: panelOffset)
@@ -99,6 +105,12 @@ struct SideMenuContainer: View {
             guard isOpen || playlists.isEmpty, let client = session.client else { return }
             if let loaded = try? await client.playlists() { playlists = loaded }
         }
+        // The names and pictures of the profiles, for the bottom of the panel.
+        .task { await profiles.load(session: session) }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(model: profiles)
+                .environment(session)
+        }
     }
 
     @ViewBuilder
@@ -108,6 +120,10 @@ struct SideMenuContainer: View {
             HomeView()
         case .subscriptions:
             SubscriptionsView()
+        case .playlist(let playlist):
+            // A fresh screen for each playlist, not the last one's videos.
+            PlaylistScreen(playlist: playlist)
+                .id(playlist.id)
         default:
             ComingSoonView(destination: destination)
         }
@@ -147,11 +163,14 @@ struct SideMenuContainer: View {
     }
 }
 
-/// The panel itself: the main places, then "My playlists" with the profile's own.
+/// The panel itself: the main places, then "My playlists" with the profile's
+/// own, and the profile in use at the bottom.
 private struct SideMenuPanel: View {
+    @Environment(AppSession.self) private var session
     let destination: MenuDestination
     let playlists: [APIModels.UserPlaylist]
     let choose: (MenuDestination) -> Void
+    let openSettings: () -> Void
 
     private let places: [MenuDestination] = [.main, .recommendations, .shorts, .scheduled, .subscriptions]
 
@@ -189,6 +208,7 @@ private struct SideMenuPanel: View {
         }
         .scrollIndicators(.hidden)
         .frame(maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom, spacing: 0) { profileRow }
         .background(Color(white: 0.09).ignoresSafeArea())
         .overlay(alignment: .trailing) {
             Rectangle()
@@ -196,6 +216,48 @@ private struct SideMenuPanel: View {
                 .frame(width: 1)
                 .ignoresSafeArea()
         }
+    }
+
+    /// The picture and name of who is watching, kept at the bottom while the
+    /// list above scrolls. Before the names are known, a gear and "Settings".
+    private var profileRow: some View {
+        let profile = session.activeProfile.flatMap { $0.name.isEmpty ? nil : $0 }
+        return Button(action: openSettings) {
+            HStack(spacing: 12) {
+                if let profile {
+                    ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: 40)
+                    Text(verbatim: profile.name)
+                        .font(.body.weight(.semibold))
+                        .lineLimit(1)
+                } else {
+                    Image(systemName: "gearshape")
+                        .font(.title3)
+                        .frame(width: 40, height: 40)
+                    Text("Settings")
+                        .font(.body.weight(.semibold))
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .background(alignment: .top) {
+            Rectangle()
+                .fill(.white.opacity(0.08))
+                .frame(height: 1)
+        }
+        .background(Color(white: 0.09))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Settings"))
+        .accessibilityValue(profile.map { Text(verbatim: $0.name) } ?? Text(verbatim: ""))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("profile-button")
     }
 
     private func row(_ place: MenuDestination, count: Int? = nil) -> some View {
