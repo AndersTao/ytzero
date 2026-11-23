@@ -49,7 +49,16 @@ final class OfflineStore {
     }
 
     /// The profile in use, which `entries` and everything else answer for.
-    var profile = 0
+    /// Another taking over stops the jobs started for the one before, which
+    /// ask the server with that profile's session; they carry on when it is
+    /// back (`resume`). Transfers already under way finish into their owner's copy.
+    var profile = 0 {
+        didSet {
+            guard profile != oldValue else { return }
+            work.values.forEach { $0.cancel() }
+            work.removeAll()
+        }
+    }
     /// Every profile's copies.
     private var all: [Entry] = []
     /// The profile in use's copies, newest first.
@@ -178,38 +187,43 @@ final class OfflineStore {
         save()
     }
 
+    /// Started for the profile in use, which the job keeps as its owner
+    /// even if another profile takes over while it runs (see `profile`).
     private func start(_ id: String, client: APIClient) {
-        work[Self.taskName(id, profile: profile)]?.cancel()
-        work[Self.taskName(id, profile: profile)] = Task { await run(id, client: client) }
+        let owner = profile
+        let name = Self.taskName(id, profile: owner)
+        work[name]?.cancel()
+        work[name] = Task { await run(id, owner: owner, client: client) }
     }
 
-    private func run(_ id: String, client: APIClient) async {
-        defer { work[Self.taskName(id, profile: profile)] = nil }
+    private func run(_ id: String, owner: Int, client: APIClient) async {
+        let name = Self.taskName(id, profile: owner)
+        defer { work[name] = nil }
         do {
-            guard let video = entry(for: id)?.video else { return }
+            guard let video = all.first(where: { $0.id == id && $0.profile == owner })?.video else { return }
             await keepPictures(of: video, client: client)
             // Asked again when it was already done: the server answers at once.
-            if entry(for: id)?.state == .requesting {
+            if all.first(where: { $0.id == id && $0.profile == owner })?.state == .requesting {
                 try await client.requestServerDownload(id)
-                update(id) { $0.state = .serverFetching }
+                update(id, profile: owner) { $0.state = .serverFetching }
             }
-            try await waitForServer(id, client: client)
+            try await waitForServer(id, owner: owner, client: client)
             let stream = try await preparedFile(id, client: client)
             try Task.checkCancellation()
-            update(id) {
+            update(id, profile: owner) {
                 $0.state = .transferring
                 $0.progress = 0
             }
-            transfers.start(name: Self.taskName(id, profile: profile), url: stream)
+            transfers.start(name: name, url: stream)
         } catch is CancellationError {
         } catch {
-            failed(id, message: Self.message(for: error))
+            failed(id, profile: owner, message: Self.message(for: error))
         }
     }
 
     /// Until the server has the whole video: its progress shown as it goes.
-    private func waitForServer(_ id: String, client: APIClient) async throws {
-        update(id) { $0.state = .serverFetching }
+    private func waitForServer(_ id: String, owner: Int, client: APIClient) async throws {
+        update(id, profile: owner) { $0.state = .serverFetching }
         while true {
             try Task.checkCancellation()
             let answer = try await client.serverDownload(id)
@@ -222,7 +236,7 @@ final class OfflineStore {
                 throw OfflineError.server(String(localized: "The server no longer has the video."))
             default:
                 let percent = (answer.progress?.percent ?? 0) / 100
-                update(id) { $0.progress = min(1, max(0, percent)) }
+                update(id, profile: owner) { $0.progress = min(1, max(0, percent)) }
             }
             try await Task.sleep(for: .seconds(3))
         }
