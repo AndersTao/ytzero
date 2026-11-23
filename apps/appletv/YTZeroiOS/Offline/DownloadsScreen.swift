@@ -51,7 +51,7 @@ struct DownloadsScreen: View {
             }
         }
         .task {
-            guard let client = session.client else { return }
+            guard store.profile != 0, let client = session.client else { return }
             await store.resume(client: client)
         }
     }
@@ -171,7 +171,7 @@ struct DownloadMenuItem: View {
             Button("Delete download", systemImage: "trash", role: .destructive) {
                 OfflineStore.shared.remove(video.id)
             }
-        } else if !video.isShort, video.liveStatus != "live", video.liveStatus != "upcoming", let client {
+        } else if OfflineStore.shared.profile != 0, !video.isShort, video.liveStatus != "live", video.liveStatus != "upcoming", let client {
             Button("Download", systemImage: "arrow.down.circle") {
                 OfflineStore.shared.download(video, client: client)
             }

@@ -43,9 +43,13 @@ final class OfflineUITests: XCTestCase {
         sleep(6)
         snapshot("offline-03-playing")
         XCTAssertFalse(app.staticTexts["Videoen kunne ikke afspilles."].exists, "the copy on the device plays")
-        app.tap()
+        // A tap shows the controls, or hides them if they are still up.
         let close = app.buttons.matching(NSPredicate(format: "label IN {'Luk', 'Close'}")).firstMatch
-        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        for _ in 0..<4 where !(close.exists && close.isHittable) {
+            app.tap()
+            sleep(1)
+        }
+        XCTAssertTrue(close.isHittable, "the player can be closed")
         close.tap()
         XCTAssertTrue(row.waitForExistence(timeout: 10), "back on Downloads")
 

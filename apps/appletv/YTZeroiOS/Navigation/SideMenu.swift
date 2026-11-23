@@ -111,8 +111,14 @@ struct SideMenuContainer: View {
         .task { await profiles.load(session: session) }
         // Offline copies under way when the app was last closed carry on, and
         // positions reached offline reach the server.
-        .task {
-            guard let client = session.client else { return }
+        // This profile's copies only: another profile's are not shown,
+        // played or reported to the server as this one. Its id is kept from
+        // the last launch; only right after pairing does it wait for the
+        // server, and until then nothing is offered for download.
+        .task(id: session.activeProfile?.id) {
+            let profile = session.activeProfile?.id ?? 0
+            OfflineStore.shared.profile = profile
+            guard profile != 0, let client = session.client else { return }
             await OfflineStore.shared.resume(client: client)
         }
         .sheet(isPresented: $showingSettings) {

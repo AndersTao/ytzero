@@ -10,6 +10,10 @@ import Observation
 /// and where it was watched to are kept beside the file, so the Downloads
 /// screen and playback need no server; positions reached offline are handed
 /// to the server once it can be reached again.
+///
+/// Each copy belongs to the profile that made it: another profile on this
+/// device (a child's, say) neither sees nor plays it, and positions go to the
+/// server as the profile they were reached by.
 @Observable
 final class OfflineStore {
     static let shared = OfflineStore()
@@ -38,11 +42,18 @@ final class OfflineStore {
         var duration: Double?
         /// A position or a finish the server has not heard of yet.
         var unsynced = false
+        /// The profile that made it.
+        var profile: Int
 
         var id: String { video.id }
     }
 
-    private(set) var entries: [Entry] = []
+    /// The profile in use, which `entries` and everything else answer for.
+    var profile = 0
+    /// Every profile's copies.
+    private var all: [Entry] = []
+    /// The profile in use's copies, newest first.
+    var entries: [Entry] { all.filter { $0.profile == profile } }
     /// Handed over by iOS when it woke the app for finished transfers.
     var backgroundCompletion: (() -> Void)?
 
@@ -55,8 +66,25 @@ final class OfflineStore {
 
     private static var index: URL { directory.appending(path: "index.json") }
 
-    nonisolated static func file(for id: String) -> URL {
-        URL.applicationSupportDirectory.appending(path: "Offline/\(id).mp4")
+    /// Where a profile's copy of a video is kept, apart from another profile's.
+    /// Only an id of plain letters, digits, - and _ names a file (see
+    /// `isSafe`), so no answer from a server can point it elsewhere.
+    nonisolated static func file(for id: String, profile: Int) -> URL {
+        let name = isSafe(id) ? id : "invalid"
+        return URL.applicationSupportDirectory.appending(path: "Offline/\(profile)-\(name).mp4")
+    }
+
+    /// A video id as YouTube and Dailymotion write them.
+    nonisolated static func isSafe(_ id: String) -> Bool {
+        (1...64).contains(id.count) && id.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") }
+    }
+
+    /// The background task's name for a copy, and back.
+    nonisolated static func taskName(_ id: String, profile: Int) -> String { "\(profile)/\(id)" }
+    nonisolated static func copy(named name: String) -> (id: String, profile: Int)? {
+        let parts = name.split(separator: "/", maxSplits: 1)
+        guard parts.count == 2, let profile = Int(parts[0]) else { return nil }
+        return (String(parts[1]), profile)
     }
 
     private init() {
@@ -67,7 +95,7 @@ final class OfflineStore {
         values.isExcludedFromBackup = true
         try? folder.setResourceValues(values)
         if let data = try? Data(contentsOf: Self.index), let saved = try? JSONDecoder().decode([Entry].self, from: data) {
-            entries = saved
+            all = saved
         }
         transfers = OfflineTransfers()
     }
@@ -81,7 +109,7 @@ final class OfflineStore {
     /// The file to play, once the whole of it is here.
     func playableFile(for id: String) -> URL? {
         guard entry(for: id)?.state == .ready else { return nil }
-        let file = Self.file(for: id)
+        let file = Self.file(for: id, profile: profile)
         return FileManager.default.fileExists(atPath: file.path) ? file : nil
     }
 
@@ -101,9 +129,10 @@ final class OfflineStore {
     // MARK: Downloading
 
     func download(_ video: Video, client: APIClient) {
+        guard Self.isSafe(video.id) else { return }
         if let existing = entry(for: video.id), existing.state != .failed { return }
-        entries.removeAll { $0.id == video.id }
-        entries.insert(Entry(video: video, state: .requesting, addedAt: .now), at: 0)
+        all.removeAll { $0.id == video.id && $0.profile == profile }
+        all.insert(Entry(video: video, state: .requesting, addedAt: .now, profile: profile), at: 0)
         save()
         start(video.id, client: client)
     }
@@ -121,12 +150,12 @@ final class OfflineStore {
     /// server's part is asked about again, and a transfer the background
     /// session no longer has is started again. Positions kept here go to the server.
     func resume(client: APIClient) async {
-        let running = await transfers.runningIDs()
-        for entry in entries where work[entry.id] == nil {
+        let running = await transfers.runningNames()
+        for entry in entries where work[Self.taskName(entry.id, profile: profile)] == nil {
             switch entry.state {
             case .requesting, .serverFetching:
                 start(entry.id, client: client)
-            case .transferring where !running.contains(entry.id):
+            case .transferring where !running.contains(Self.taskName(entry.id, profile: profile)):
                 start(entry.id, client: client)
             default:
                 break
@@ -136,24 +165,26 @@ final class OfflineStore {
     }
 
     func remove(_ id: String) {
-        work[id]?.cancel()
-        work[id] = nil
-        transfers.cancel(id)
-        try? FileManager.default.removeItem(at: Self.file(for: id))
-        if let video = entry(for: id)?.video {
+        work[Self.taskName(id, profile: profile)]?.cancel()
+        work[Self.taskName(id, profile: profile)] = nil
+        transfers.cancel(Self.taskName(id, profile: profile))
+        try? FileManager.default.removeItem(at: Self.file(for: id, profile: profile))
+        let video = entry(for: id)?.video
+        all.removeAll { $0.id == id && $0.profile == profile }
+        // The pictures stay while another profile's copy of the video uses them.
+        if let video, !all.contains(where: { $0.id == id }) {
             [video.thumbnail, video.channelThumbnail].compactMap { $0 }.forEach(OfflineImages.remove)
         }
-        entries.removeAll { $0.id == id }
         save()
     }
 
     private func start(_ id: String, client: APIClient) {
-        work[id]?.cancel()
-        work[id] = Task { await run(id, client: client) }
+        work[Self.taskName(id, profile: profile)]?.cancel()
+        work[Self.taskName(id, profile: profile)] = Task { await run(id, client: client) }
     }
 
     private func run(_ id: String, client: APIClient) async {
-        defer { work[id] = nil }
+        defer { work[Self.taskName(id, profile: profile)] = nil }
         do {
             guard let video = entry(for: id)?.video else { return }
             await keepPictures(of: video, client: client)
@@ -169,7 +200,7 @@ final class OfflineStore {
                 $0.state = .transferring
                 $0.progress = 0
             }
-            transfers.start(id: id, url: stream)
+            transfers.start(name: Self.taskName(id, profile: profile), url: stream)
         } catch is CancellationError {
         } catch {
             failed(id, message: Self.message(for: error))
@@ -218,16 +249,16 @@ final class OfflineStore {
 
     // MARK: From the background session
 
-    func transferred(_ id: String, written: Int64, expected: Int64) {
+    func transferred(_ id: String, profile: Int, written: Int64, expected: Int64) {
         guard expected > 0 else { return }
-        update(id) {
+        update(id, profile: profile) {
             $0.state = .transferring
             $0.progress = Double(written) / Double(expected)
         }
     }
 
-    func finished(_ id: String, bytes: Int64) {
-        update(id) {
+    func finished(_ id: String, profile: Int, bytes: Int64) {
+        update(id, profile: profile) {
             $0.state = .ready
             $0.progress = 1
             $0.bytes = bytes
@@ -235,8 +266,8 @@ final class OfflineStore {
         }
     }
 
-    func failed(_ id: String, message: String) {
-        update(id) {
+    func failed(_ id: String, profile: Int? = nil, message: String) {
+        update(id, profile: profile) {
             $0.state = .failed
             $0.error = message
         }
@@ -284,18 +315,21 @@ final class OfflineStore {
 
     // MARK: Keeping
 
-    private func update(_ id: String, _ change: (inout Entry) -> Void) {
-        guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
-        var entry = entries[index]
+    /// Changes the profile in use's entry, or the given profile's (a background
+    /// transfer may end after a switch).
+    private func update(_ id: String, profile owner: Int? = nil, _ change: (inout Entry) -> Void) {
+        let owner = owner ?? profile
+        guard let index = all.firstIndex(where: { $0.id == id && $0.profile == owner }) else { return }
+        var entry = all[index]
         change(&entry)
-        guard entry != entries[index] else { return }
-        entries[index] = entry
+        guard entry != all[index] else { return }
+        all[index] = entry
         // Progress changes many times a second; it is saved with the step it belongs to.
-        if entry.state != .transferring && entry.state != .serverFetching || entries[index].progress == 0 { save() }
+        if entry.state != .transferring && entry.state != .serverFetching || entry.progress == 0 { save() }
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(entries) else { return }
+        guard let data = try? JSONEncoder().encode(all) else { return }
         try? data.write(to: Self.index, options: .atomic)
     }
 
@@ -336,55 +370,56 @@ nonisolated final class OfflineTransfers: NSObject, URLSessionDownloadDelegate, 
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }
 
-    func start(id: String, url: URL) {
+    /// `name` says whose copy of which video (see `OfflineStore.taskName`).
+    func start(name: String, url: URL) {
         let task = session.downloadTask(with: url)
-        task.taskDescription = id
+        task.taskDescription = name
         task.resume()
     }
 
-    func cancel(_ id: String) {
+    func cancel(_ name: String) {
         session.getAllTasks { tasks in
-            tasks.filter { $0.taskDescription == id }.forEach { $0.cancel() }
+            tasks.filter { $0.taskDescription == name }.forEach { $0.cancel() }
         }
     }
 
-    func runningIDs() async -> Set<String> {
+    func runningNames() async -> Set<String> {
         Set(await session.allTasks.filter { $0.state == .running || $0.state == .suspended }.compactMap(\.taskDescription))
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard let id = downloadTask.taskDescription else { return }
-        Task { @MainActor in OfflineStore.shared.transferred(id, written: totalBytesWritten, expected: totalBytesExpectedToWrite) }
+        guard let (id, profile) = downloadTask.taskDescription.flatMap(OfflineStore.copy(named:)) else { return }
+        Task { @MainActor in OfflineStore.shared.transferred(id, profile: profile, written: totalBytesWritten, expected: totalBytesExpectedToWrite) }
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        guard let id = downloadTask.taskDescription else { return }
+        guard let (id, profile) = downloadTask.taskDescription.flatMap(OfflineStore.copy(named:)) else { return }
         let status = (downloadTask.response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
             refused.withLock { _ = refusedTasks.insert(downloadTask.taskIdentifier) }
-            Task { @MainActor in OfflineStore.shared.failed(id, message: String(localized: "The server answered \(status).")) }
+            Task { @MainActor in OfflineStore.shared.failed(id, profile: profile, message: String(localized: "The server answered \(status).")) }
             return
         }
         // Moved now: the file at `location` is gone once this returns.
-        let destination = OfflineStore.file(for: id)
+        let destination = OfflineStore.file(for: id, profile: profile)
         do {
             try? FileManager.default.removeItem(at: destination)
             try FileManager.default.moveItem(at: location, to: destination)
             let bytes = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
-            Task { @MainActor in OfflineStore.shared.finished(id, bytes: bytes) }
+            Task { @MainActor in OfflineStore.shared.finished(id, profile: profile, bytes: bytes) }
         } catch {
             let message = error.localizedDescription
-            Task { @MainActor in OfflineStore.shared.failed(id, message: message) }
+            Task { @MainActor in OfflineStore.shared.failed(id, profile: profile, message: message) }
         }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
-        guard let id = task.taskDescription, let error else { return }
+        guard let (id, profile) = task.taskDescription.flatMap(OfflineStore.copy(named:)), let error else { return }
         let wasRefused = refused.withLock { refusedTasks.remove(task.taskIdentifier) != nil }
         // Cancelled on purpose: the entry is gone already.
         guard !wasRefused, (error as? URLError)?.code != .cancelled else { return }
         let message = error.localizedDescription
-        Task { @MainActor in OfflineStore.shared.failed(id, message: message) }
+        Task { @MainActor in OfflineStore.shared.failed(id, profile: profile, message: message) }
     }
 
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
