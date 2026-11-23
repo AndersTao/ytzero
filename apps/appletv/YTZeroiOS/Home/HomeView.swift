@@ -106,16 +106,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 28) {
             ForEach(model.mainByDay) { day in
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 14) {
-                        Text(verbatim: day.title)
-                            .font(.title3.bold())
-                        Rectangle()
-                            .fill(.white.opacity(0.18))
-                            .frame(height: 1)
-                    }
-                    .padding(.horizontal)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(.isHeader)
+                    SectionHeading(title: day.title)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16, alignment: .top)], spacing: 22) {
                         ForEach(day.videos) { video in
                             card(for: video, compact: false)

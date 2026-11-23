@@ -7,6 +7,25 @@ nonisolated enum APIModels {
         let videos: [Video]
     }
 
+    /// A page of recommendations; `enabled` is false where the profile has them off.
+    struct Recommendations: Decodable, Sendable {
+        let enabled: Bool
+        let videos: [Video]
+        let hasMore: Bool
+
+        enum CodingKeys: String, CodingKey {
+            case enabled, videos
+            case hasMore = "has_more"
+        }
+
+        init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            enabled = (try? container.decodeIfPresent(Bool.self, forKey: .enabled)) ?? true
+            videos = try container.decodeIfPresent([Video].self, forKey: .videos) ?? []
+            hasMore = (try? container.decodeIfPresent(Bool.self, forKey: .hasMore)) ?? false
+        }
+    }
+
     struct DeviceCode: Decodable, Sendable {
         let deviceCode: String
         let userCode: String

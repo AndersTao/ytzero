@@ -921,6 +921,126 @@
           }
         }
       }
+    },
+    "Tomorrow" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I morgen"
+          }
+        }
+      }
+    },
+    "Weekend" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekend"
+          }
+        }
+      }
+    },
+    "Later" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senere"
+          }
+        }
+      }
+    },
+    "Removed from Scheduled" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjernet fra Planlagt"
+          }
+        }
+      }
+    },
+    "Remove from Scheduled" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern fra Planlagt"
+          }
+        }
+      }
+    },
+    "No new Shorts" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen nye Shorts"
+          }
+        }
+      }
+    },
+    "Nothing scheduled" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intet planlagt"
+          }
+        }
+      }
+    },
+    "Videos you schedule on the web are listed here." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoer, du planlægger på web, vises her."
+          }
+        }
+      }
+    },
+    "Recommendations are off" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anbefalinger er slået fra"
+          }
+        }
+      }
+    },
+    "They can be turned on in Settings on the web." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De kan slås til under Indstillinger på web."
+          }
+        }
+      }
+    },
+    "No recommendations yet" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen anbefalinger endnu"
+          }
+        }
+      }
+    },
+    "Pull down to have the server look again." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Træk ned for at få serveren til at kigge igen."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

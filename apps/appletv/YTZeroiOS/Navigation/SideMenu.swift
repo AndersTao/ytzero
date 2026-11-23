@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Where the side menu leads. Main is the home screen; the others get their
-/// screens one at a time.
+/// Where the side menu leads. Main is the home screen.
 enum MenuDestination: Hashable {
     case main
     case recommendations
@@ -118,14 +117,18 @@ struct SideMenuContainer: View {
         switch destination {
         case .main:
             HomeView()
+        case .recommendations:
+            VideoListScreen(destination: .recommendations, kind: .recommendations)
+        case .shorts:
+            VideoListScreen(destination: .shorts, kind: .shorts)
+        case .scheduled:
+            VideoListScreen(destination: .scheduled, kind: .scheduled)
         case .subscriptions:
             SubscriptionsView()
         case .playlist(let playlist):
             // A fresh screen for each playlist, not the last one's videos.
             PlaylistScreen(playlist: playlist)
                 .id(playlist.id)
-        default:
-            ComingSoonView(destination: destination)
         }
     }
 
@@ -286,28 +289,6 @@ private struct SideMenuPanel: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// A place the menu has but whose screen is still to be made.
-private struct ComingSoonView: View {
-    let destination: MenuDestination
-
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView {
-                Label { Text(verbatim: destination.title) } icon: { Image(systemName: destination.systemImage) }
-            } description: {
-                Text("Coming soon")
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    MenuButton()
-                }
-            }
-            .navigationTitle(Text(verbatim: destination.title))
-            .navigationBarTitleDisplayMode(.inline)
-        }
     }
 }
 

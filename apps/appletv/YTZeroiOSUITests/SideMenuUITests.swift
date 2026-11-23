@@ -31,7 +31,7 @@ final class SideMenuUITests: XCTestCase {
         snapshot("01-menu")
 
         scheduled.tap()
-        XCTAssertTrue(app.staticTexts["Kommer snart"].waitForExistence(timeout: 5), "Scheduled has no screen yet")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Planlagt til i aften'")).firstMatch.waitForExistence(timeout: 10), "Scheduled lists what is scheduled")
         XCTAssertFalse(app.buttons["Abonnementer"].exists, "choosing closes the menu")
 
         app.buttons["menu-button"].tap()
@@ -69,7 +69,6 @@ final class SideMenuUITests: XCTestCase {
         XCTAssertTrue(videos.firstMatch.waitForExistence(timeout: 10), "the playlist's videos should load")
         XCTAssertGreaterThanOrEqual(videos.count, 3, "every video on the list is shown")
         XCTAssertFalse(app.staticTexts["I dag"].exists, "a playlist has no days")
-        XCTAssertFalse(app.staticTexts["Kommer snart"].exists)
         snapshot("04-playlist")
 
         app.buttons["menu-button"].tap()
@@ -78,6 +77,55 @@ final class SideMenuUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Log ud"].exists)
         XCTAssertTrue(app.buttons["Brug en anden server"].exists)
         snapshot("05-settings")
+    }
+
+    /// Shorts and Scheduled are cut into headings as Main is (Scheduled by
+    /// when, as on the web); Recommendations is one grid, or says why it is
+    /// empty. Needs the dev data's two Shorts and two scheduled videos.
+    func testListsFromTheMenu() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let server = environment["YTZERO_UITEST_SERVER"], let token = environment["YTZERO_UITEST_TOKEN"] else {
+            throw XCTSkip("Set YTZERO_UITEST_SERVER and YTZERO_UITEST_TOKEN to run against a server.")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["YTZERO_UITEST_SERVER"] = server
+        app.launchEnvironment["YTZERO_UITEST_TOKEN"] = token
+        app.launchArguments += ["-AppleLanguages", "(da)", "-AppleLocale", "da_DK"]
+        XCUIDevice.shared.orientation = .portrait
+        app.launch()
+        XCTAssertTrue(app.staticTexts["I dag"].waitForExistence(timeout: 20), "the lists should load")
+        let heading = { (title: String) in app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", title)).firstMatch }
+
+        app.buttons["menu-button"].tap()
+        app.buttons["Shorts"].tap()
+        let short = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Short 2 timer gammel'")).firstMatch
+        XCTAssertTrue(short.waitForExistence(timeout: 10), "Shorts lists the Shorts")
+        XCTAssertTrue(heading("I dag").exists, "Shorts has days like Main")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Video 1 timer gammel'")).firstMatch.exists, "only Shorts")
+        snapshot("06-shorts")
+
+        app.buttons["menu-button"].tap()
+        app.buttons["Planlagt"].tap()
+        let tonight = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Planlagt til i aften'")).firstMatch
+        XCTAssertTrue(tonight.waitForExistence(timeout: 10), "Scheduled lists what is scheduled")
+        XCTAssertTrue(heading("I dag").exists, "tonight is under Today")
+        XCTAssertTrue(heading("I morgen").exists, "tomorrow has its own heading")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Short 2 timer gammel'")).firstMatch.exists)
+        snapshot("07-scheduled")
+        tonight.press(forDuration: 1.2)
+        XCTAssertTrue(app.buttons["Fjern fra Planlagt"].waitForExistence(timeout: 5), "a scheduled video can be taken off")
+        XCTAssertFalse(app.buttons["Afvis"].exists, "not rejected from here")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.97)).tap()
+        XCTAssertTrue(app.buttons["Fjern fra Planlagt"].waitForNonExistence(timeout: 5), "the menu of the card closes")
+
+        app.buttons["menu-button"].tap()
+        XCTAssertTrue(app.buttons["Anbefalinger"].waitForExistence(timeout: 5))
+        app.buttons["Anbefalinger"].tap()
+        let answered = app.staticTexts.matching(NSPredicate(format: "label IN {'Anbefalinger er slået fra', 'Ingen anbefalinger endnu'}")).firstMatch
+        let anyVideo = app.buttons.matching(NSPredicate(format: "label CONTAINS 'gammel'")).firstMatch
+        XCTAssertTrue(answered.waitForExistence(timeout: 10) || anyVideo.exists, "Recommendations lists videos or says why not")
+        XCTAssertFalse(app.staticTexts["Kommer snart"].exists)
+        snapshot("08-recommendations")
     }
 
     private func snapshot(_ name: String) {
