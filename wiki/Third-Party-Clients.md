@@ -141,6 +141,17 @@ curl -o /dev/null -w '%{http_code}\n' https://ytzero.example.com/api/v1/trending
 curl -o /dev/null -w '%{http_code}\n' https://ytzero.example.com/api/v1/media/dQw4w9WgXcQ
 ```
 
+## Jellyfin clients
+
+With `YTZERO_JELLYFIN_COMPAT=1` the instance also answers as a Jellyfin server at `<instance>/jellyfin`, enough for a Jellyfin client to add it like any other server. It is made for Rivulet on the Apple TV:
+
+1. In Rivulet, add a Jellyfin server with the address `https://<your instance>/jellyfin`.
+2. Sign in with the profile's name as the user name and the profile's client token (Settings → Clients, the same token Yattee uses) as the password.
+
+Main shows up as a film library called "Main", with Continue watching and Recently added on Rivulet's home screen. Videos play through the server's full-quality relay as HLS, and the position is saved as the YT Zero apps save it, so Continue watching follows you between Rivulet, the apps and the web. Marking a video played in Rivulet marks it watched here.
+
+Only what such a client needs is answered: there are no series, music, live TV, collections or Quick Connect, and the days, Reject and the other YT Zero-only features stay in YT Zero's own apps. Pictures are served without credentials, because a client's image view sends none; everything else needs the session Rivulet gets when it signs in.
+
 ## Environment variables
 
 | Variable | Default | Description |
