@@ -46,6 +46,14 @@ final class OfflineStore {
         var unsynced = false
         /// The profile that made it.
         var profile: Int
+        /// Locked: kept until deleted by hand, whatever the settings say.
+        var pinned = false
+        /// When the whole of it arrived, which the days kept count from.
+        var readyAt: Date?
+        /// The height it was asked for (480, 720 or 1080).
+        var height: Int?
+        /// Deleted after it was watched, kept only until the server hears of it.
+        var gone = false
 
         var id: String { video.id }
     }
@@ -64,7 +72,7 @@ final class OfflineStore {
     /// Every profile's copies.
     private var all: [Entry] = []
     /// The profile in use's copies, newest first.
-    var entries: [Entry] { all.filter { $0.profile == profile } }
+    var entries: [Entry] { all.filter { $0.profile == profile && !$0.gone } }
     /// Handed over by iOS when it woke the app for finished transfers.
     var backgroundCompletion: (() -> Void)?
 
@@ -155,7 +163,7 @@ final class OfflineStore {
         guard Self.isSafe(video.id) else { return }
         if let existing = entry(for: video.id), existing.state != .failed { return }
         all.removeAll { $0.id == video.id && $0.profile == profile }
-        all.insert(Entry(video: video, state: .requesting, addedAt: .now, profile: profile), at: 0)
+        all.insert(Entry(video: video, state: .requesting, addedAt: .now, profile: profile, height: OfflineSettings.quality), at: 0)
         save()
         start(video.id, client: client)
     }
@@ -173,6 +181,7 @@ final class OfflineStore {
     /// server's part is asked about again, and a transfer the background
     /// session no longer has is started again. Positions kept here go to the server.
     func resume(client: APIClient) async {
+        expire()
         let running = await transfers.runningNames()
         for entry in entries where work[Self.taskName(entry.id, profile: profile)] == nil {
             switch entry.state {
@@ -185,6 +194,26 @@ final class OfflineStore {
             }
         }
         await syncProgress(client: client)
+    }
+
+    /// Locked, or no longer: a locked copy stays until deleted by hand.
+    func togglePin(_ id: String) {
+        update(id) { $0.pinned.toggle() }
+    }
+
+    /// Every copy of the profile in use, or all but the locked ones.
+    func removeAll(keepingPinned: Bool) {
+        for entry in entries where !(keepingPinned && entry.pinned) { remove(entry.id) }
+    }
+
+    /// Copies kept longer than the settings allow go, unless locked.
+    func expire(now: Date = .now) {
+        let days = OfflineSettings.keepDays
+        guard days > 0 else { return }
+        let limit = now.addingTimeInterval(-Double(days) * 86_400)
+        for entry in entries where entry.state == .ready && !entry.pinned && (entry.readyAt ?? entry.addedAt) < limit {
+            remove(entry.id)
+        }
     }
 
     func remove(_ id: String) {
@@ -216,7 +245,8 @@ final class OfflineStore {
         do {
             guard let video = all.first(where: { $0.id == id && $0.profile == owner })?.video else { return }
             await keepPictures(of: video, client: client)
-            let stream = try await serverCopy(id, owner: owner, client: client)
+            let height = all.first(where: { $0.id == id && $0.profile == owner })?.height ?? OfflineSettings.quality
+            let stream = try await serverCopy(id, height: height, owner: owner, client: client)
             try Task.checkCancellation()
             update(id, profile: owner) {
                 $0.state = .transferring
@@ -231,11 +261,11 @@ final class OfflineStore {
 
     /// Until the server's copy is ready, its progress shown as it goes: the
     /// address of the file then. Asked again, a copy already made is ready at once.
-    private func serverCopy(_ id: String, owner: Int, client: APIClient) async throws -> URL {
+    private func serverCopy(_ id: String, height: Int, owner: Int, client: APIClient) async throws -> URL {
         update(id, profile: owner) { $0.state = .serverFetching }
         while true {
             try Task.checkCancellation()
-            switch try await client.offlineCopy(id) {
+            switch try await client.offlineCopy(id, height: height) {
             case .ready(let url):
                 return url
             case .preparing(let progress):
@@ -265,6 +295,7 @@ final class OfflineStore {
         update(id, profile: profile) {
             $0.state = .ready
             $0.progress = 1
+            $0.readyAt = .now
             $0.bytes = bytes
             $0.error = nil
         }
@@ -303,18 +334,24 @@ final class OfflineStore {
         }
         // Gone from Main at once, also when it was played from Downloads.
         if finished { NotificationCenter.default.post(name: .offlineFinished, object: video) }
+        // Set to go once watched: the file goes now; the entry stays out of
+        // sight only until the server has heard the video was finished.
+        if finished, OfflineSettings.deleteWhenWatched, entry(for: video.id)?.pinned == false {
+            try? FileManager.default.removeItem(at: Self.file(for: video.id, profile: profile))
+            update(video.id) { $0.gone = true }
+        }
         let ended = finished
         Task { await sync(video.id, finished: ended, client: client) }
     }
 
     func syncProgress(client: APIClient) async {
-        for entry in entries where entry.unsynced {
+        for entry in all where entry.profile == profile && entry.unsynced {
             await sync(entry.id, finished: entry.position == nil, client: client)
         }
     }
 
     private func sync(_ id: String, finished: Bool, client: APIClient) async {
-        guard let entry = entry(for: id), entry.unsynced else { return }
+        guard let entry = all.first(where: { $0.id == id && $0.profile == profile }), entry.unsynced else { return }
         do {
             if finished {
                 try await client.markWatched(id)
@@ -322,12 +359,24 @@ final class OfflineStore {
                 try await client.saveProgress(id, position: position, duration: duration)
             }
             update(id) { $0.unsynced = false }
+            // Deleted once watched: nothing is left to keep.
+            if entry.gone { forget(id) }
             // The server has it now: lists asked from here on show it.
             NotificationCenter.default.post(name: .offlineSynced, object: id)
         } catch {}
     }
 
     // MARK: Keeping
+
+    /// An entry deleted after it was watched, once the server has heard.
+    private func forget(_ id: String) {
+        let video = all.first(where: { $0.id == id && $0.profile == profile })?.video
+        all.removeAll { $0.id == id && $0.profile == profile }
+        if let video, !all.contains(where: { $0.id == id }) {
+            [video.thumbnail, video.channelThumbnail].compactMap { $0 }.forEach(OfflineImages.remove)
+        }
+        save()
+    }
 
     /// Changes the profile in use's entry, or the given profile's (a background
     /// transfer may end after a switch).
@@ -431,6 +480,46 @@ nonisolated final class OfflineTransfers: NSObject, URLSessionDownloadDelegate, 
             OfflineStore.shared.backgroundCompletion = nil
         }
     }
+}
+
+extension OfflineStore.Entry {
+    /// Read leniently: a list written by an earlier version lacks the later fields.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        video = try container.decode(Video.self, forKey: .video)
+        state = try container.decode(OfflineStore.State.self, forKey: .state)
+        progress = try container.decodeIfPresent(Double.self, forKey: .progress) ?? 0
+        bytes = try container.decodeIfPresent(Int64.self, forKey: .bytes)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+        addedAt = try container.decode(Date.self, forKey: .addedAt)
+        position = try container.decodeIfPresent(Double.self, forKey: .position)
+        duration = try container.decodeIfPresent(Double.self, forKey: .duration)
+        unsynced = try container.decodeIfPresent(Bool.self, forKey: .unsynced) ?? false
+        profile = try container.decode(Int.self, forKey: .profile)
+        pinned = try container.decodeIfPresent(Bool.self, forKey: .pinned) ?? false
+        readyAt = try container.decodeIfPresent(Date.self, forKey: .readyAt)
+        height = try container.decodeIfPresent(Int.self, forKey: .height)
+        gone = try container.decodeIfPresent(Bool.self, forKey: .gone) ?? false
+    }
+}
+
+/// How copies are made and kept on this device, set under Downloads.
+nonisolated enum OfflineSettings {
+    static let qualityKey = "offline.quality"
+    static let deleteWhenWatchedKey = "offline.deleteWhenWatched"
+    static let keepDaysKey = "offline.keepDays"
+
+    static let qualities = [480, 720, 1080]
+    /// 0 is for as long as wanted.
+    static let keepChoices = [0, 1, 3, 7, 14, 30]
+
+    static var quality: Int {
+        let saved = UserDefaults.standard.integer(forKey: qualityKey)
+        return qualities.contains(saved) ? saved : 1080
+    }
+
+    static var deleteWhenWatched: Bool { UserDefaults.standard.bool(forKey: deleteWhenWatchedKey) }
+    static var keepDays: Int { UserDefaults.standard.integer(forKey: keepDaysKey) }
 }
 
 extension Notification.Name {

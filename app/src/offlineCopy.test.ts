@@ -10,7 +10,7 @@ const copies = join(root, "copies");
 mkdirSync(cache);
 process.env.YTZERO_INVIDIOUS_CACHE_DIR = cache;
 process.env.YTZERO_OFFLINE_COPIES_DIR = copies;
-const { offlineCopy, offlineCopyPath, prune } = await import("./offlineCopy");
+const { offlineCopy, offlineCopyPath, offlineHeight, prune } = await import("./offlineCopy");
 
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
@@ -43,6 +43,14 @@ describe("a copy of a video for a device to keep", () => {
     const copy = await until(() => offlineCopy(1, "offline0001"), (state) => state.kind !== "pending");
     expect(copy.kind).toBe("ready");
     expect(existsSync(offlineCopyPath("offline0001"))).toBe(true);
+    // Asked for lower, the copy is its own file from a track no higher than that.
+    const lower = join(cache, "offline0001.hls-video720.h720.mp4");
+    expect(Bun.spawnSync([ffmpeg!, "-loglevel", "error", "-y", "-i", video, "-c", "copy", lower]).exitCode).toBe(0);
+    writeFileSync(`${lower}.txt`, "line");
+    const at720 = await until(() => offlineCopy(1, "offline0001", 720), (state) => state.kind !== "pending");
+    expect(at720.kind).toBe("ready");
+    expect(existsSync(offlineCopyPath("offline0001", 720))).toBe(true);
+    expect(offlineCopyPath("offline0001", 720)).not.toBe(offlineCopyPath("offline0001"));
 
     const probe = Bun.spawnSync([ffmpeg!.replace(/ffmpeg$/, "ffprobe"), "-v", "error", "-show_entries", "stream=codec_name", "-of", "csv=p=0", offlineCopyPath("offline0001")]);
     expect(probe.stdout.toString().trim().split("\n").sort()).toEqual(["aac", "h264"]);
@@ -50,6 +58,11 @@ describe("a copy of a video for a device to keep", () => {
 
   test("refuses anything that is not a video id, which names a file", () => {
     expect(offlineCopy(1, "../etc").kind).toBe("failed");
+  });
+
+  test("is made at 480, 720 or 1080, and at 1080 when asked for anything else", () => {
+    expect([480, 720, 1080].map(offlineHeight)).toEqual([480, 720, 1080]);
+    expect([undefined, "abc", 360, 2160].map(offlineHeight)).toEqual([1080, 1080, 1080, 1080]);
   });
 
   test("goes once it has not been fetched for two days, or when copies outgrow the limit", () => {

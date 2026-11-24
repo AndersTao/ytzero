@@ -7,7 +7,7 @@ import { ytdlpStatus } from "../downloader";
 import { answerMedia } from "../compat/invidious/mediaRoutes";
 import { BEST_HEIGHT, cacheableVideoId } from "../compat/invidious/mediaCache";
 import { RELAY_HLS_HEIGHT, relayHlsPlaylist, relayHlsReadiness, relayHlsTailResponse } from "../relayHls";
-import { offlineCopy, offlineCopyPath } from "../offlineCopy";
+import { offlineCopy, offlineCopyPath, offlineHeight } from "../offlineCopy";
 import { localFileResponse } from "../compat/invidious/media";
 
 type Environment = { Variables: { userId: number; sessionAdmin?: boolean; profileAdmin?: boolean } };
@@ -19,7 +19,7 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
     if (!sessionToken) return c.json({ error: "device session required" }, 401);
     const userId = currentUserId(c);
     const videoId = c.req.param("id");
-    const { source: asked, start } = await c.req.json().catch(() => ({}));
+    const { source: asked, start, height: askedHeight } = await c.req.json().catch(() => ({}));
     // A copy for an iPhone or iPad to keep: the relay's H.264 and AAC in one
     // MP4. 202 with how far it is while the server fetches the two tracks.
     if (asked === "offline") {
@@ -31,14 +31,15 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
         return c.json({ error: "this video cannot be kept offline" }, 409);
       }
       if (!cacheableVideoId(videoId) || !await ytdlpStatus()) return c.json({ error: "offline copies unavailable" }, 503);
-      const copy = offlineCopy(userId, videoId);
+      const height = offlineHeight(askedHeight);
+      const copy = offlineCopy(userId, videoId, height);
       if (copy.kind === "failed") return c.json({ error: copy.error }, 502);
       if (copy.kind === "pending") {
         c.header("Retry-After", "3");
         return c.json({ preparing: true, progress: copy.progress }, 202);
       }
       const ticket = mediaTickets.issue({ userId, videoId, sessionToken, kind: "offline" });
-      return c.json({ ticket, url: `${mediaTicketPath({ videoId, kind: "offline" })}?media_ticket=${ticket}`, content_type: "progressive", size: copy.size, expires_in: MEDIA_TICKET_TTL_MS / 1000 });
+      return c.json({ ticket, url: `${mediaTicketPath({ videoId, kind: "offline" })}?height=${height}&media_ticket=${ticket}`, content_type: "progressive", size: copy.size, height, expires_in: MEDIA_TICKET_TTL_MS / 1000 });
     }
     // A client whose direct stream was refused by YouTube asks for the relay:
     // this server fetches the video with yt-dlp and serves it as it arrives.
@@ -108,7 +109,7 @@ export function registerNativePlaybackRoutes(api: Hono<Environment>, currentUser
   // Reached only with an offline media ticket: the copy made for a device.
   api.get("/videos/:id/offline.mp4", async (c) => {
     if (c.req.query("media_ticket") === undefined) return c.json({ error: "media ticket required" }, 401);
-    return localFileResponse(offlineCopyPath(c.req.param("id")), c.req.header("range"), "video/mp4", false)
+    return localFileResponse(offlineCopyPath(c.req.param("id"), offlineHeight(c.req.query("height"))), c.req.header("range"), "video/mp4", false)
       ?? c.json({ error: "no offline copy" }, 404);
   });
 

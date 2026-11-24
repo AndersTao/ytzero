@@ -11,7 +11,9 @@ import { RELAY_HLS_HEIGHT } from "./relayHls";
  * The apps stream the relay's full quality: H.264 up to 1080p and AAC, fetched
  * by yt-dlp as two files into the Invidious cache. Those are exactly what
  * AVPlayer plays, so a copy for the device is the two put into one MP4 — the
- * streams copied, not converted, which takes seconds. The profile's own
+ * streams copied, not converted, which takes seconds. The device picks the
+ * height (480, 720 or 1080): the video track is fetched no higher than that,
+ * the audio is the same for all three. The profile's own
  * Downloads archive is not involved: it keeps whatever quality the profile
  * chose (4K AV1, say), which a device would have to have converted first.
  *
@@ -35,8 +37,16 @@ function directory(): string {
   return process.env.YTZERO_OFFLINE_COPIES_DIR ?? resolve(dirname(DB_PATH), "../offline-copies");
 }
 
-export function offlineCopyPath(videoId: string): string {
-  return join(directory(), `${videoId}.mp4`);
+/** The heights a device may ask for; anything else is the highest. */
+export const OFFLINE_HEIGHTS = [480, 720, 1080] as const;
+
+export function offlineHeight(value: unknown): number {
+  const height = Math.trunc(Number(value));
+  return (OFFLINE_HEIGHTS as readonly number[]).includes(height) ? height : RELAY_HLS_HEIGHT;
+}
+
+export function offlineCopyPath(videoId: string, height: number = RELAY_HLS_HEIGHT): string {
+  return join(directory(), `${videoId}.${offlineHeight(height)}.mp4`);
 }
 
 const building = new Map<string, Promise<void>>();
@@ -44,57 +54,61 @@ const progressOf = new Map<string, () => number | null>();
 const failures = new Map<string, { error: string; at: number }>();
 
 /** Where the copy of a video is: ready, being made (with how far), or failed. Asking starts it. */
-export function offlineCopy(userId: number, videoId: string): OfflineCopy {
+export function offlineCopy(userId: number, videoId: string, asked: number = RELAY_HLS_HEIGHT): OfflineCopy {
   if (!cacheableVideoId(videoId)) return { kind: "failed", error: "not a video id" };
-  const path = offlineCopyPath(videoId);
-  if (!building.has(videoId) && existsSync(path)) {
+  const height = offlineHeight(asked);
+  const key = `${videoId}:${height}`;
+  const path = offlineCopyPath(videoId, height);
+  if (!building.has(key) && existsSync(path)) {
     const now = new Date();
     // Fetched again: kept from now on.
     try { utimesSync(path, now, now); } catch {}
     return { kind: "ready", path, size: statSync(path).size };
   }
-  const failed = failures.get(videoId);
+  const failed = failures.get(key);
   if (failed && Date.now() - failed.at < FAILURE_MS) return { kind: "failed", error: failed.error };
-  if (!building.has(videoId)) start(userId, videoId, path);
-  return { kind: "pending", progress: progressOf.get(videoId)?.() ?? null };
+  if (!building.has(key)) start(userId, videoId, height, path);
+  return { kind: "pending", progress: progressOf.get(key)?.() ?? null };
 }
 
-function start(userId: number, videoId: string, path: string): void {
-  failures.delete(videoId);
+function start(userId: number, videoId: string, height: number, path: string): void {
+  const key = `${videoId}:${height}`;
+  failures.delete(key);
   const startedAt = Date.now();
   const job = (async () => {
     const [video, audio] = await Promise.all([
-      complete(userId, videoId, "hls-video"),
-      complete(userId, videoId, "hls-audio"),
+      complete(userId, videoId, "hls-video", height, key),
+      // The same sound whatever the picture: the relay's own audio track.
+      complete(userId, videoId, "hls-audio", RELAY_HLS_HEIGHT, key),
     ]);
     if (!video || !audio) throw new Error("the video could not be fetched");
     await joinTracks(video, audio, path);
-    log.info("offline_copy.ready", { videoId, bytes: statSync(path).size, ms: Date.now() - startedAt });
+    log.info("offline_copy.ready", { videoId, height, bytes: statSync(path).size, ms: Date.now() - startedAt });
     prune(path);
   })()
     .catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      failures.set(videoId, { error: message, at: Date.now() });
-      log.warn("offline_copy.failed", { videoId, error: message.slice(0, 300) });
+      failures.set(key, { error: message, at: Date.now() });
+      log.warn("offline_copy.failed", { videoId, height, error: message.slice(0, 300) });
     })
     .finally(() => {
-      building.delete(videoId);
-      progressOf.delete(videoId);
+      building.delete(key);
+      progressOf.delete(key);
     });
-  building.set(videoId, job);
+  building.set(key, job);
 }
 
 /** One of the two tracks, whole: the cache's own copy, or one fetched for it now. */
-async function complete(userId: number, videoId: string, kind: MediaKind): Promise<string | null> {
+async function complete(userId: number, videoId: string, kind: MediaKind, height: number, key: string): Promise<string | null> {
   const deadline = Date.now() + SLOT_WAIT_MS;
   while (Date.now() < deadline) {
-    const kept = cachedEntry(videoId, kind, RELAY_HLS_HEIGHT);
+    const kept = cachedEntry(videoId, kind, height);
     // The line yt-dlp printed is written beside a track once it is whole.
     if (kept && existsSync(`${kept.path}.txt`)) return kept.path;
-    const entry = pendingFetch(videoId, kind, RELAY_HLS_HEIGHT) ?? startFetch(userId, videoId, kind, RELAY_HLS_HEIGHT);
+    const entry = pendingFetch(videoId, kind, height) ?? startFetch(userId, videoId, kind, height);
     if (entry) {
       // The video is nearly all of the bytes: its share is the progress shown.
-      if (kind === "hls-video") progressOf.set(videoId, fraction(entry));
+      if (kind === "hls-video") progressOf.set(key, fraction(entry));
       return await entry.done;
     }
     // Every fetch slot is taken: wait for one.
