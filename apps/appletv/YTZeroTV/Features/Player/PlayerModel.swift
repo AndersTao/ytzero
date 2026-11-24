@@ -27,6 +27,8 @@ final class PlayerModel {
     /// The bar with channel, title and time; shown while paused and briefly after a press.
     private(set) var showsOverlay = true
     private(set) var finished = false
+    /// "Skipped: Sponsor", for a moment after SponsorBlock jumped past a part.
+    private(set) var skipNotice: String?
 
     private var ticket: String?
     /// The kind of stream playing, asked for again when its ticket runs out:
@@ -43,6 +45,13 @@ final class PlayerModel {
     private var lastSaved: Double = 0
     private var overlayToken = 0
     private var flashToken = 0
+    /// SponsorBlock: the parts to jump past, which were counted, and the
+    /// observer that catches the start of each as it plays.
+    private var skips: [APIModels.SkipSegment] = []
+    private var countedSkips: Set<String> = []
+    private var skipObserver: Any?
+    private var skipReport: ((APIModels.SkipSegment, Double) -> Void)?
+    private var noticeToken = 0
 
     // MARK: Lifecycle
 
@@ -56,6 +65,8 @@ final class PlayerModel {
             return
         }
         try? await client.recordVisit(video.id)
+        // Asked for alongside the stream, so it is there when playing starts.
+        let skipList = video.liveStatus == "live" ? nil : Task { try? await client.skipSegments(video.id) }
         do {
             // Always through the server, which fetches with yt-dlp and serves
             // as it arrives — what Invidious clients such as Yattee play too.
@@ -109,6 +120,7 @@ final class PlayerModel {
             wantsToPlay = true
             phase = .playing
             hideOverlaySoon()
+            if let skipList { startSkipping(await skipList.value ?? [], video: video, client: client) }
             let renewEvery = stream.expiresIn / 2
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { await self.track(video: video, client: client, renewEvery: renewEvery) }
@@ -138,6 +150,8 @@ final class PlayerModel {
         wantsToPlay = true
         phase = .playing
         hideOverlaySoon()
+        // Offline this simply finds nothing, and the copy plays as it is.
+        Task { startSkipping((try? await client.skipSegments(video.id)) ?? [], video: video, client: client) }
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.track(video: video, client: client, renewEvery: 0) }
             group.addTask { await self.waitForEnd(video: video, client: client) }
@@ -154,6 +168,7 @@ final class PlayerModel {
         // PlayerPresenter): pausing again only notifies observers again.
         if let player, player.rate != 0 { player.pause() }
         wantsToPlay = false
+        stopSkipping()
         var watched = video
         if !finished, duration > 0, position >= 1 {
             try? await client.saveProgress(video.id, position: position, duration: duration)
@@ -302,6 +317,8 @@ final class PlayerModel {
             position = player.currentTime().seconds.isFinite ? player.currentTime().seconds : position
             if let seconds = player.currentItem?.duration.seconds, seconds.isFinite { duration = seconds }
             isPlaying = player.timeControlStatus != .paused
+            // Also catches a part played into by a seek, which the observer does not.
+            if isPlaying { skipIfInSegment(at: position) }
             if isPlaying, duration > 0, abs(position - lastSaved) >= 15 {
                 lastSaved = position
                 try? await client.saveProgress(video.id, position: position, duration: duration)
@@ -374,6 +391,68 @@ final class PlayerModel {
     private func turnOffCaptions(on item: AVPlayerItem) async {
         guard let group = try? await item.asset.loadMediaSelectionGroup(for: .legible) else { return }
         item.select(nil, in: group)
+    }
+
+    // MARK: SponsorBlock
+
+    /// Jump past the profile's chosen parts (sponsors, intros, …) as the web
+    /// player does: at the start of each as it plays, and whenever playing
+    /// finds itself inside one.
+    private func startSkipping(_ segments: [APIModels.SkipSegment], video: Video, client: APIClient) {
+        stopSkipping()
+        guard !segments.isEmpty, let player else { return }
+        skips = segments
+        skipReport = { segment, skipped in
+            Task { try? await client.recordSkip(video.id, segment: segment, skipped: skipped) }
+        }
+        let starts = segments.map { NSValue(time: CMTime(seconds: $0.start + 0.05, preferredTimescale: 600)) }
+        skipObserver = player.addBoundaryTimeObserver(forTimes: starts, queue: .main) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, let now = self.player?.currentTime().seconds, now.isFinite else { return }
+                self.skipIfInSegment(at: now)
+            }
+        }
+        if let now = self.player?.currentTime().seconds, now.isFinite { skipIfInSegment(at: now) }
+    }
+
+    private func stopSkipping() {
+        if let skipObserver { player?.removeTimeObserver(skipObserver) }
+        skipObserver = nil
+        skips = []
+        skipReport = nil
+    }
+
+    private func skipIfInSegment(at time: Double) {
+        guard wantsToPlay, let segment = skips.first(where: { time >= $0.start && time < $0.end - 0.3 }) else { return }
+        let skipped = segment.end - time
+        seek(to: segment.end)
+        showSkipNotice(segment.category)
+        if countedSkips.insert(segment.uuid).inserted { skipReport?(segment, skipped) }
+    }
+
+    private func showSkipNotice(_ category: String) {
+        skipNotice = String(localized: "Skipped: \(Self.skipName(category))")
+        noticeToken += 1
+        let token = noticeToken
+        Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            if token == noticeToken { skipNotice = nil }
+        }
+    }
+
+    /// The names the web gives SponsorBlock's kinds.
+    static func skipName(_ category: String) -> String {
+        switch category {
+        case "sponsor": String(localized: "Sponsor")
+        case "selfpromo": String(localized: "Self-promotion")
+        case "interaction": String(localized: "Interaction")
+        case "intro": String(localized: "Intro")
+        case "outro": String(localized: "Outro")
+        case "preview": String(localized: "Preview")
+        case "music_offtopic": String(localized: "Non-music section")
+        case "filler": String(localized: "Filler")
+        default: category
+        }
     }
 
     // MARK: Remote

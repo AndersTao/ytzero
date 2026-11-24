@@ -1813,6 +1813,7 @@
       history.pushState({ tvPlayer: true }, "");
       // A history row is what puts the video on the "Continue watching" shelf.
       post("/videos/" + encodeURIComponent(v.video_id) + "/watch").catch(function () {});
+      loadSkips(v);
 
       var start = 0;
       if (v.watch_position && v.watch_duration && v.watch_position > 10 && v.watch_position < v.watch_duration - 30) {
@@ -1862,12 +1863,58 @@
 
     var finished = null;
 
+    // ---------- SponsorBlock ----------
+
+    /*
+     * The parts the profile has SponsorBlock skip (Settings → Privacy on the
+     * web: sponsors, intros and so on), jumped past as they come up, as the
+     * web player does. A skip is counted where the web counts its own.
+     */
+    var SKIP_NAMES = { sponsor: "Sponsor", selfpromo: "Selvpromovering", interaction: "Interaktion", intro: "Intro",
+                       outro: "Outro", preview: "Forhåndsvisning", music_offtopic: "Afsnit uden musik", filler: "Fyld" };
+    var skips = [];
+    var countedSkips = {};
+    var skipTimer = null;
+
+    function loadSkips(v) {
+      skips = [];
+      if (v.live_status === "live") return;
+      api("/videos/" + encodeURIComponent(v.video_id) + "/skip-segments").then(function (data) {
+        if (current !== v || !data || !data.segments || !data.segments.length) return;
+        skips = data.segments;
+        clearInterval(skipTimer);
+        skipTimer = setInterval(function () { skipIfInSegment(v); }, 250);
+      }).catch(function () {});
+    }
+
+    function skipIfInSegment(v) {
+      if (!player || current !== v || !isPlaying()) return;
+      var at = position();
+      for (var k = 0; k < skips.length; k++) {
+        var seg = skips[k];
+        if (at >= seg.start && at < seg.end - 0.3) {
+          player.seekTo(seg.end, true);
+          toast("Sprunget over: " + (SKIP_NAMES[seg.category] || seg.category));
+          if (!countedSkips[seg.uuid]) {
+            countedSkips[seg.uuid] = true;
+            fetch("/api/videos/" + encodeURIComponent(v.video_id) + "/sponsorblock-skip", {
+              method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ category: seg.category, skipped_seconds: seg.end - at, segment_start: seg.start, segment_end: seg.end, segment_uuid: seg.uuid })
+            }).catch(function () {});
+          }
+          return;
+        }
+      }
+    }
+
     function closePlayer() {
       if (!current) return;
       // A video just marked watched, rejected or played to the end must not get
       // a fresh position, or it would land on the Continue shelf again.
       var saved = !removed[current.video_id] && finished !== current.video_id ? saveProgress(true) : Promise.resolve();
       clearInterval(tickTimer);
+      clearInterval(skipTimer);
+      skips = [];
       clearTimeout(overlayTimer);
       try { player && player.destroy(); } catch (e) {}
       player = null;

@@ -42,9 +42,21 @@ struct PlayerControls: View {
                 controls
                     .transition(.opacity)
             }
+            if let notice = model.skipNotice {
+                Text(notice)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.black.opacity(0.65), in: .capsule)
+                    .padding(.top, 56)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
             status
         }
         .animation(.easeOut(duration: 0.2), value: showsControls)
+        .animation(.easeOut(duration: 0.2), value: model.skipNotice)
         .foregroundStyle(.white)
     }
 

@@ -316,6 +316,27 @@ nonisolated struct APIClient: Sendable {
         return (ticket.ticket, streamURL, ticket.expiresIn)
     }
 
+    /// What to skip in this video: sponsors, intros and the like, as the
+    /// profile chose under Privacy → SponsorBlock on the web. Empty when off.
+    func skipSegments(_ id: String) async throws -> [APIModels.SkipSegment] {
+        let (data, response) = try await send(request("/videos/\(id)/skip-segments"))
+        return try decode(APIModels.SkipSegments.self, from: data, status: response.statusCode).segments
+    }
+
+    /// A skip, counted where the web player counts its own (Insights).
+    func recordSkip(_ id: String, segment: APIModels.SkipSegment, skipped: Double) async throws {
+        struct Body: Encodable, Sendable {
+            let category: String
+            let skipped_seconds: Double
+            let segment_start: Double
+            let segment_end: Double
+            let segment_uuid: String
+        }
+        let body = Body(category: segment.category, skipped_seconds: skipped, segment_start: segment.start, segment_end: segment.end, segment_uuid: segment.uuid)
+        let (data, response) = try await send(request("/videos/\(id)/sponsorblock-skip", method: "POST", body: body))
+        try expectSuccess(data, response)
+    }
+
     func renewTicket(_ id: String, ticket: String) async throws {
         let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "PUT", body: ["ticket": ticket]))
         try expectSuccess(data, response)
