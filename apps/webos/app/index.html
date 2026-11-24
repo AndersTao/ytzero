@@ -7,25 +7,27 @@
   <style>
     html, body {
       margin: 0; height: 100%;
-      background: #0f0f0f; color: #f1f1f1;
+      background: #2a5ef6; color: #fff;
       font-family: "LG Smart UI", "Museo Sans", system-ui, sans-serif;
     }
     body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; }
-    img { width: 220px; height: 220px; }
-    #status { font-size: 40px; opacity: .85; text-align: center; max-width: 1400px; }
-    #detail { font-size: 28px; opacity: .55; min-height: 1em; }
+    /* The launch screen, as the TV draws it before this page: blue, the play mark in the middle. */
+    svg { width: 135px; height: 150px; margin-left: 14px; }
+    #status { font-size: 40px; text-align: center; max-width: 1400px; }
+    #detail { font-size: 28px; opacity: .75; min-height: 1em; }
     button {
       font: inherit; font-size: 34px; padding: 18px 56px; border-radius: 16px;
-      border: 3px solid transparent; background: #272727; color: #f1f1f1; cursor: pointer;
+      border: 3px solid transparent; background: rgba(0,0,0,.25); color: #fff; cursor: pointer;
     }
-    button:focus, button:hover { background: #f1f1f1; color: #0f0f0f; outline: none; }
+    button:focus, button:hover { background: #fff; color: #2a5ef6; outline: none; }
     [hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <img src="largeIcon.png" alt="">
-  <div id="status">Forbinder til YT Zero…</div>
-  <div id="detail"></div>
+  <svg viewBox="0 0 135 150" aria-hidden="true"><path d="M20 10 L125 75 L20 140 Z" fill="#fff" stroke="#fff" stroke-width="20" stroke-linejoin="round"/></svg>
+  <!-- Words only when the server cannot be reached; connecting is the launch screen alone. -->
+  <div id="status" hidden></div>
+  <div id="detail" hidden></div>
   <button id="retry" hidden>Prøv igen</button>
 
   <script>
@@ -58,8 +60,8 @@
     function connect() {
       clearTimeout(retryTimer);
       retryBtn.hidden = true;
-      statusEl.textContent = "Forbinder til YT Zero…";
-      detailEl.textContent = "";
+      statusEl.hidden = true;
+      detailEl.hidden = true;
       reachable(INSTANCE_URL, TIMEOUT_MS).then(function (ok) {
         if (ok) {
           // replace() så denne side ikke ligger i historikken: Tilbage på fjernbetjeningen
@@ -68,6 +70,8 @@
         } else {
           statusEl.textContent = "Kan ikke nå YT Zero lige nu";
           detailEl.textContent = INSTANCE_URL.replace(/\/$/, "") + " · prøver igen automatisk";
+          statusEl.hidden = false;
+          detailEl.hidden = false;
           retryBtn.hidden = false;
           retryBtn.focus();
           retryTimer = setTimeout(connect, AUTO_RETRY_MS);

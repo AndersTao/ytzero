@@ -31,9 +31,18 @@
     #status.error { color: #ff6b6b; opacity: .9; }
     #back { margin-top: 28px; font-size: 26px; opacity: .55; }
     #back[hidden] { display: none; }
+    /* The launch screen the TV app opens on, held until there is something to show. */
+    #splash {
+      position: fixed; inset: 0; z-index: 30; background: #2a5ef6;
+      display: flex; align-items: center; justify-content: center; transition: opacity .3s ease;
+    }
+    #splash svg { width: 135px; height: 150px; margin-left: 14px; }
+    #splash.gone { opacity: 0; pointer-events: none; }
+    #splash[hidden] { display: none; }
   </style>
 </head>
 <body>
+  <div id="splash"><svg viewBox="0 0 135 150" aria-hidden="true"><path d="M20 10 L125 75 L20 140 Z" fill="#fff" stroke="#fff" stroke-width="20" stroke-linejoin="round"/></svg></div>
   <main>
     <div id="qr" class="empty"></div>
     <div class="text">
@@ -2375,6 +2384,10 @@ var qrcode = function() {
       // The TV has its own simple, view-only page (tv.html).
       function goHome() { window.location.replace("/tv.html"); }
 
+      // The launch screen stays up while the TV checks it is signed in, so a TV
+      // that is goes straight from it to its videos and never shows this page.
+      function showLogin() { document.getElementById("splash").hidden = true; start(); }
+
       function formatCode(code) {
         var c = String(code).replace(/[^0-9A-Za-z]/g, "").toUpperCase();
         return c.length === 8 ? c.slice(0, 4) + "-" + c.slice(4) : String(code).toUpperCase();
@@ -2433,6 +2446,7 @@ var qrcode = function() {
         document.getElementById("heading").textContent = "Tilføj en profil";
         document.getElementById("lead").textContent = "Scan QR-koden med telefonen, og log ind som den, der skal tilføjes. TV'et kan derefter skifte mellem profilerne.";
         document.getElementById("back").hidden = false;
+        document.getElementById("splash").hidden = true;
         // Back (or Escape) returns to the videos without adding anyone.
         document.addEventListener("keydown", function (e) {
           if (e.keyCode === 461 || e.keyCode === 27 || e.keyCode === 8) {
@@ -2448,8 +2462,8 @@ var qrcode = function() {
       // Allerede logget ind? Så direkte videre.
       fetch("/api/auth/status", { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { return r.json(); })
-        .then(function (s) { if (s && s.authenticated) goHome(); else start(); })
-        .catch(start);
+        .then(function (s) { if (s && s.authenticated) goHome(); else showLogin(); })
+        .catch(showLogin);
     })();
   </script>
 </body>

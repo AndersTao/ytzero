@@ -7,7 +7,10 @@ i 30 dage. Passkey-login i Authentik behøver derfor ikke virke på TV'et.
 
 Sådan hænger det sammen:
 
-1. Appen (`app/index.html`) tjekker, at serveren svarer. Derefter åbner den
+1. Appen åbner på en blå skærm med play-ikonet (`app/splash.png`), som
+   bliver stående, til forsiden er klar: `app/index.html`, login-siden og
+   `/tv.html` viser den samme skærm, så et TV, der allerede er logget ind, går
+   direkte fra den til videoerne. Appen (`app/index.html`) tjekker, at serveren svarer. Derefter åbner den
    `<din instans>/tv-login.html`. Svarer serveren ikke, viser
    den en fejlside og prøver igen automatisk.
 2. Login-siden (`/tv-login.html`) følger med YT Zero-imaget fra `ui/public`.
@@ -26,11 +29,12 @@ Sådan hænger det sammen:
    fremskridt gemmes.
    Øverst står "Fortsæt med at se". Hold OK nede på en video for at få en
    menu med "Markér som set" og "Afvis". Op fra øverste række går til
-   "Opdater" i øverste højre hjørne. Talknapperne virker stadig som genveje
+   stedknappen øverst til venstre (Main), og Højre derfra til profil og
+   "Opdater". Talknapperne virker stadig som genveje
    (1 afviser, 2 markerer som set, 3 opdaterer), men vises ikke. Farveknapperne
    bruges ikke, fordi LG-TV'et selv fanger dem (billed- og
    energiindstillinger).
-   Knappen øverst til venstre (Op og så Venstre) går til de samme steder som
+   Stedknappen øverst til venstre går til de samme steder som
    Apple TV-appen: Main, Anbefalinger, Shorts (en række lodrette kort pr. dag),
    Planlagt (Venstre/Højre på en række vælger I dag, I aften, I morgen,
    I morgen aften, Weekend eller X for at fjerne den) og profilens playlister.

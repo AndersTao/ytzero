@@ -11,10 +11,10 @@
     upright cards per day), Scheduled (with the times to move a video to) and the
     profile's playlists, and a full-screen player. Remote keys only:
       browse  arrows move, OK plays, OK held opens a menu (watched / reject),
-              Up from the top row reaches Refresh in the top right, Left from it the
-              profile button (switch profile, add one by pairing again) and the
-              place button at the left (choose where to be), Back goes to Main and
-              from there leaves the app
+              Up from the top row reaches the place button at the left (choose
+              where to be), Right from it the profile button (switch profile, add
+              one by pairing again) and Refresh, Back goes to Main and from there
+              leaves the app
       player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
       numbers 1 rejects, 2 marks as watched, 3 refreshes: shortcuts, not shown.
               (The colour keys are taken by the LG TV itself.)
@@ -229,9 +229,18 @@
     .sched-btn.focused { box-shadow: 0 0 0 4px var(--accent); background: #3a3a3a; color: var(--fg); }
     .sched-btn.remove { width: 60px; height: 60px; border-radius: 50%; background: #2a2a2a; }
     .sched-btn.remove.focused { box-shadow: 0 0 0 4px #e5484d; }
+    /* The launch screen the TV app opens on, held until there is something to show. */
+    #splash {
+      position: fixed; inset: 0; z-index: 30; background: #2a5ef6;
+      display: flex; align-items: center; justify-content: center; transition: opacity .3s ease;
+    }
+    #splash svg { width: 135px; height: 150px; margin-left: 14px; }
+    #splash.gone { opacity: 0; pointer-events: none; }
+    #splash[hidden] { display: none; }
   </style>
 </head>
 <body>
+  <div id="splash"><svg viewBox="0 0 135 150" aria-hidden="true"><path d="M20 10 L125 75 L20 140 Z" fill="#fff" stroke="#fff" stroke-width="20" stroke-linejoin="round"/></svg></div>
   <div id="topbar"><button id="placeBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="placeName">Main</span></button><button id="profileBtn" type="button" tabindex="-1" hidden><span class="avatar" id="profileAvatar"></span><span id="profileName"></span></button><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
@@ -316,6 +325,16 @@
     var generation = 0; // bumps on refresh, so late answers from before it are dropped
     // Rejected or watched here: kept out even if a list fetched later still has them.
     var removed = {};
+
+    // The launch screen goes once the first list is drawn (or could not be),
+    // so opening the app goes from blue straight to the videos.
+    var splashEl = document.getElementById("splash");
+    function hideSplash() {
+      if (!splashEl || splashEl.classList.contains("gone")) return;
+      splashEl.classList.add("gone");
+      setTimeout(function () { splashEl.hidden = true; }, 350);
+    }
+    setTimeout(hideSplash, 8000); // never longer than this
 
     var rowsEl = document.getElementById("rows");
     var placeBtn = document.getElementById("placeBtn");
@@ -861,6 +880,7 @@
           if (place.kind === "sched") drawSchedTitles();
           loading = false;
           updateChrome();
+          hideSplash();
           if (first && !current && focus.s !== "top") {
             var firstFilled = filledSections()[0];
             if (firstFilled) setFocus(firstFilled, 0, true);
@@ -869,6 +889,7 @@
         })
         .catch(function (error) {
           loading = false;
+          hideSplash();
           if (String(error && error.message) === "unauthenticated" || gen !== generation) return;
           if (!filledSections().length) {
             messageEl.textContent = "Kunne ikke hente videoer. Prøver igen…";
@@ -923,13 +944,13 @@
     }
 
     // The top row: the place button, the profile button (once known) and Refresh.
-    // Up lands on Refresh.
+    // Up lands on the place button, the way to the other places.
     function topButtons() { return [placeBtn, profileBtn, refreshBtn].filter(function (b) { return !b.hidden; }); }
 
     function focusTop(quiet, index) {
       clearMark();
       var buttons = topButtons();
-      var i = index == null || index < 0 ? buttons.length - 1 : Math.min(buttons.length - 1, index);
+      var i = index == null || index < 0 ? 0 : Math.min(buttons.length - 1, index);
       focus = { s: "top", i: i, btn: buttons[i] };
       buttons[i].classList.add("focused");
       if (!quiet) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1184,7 +1205,7 @@
       b.addEventListener("click", function (e) { e.stopPropagation(); if (menuPressed) chooseMenu(menuShown.indexOf(b)); });
     });
     menuEl.addEventListener("click", function (e) { if (e.target === menuEl && menuPressed) leaveMenu(); });
-    refreshBtn.addEventListener("click", function () { focusTop(true); refresh(); });
+    refreshBtn.addEventListener("click", function () { focusTop(true, topButtons().indexOf(refreshBtn)); refresh(); });
     placeBtn.addEventListener("click", function () { focusTop(true, 0); openPlaces(); });
 
     // ---------- Number keys ----------
