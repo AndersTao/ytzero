@@ -29,17 +29,29 @@
     }
     #status { font-size: 28px; opacity: .55; min-height: 1.4em; }
     #status.error { color: #ff6b6b; opacity: .9; }
+    #back { margin-top: 28px; font-size: 26px; opacity: .55; }
+    #back[hidden] { display: none; }
+    /* The launch screen the TV app opens on, held until there is something to show. */
+    #splash {
+      position: fixed; inset: 0; z-index: 30; background: #2a5ef6;
+      display: flex; align-items: center; justify-content: center; transition: opacity .3s ease;
+    }
+    #splash svg { width: 135px; height: 150px; margin-left: 14px; }
+    #splash.gone { opacity: 0; pointer-events: none; }
+    #splash[hidden] { display: none; }
   </style>
 </head>
 <body>
+  <div id="splash"><svg viewBox="0 0 135 150" aria-hidden="true"><path d="M20 10 L125 75 L20 140 Z" fill="#fff" stroke="#fff" stroke-width="20" stroke-linejoin="round"/></svg></div>
   <main>
     <div id="qr" class="empty"></div>
     <div class="text">
-      <h1>Log ind på YT Zero</h1>
-      <p>Scan QR-koden med telefonen, log ind og godkend TV'et.</p>
+      <h1 id="heading">Log ind på YT Zero</h1>
+      <p id="lead">Scan QR-koden med telefonen, log ind og godkend TV'et.</p>
       <p id="url"></p>
       <div id="code">····-····</div>
       <div id="status">Henter kode…</div>
+      <p id="back" hidden>Tryk Tilbage for at fortryde.</p>
     </div>
   </main>
 
@@ -47,6 +59,9 @@
   <script>
     (function () {
       var DEVICE_NAME = "LG TV";
+      // ?add=1: the TV is signed in already and adds another profile. The new
+      // session is linked to the one it has, so it can switch between them.
+      var ADDING = /[?&]add=1(&|$)/.test(window.location.search);
 
       var qrEl = document.getElementById("qr");
       var codeEl = document.getElementById("code");
@@ -71,6 +86,10 @@
 
       // The TV has its own simple, view-only page (tv.html).
       function goHome() { window.location.replace("/tv.html"); }
+
+      // The launch screen stays up while the TV checks it is signed in, so a TV
+      // that is goes straight from it to its videos and never shows this page.
+      function showLogin() { document.getElementById("splash").hidden = true; start(); }
 
       function formatCode(code) {
         var c = String(code).replace(/[^0-9A-Za-z]/g, "").toUpperCase();
@@ -110,7 +129,7 @@
       function poll(deviceCode, interval) {
         pollTimer = setTimeout(function () {
           // set_cookie: the server sets the usual HttpOnly session cookie itself.
-          post("/api/auth/device/token", { device_code: deviceCode, set_cookie: true })
+          post("/api/auth/device/token", { device_code: deviceCode, set_cookie: true, link_session: ADDING })
             .then(function (r) {
               if (r.status === 428) return poll(deviceCode, interval);   // venter stadig
               if (r.status === 400) return start();                      // koden er udløbet
@@ -126,11 +145,28 @@
         }, interval);
       }
 
+      if (ADDING) {
+        document.getElementById("heading").textContent = "Tilføj en profil";
+        document.getElementById("lead").textContent = "Scan QR-koden med telefonen, og log ind som den, der skal tilføjes. TV'et kan derefter skifte mellem profilerne.";
+        document.getElementById("back").hidden = false;
+        document.getElementById("splash").hidden = true;
+        // Back (or Escape) returns to the videos without adding anyone.
+        document.addEventListener("keydown", function (e) {
+          if (e.keyCode === 461 || e.keyCode === 27 || e.keyCode === 8) {
+            e.preventDefault();
+            stopTimers();
+            goHome();
+          }
+        });
+        start();
+        return;
+      }
+
       // Allerede logget ind? Så direkte videre.
       fetch("/api/auth/status", { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { return r.json(); })
-        .then(function (s) { if (s && s.authenticated) goHome(); else start(); })
-        .catch(start);
+        .then(function (s) { if (s && s.authenticated) goHome(); else showLogin(); })
+        .catch(showLogin);
     })();
   </script>
 </body>
