@@ -1271,6 +1271,16 @@
           }
         }
       }
+    },
+    "The server is too old for offline copies." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serveren er for gammel til offline-kopier."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

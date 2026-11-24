@@ -340,6 +340,11 @@ nonisolated struct APIClient: Sendable {
         }
         let ticket = try decode(APIModels.PlaybackTicket.self, from: data, status: response.statusCode)
         guard let url = URL(string: ticket.url, relativeTo: baseURL)?.absoluteURL else { throw APIError.invalidAddress }
+        // A server from before offline copies answers with a stream instead,
+        // which is no file to keep.
+        guard url.path().hasSuffix("/offline.mp4") else {
+            throw APIError.server(status: 501, message: String(localized: "The server is too old for offline copies."))
+        }
         return .ready(url)
     }
 
