@@ -54,6 +54,8 @@ picker is read-only until `TZ` is removed and the instance restarted.
 | `YTZERO_INVIDIOUS_COMPAT_USER` | _(first administrator)_ | Profile id whose library the catalogue routes serve while `YTZERO_INVIDIOUS_COMPAT_AUTH` is `open`. |
 | `YTZERO_JELLYFIN_COMPAT` | _(unset)_ | Set to `1` to answer a small part of the Jellyfin API at `/jellyfin`, so a Jellyfin client such as Rivulet on the Apple TV can browse Main and play from it. Signing in takes the profile name and the client token from Settings → Clients. See [Third-Party Clients](Third-Party-Clients#jellyfin-clients). |
 | `YTZERO_INVIDIOUS_CACHE_MB` | `4096` | Cap for the directory holding videos fetched for a third-party client. |
+| `YTZERO_OFFLINE_COPIES_MB` | `8192` | Cap for the copies the iPhone and iPad app fetch to keep offline (H.264 + AAC up to 1080p, one MP4 per video). A copy not fetched for 48 hours is removed, and beyond the cap the least recently fetched go first. |
+| `YTZERO_OFFLINE_COPIES_DIR` | `<data>/offline-copies` | Where those copies are kept, beside the database's folder. |
 | `YTZERO_INVIDIOUS_MAX_FETCHES` | `6` | How many videos are fetched at once for third-party clients. |
 | `YTZERO_AUTH_DISABLE` | _(unset)_ | Set to `1` to force the **None** auth method regardless of the saved setting. Emergency unlock if an auth method locks you out — see [Authentication](Authentication#recovery-anti-lockout). |
 | `YTZERO_BACKGROUND_TASKS` | `1` | Set to `0` on HTTP-only replicas in a PostgreSQL cluster. Such replicas still serve requests and enqueue durable work, but do not start refresh schedulers, the download consumer, automatic yt-dlp updates, or TubeArchivist background synchronization. Exactly one replica should keep the default `1`. |

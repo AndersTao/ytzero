@@ -4,10 +4,11 @@ import Observation
 
 /// Videos kept on this device to watch without a connection.
 ///
-/// A copy is made from the server's own: the server fetches the video (its
-/// Downloads, ahead of anything else it is fetching) and prepares a file
-/// AVPlayer plays, then this device transfers that file with a background
-/// session, which carries on while the app is away. The video, its pictures
+/// The server makes the copy: the H.264 and AAC tracks the apps stream, up to
+/// 1080p, put together in one MP4 without converting anything. Then this
+/// device transfers the file with a background session, which carries on while
+/// the app is away. The profile's own Downloads archive on the server is not
+/// used: it keeps the quality the profile chose, which may need converting. The video, its pictures
 /// and where it was watched to are kept beside the file, so the Downloads
 /// screen and playback need no server; positions reached offline are handed
 /// to the server once it can be reached again.
@@ -20,9 +21,9 @@ final class OfflineStore {
     static let shared = OfflineStore()
 
     enum State: String, Codable {
-        /// Asking the server to fetch it.
+        /// Asking the server for it.
         case requesting
-        /// The server is fetching it from YouTube.
+        /// The server is fetching it from YouTube and putting it together.
         case serverFetching
         /// Coming from the server to this device.
         case transferring
@@ -215,13 +216,7 @@ final class OfflineStore {
         do {
             guard let video = all.first(where: { $0.id == id && $0.profile == owner })?.video else { return }
             await keepPictures(of: video, client: client)
-            // Asked again when it was already done: the server answers at once.
-            if all.first(where: { $0.id == id && $0.profile == owner })?.state == .requesting {
-                try await client.requestServerDownload(id)
-                update(id, profile: owner) { $0.state = .serverFetching }
-            }
-            try await waitForServer(id, owner: owner, client: client)
-            let stream = try await preparedFile(id, client: client)
+            let stream = try await serverCopy(id, owner: owner, client: client)
             try Task.checkCancellation()
             update(id, profile: owner) {
                 $0.state = .transferring
@@ -234,37 +229,19 @@ final class OfflineStore {
         }
     }
 
-    /// Until the server has the whole video: its progress shown as it goes.
-    private func waitForServer(_ id: String, owner: Int, client: APIClient) async throws {
+    /// Until the server's copy is ready, its progress shown as it goes: the
+    /// address of the file then. Asked again, a copy already made is ready at once.
+    private func serverCopy(_ id: String, owner: Int, client: APIClient) async throws -> URL {
         update(id, profile: owner) { $0.state = .serverFetching }
         while true {
             try Task.checkCancellation()
-            let answer = try await client.serverDownload(id)
-            switch answer.download?.status {
-            case "done":
-                return
-            case "error":
-                throw OfflineError.server(answer.download?.error)
-            case "deleted", nil:
-                throw OfflineError.server(String(localized: "The server no longer has the video."))
-            default:
-                let percent = (answer.progress?.percent ?? 0) / 100
-                update(id, profile: owner) { $0.progress = min(1, max(0, percent)) }
+            switch try await client.offlineCopy(id) {
+            case .ready(let url):
+                return url
+            case .preparing(let progress):
+                update(id, profile: owner) { $0.progress = min(1, max(0, progress ?? 0)) }
             }
             try await Task.sleep(for: .seconds(3))
-        }
-    }
-
-    /// The address of the server's file, prepared for AVPlayer. A video in a
-    /// format AVPlayer does not play is converted first, which takes a while.
-    private func preparedFile(_ id: String, client: APIClient) async throws -> URL {
-        let deadline = ContinuousClock.now + .seconds(30 * 60)
-        while true {
-            do {
-                return try await client.playbackTicket(id, source: nil, start: 0).url
-            } catch APIError.pending where ContinuousClock.now < deadline {
-                try await Task.sleep(for: .seconds(2))
-            }
         }
     }
 
@@ -371,21 +348,10 @@ final class OfflineStore {
     }
 
     private static func message(for error: any Error) -> String {
-        if case APIError.server(409, let message) = error, message == "downloads disabled" {
-            return String(localized: "Downloads are off for this profile: turn on “Allow downloads for this profile” on the Downloads page on the web.")
+        if case APIError.server(409, _) = error {
+            return String(localized: "This video cannot be kept offline.")
         }
-        if let error = error as? OfflineError { return error.localizedDescription }
         return error.localizedDescription
-    }
-}
-
-nonisolated enum OfflineError: LocalizedError {
-    case server(String?)
-
-    var errorDescription: String? {
-        switch self {
-        case .server(let message): message ?? String(localized: "The server could not fetch the video.")
-        }
     }
 }
 

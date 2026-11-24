@@ -3,8 +3,9 @@ import { randomBytes } from "node:crypto";
 /**
  * "relay": this server fetches the video with yt-dlp and serves it as it arrives.
  * "relay-hls": the same, as separate full-quality tracks in one HLS presentation.
+ * "offline": a whole MP4 of those tracks, for a device to keep (see offlineCopy).
  */
-export type NativeMediaKind = "file" | "hls" | "direct" | "direct-hls" | "live-hls" | "relay" | "relay-hls";
+export type NativeMediaKind = "file" | "hls" | "direct" | "direct-hls" | "live-hls" | "relay" | "relay-hls" | "offline";
 export type MediaTicket = {
   userId: number;
   videoId: string;
@@ -54,6 +55,7 @@ export function mediaTicketPath(ticket: Pick<MediaTicket, "videoId" | "kind">): 
   const base = `/api/videos/${encodeURIComponent(ticket.videoId)}`;
   if (ticket.kind === "hls" || ticket.kind === "direct-hls" || ticket.kind === "live-hls" || ticket.kind === "relay-hls") return `${base}/${ticket.kind}/index.m3u8`;
   if (ticket.kind === "relay") return `${base}/relay`;
+  if (ticket.kind === "offline") return `${base}/offline.mp4`;
   return ticket.kind === "file" ? `${base}/stream?compat=1` : `${base}/direct-stream`;
 }
 
@@ -63,6 +65,7 @@ export function ticketAllowsPath(ticket: Pick<MediaTicket, "videoId" | "kind">, 
   if (ticket.kind === "file") return pathname === `${base}/stream`;
   if (ticket.kind === "direct") return pathname === `${base}/direct-stream`;
   if (ticket.kind === "relay") return pathname === `${base}/relay`;
+  if (ticket.kind === "offline") return pathname === `${base}/offline.mp4`;
   const prefix = `${base}/${ticket.kind}/`;
   if (!pathname.startsWith(prefix)) return false;
   const file = pathname.slice(prefix.length);
