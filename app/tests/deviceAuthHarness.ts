@@ -1,5 +1,5 @@
 const { api } = await import("../src/routes");
-const { AUTH_SESSION_TTL_SECONDS, DEVICE_SESSION_TTL_SECONDS, createSession } = await import("../src/auth");
+const { DEVICE_SESSION_TTL_SECONDS, createSession } = await import("../src/auth");
 const { database } = await import("../src/database");
 const { setSetting } = await import("../src/db");
 
@@ -53,7 +53,7 @@ const tokenResponse = await api.request("http://localhost/auth/device/token", {
 const tokenBody = await tokenResponse.json() as any;
 const token = tokenBody.access_token ?? "";
 const bearer = `Bearer ${token}`;
-// Kept as named, and until it signs out rather than for 30 days.
+// Kept as named, and for half a year from its last use rather than 30 days.
 const named = await database.prepare("SELECT device_name, device_kind, expires_at FROM auth_sessions WHERE token = ?")
   .get<{ device_name: string | null; device_kind: string | null; expires_at: string }>(token);
 const longLived = new Date(named?.expires_at ?? 0).getTime() >= Date.now() + (DEVICE_SESSION_TTL_SECONDS - 60) * 1000;
@@ -165,8 +165,9 @@ if (
   || afterSignOut.devices?.length !== 1
   || afterSignOut.devices[0].name !== "Kitchen phone"
   || feed.status !== 200
-  || renewedExpiresAt < renewalStartedAt + (AUTH_SESSION_TTL_SECONDS - 5) * 1000
-  || renewedExpiresAt > renewalObservedAt + AUTH_SESSION_TTL_SECONDS * 1000
+  // Used, a device's session runs on for its own time from now.
+  || renewedExpiresAt < renewalStartedAt + (DEVICE_SESSION_TTL_SECONDS - 5) * 1000
+  || renewedExpiresAt > renewalObservedAt + DEVICE_SESSION_TTL_SECONDS * 1000
   || status.status !== 200
   || statusBody.authenticated !== true
   || statusBody.scope !== "account"

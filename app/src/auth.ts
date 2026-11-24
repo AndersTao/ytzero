@@ -107,11 +107,12 @@ export const AUTH_SESSION_COOKIE = "ytzero_session";
 export const AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 const SESSION_TTL_MS = AUTH_SESSION_TTL_SECONDS * 1000;
 /**
- * A phone, tablet or TV signed in with a code stays signed in until it signs
- * out, or is signed out under Settings → Devices: it is not asked to sign in
- * again every so often. Ten years stands for that.
+ * A phone, tablet or TV signed in with a code stays signed in for as long as
+ * it is used: half a year from its last use, renewed every time, so one in
+ * use is never asked to sign in again. One lost and left unused runs out by
+ * itself; Settings → Client access → Devices signs one out at once.
  */
-export const DEVICE_SESSION_TTL_SECONDS = 10 * 365 * 24 * 60 * 60;
+export const DEVICE_SESSION_TTL_SECONDS = 180 * 24 * 60 * 60;
 
 export type SessionScope = "account" | "profile";
 
@@ -137,16 +138,18 @@ export async function validateSession(
 ): Promise<{ user_id: number | null; scope: SessionScope; is_admin: boolean; permission_group_uuid: string | null } | null> {
   if (!token) return null;
   const row = await database
-    .prepare("SELECT user_id, scope, is_admin, permission_group_uuid, expires_at FROM auth_sessions WHERE token = ?")
-    .get<{ user_id: number | null; scope: SessionScope; is_admin: number; permission_group_uuid: string | null; expires_at: string }>(token);
+    .prepare("SELECT user_id, scope, is_admin, permission_group_uuid, expires_at, device_name FROM auth_sessions WHERE token = ?")
+    .get<{ user_id: number | null; scope: SessionScope; is_admin: number; permission_group_uuid: string | null; expires_at: string; device_name: string | null }>(token);
   if (!row) return null;
   if (new Date(row.expires_at).getTime() <= Date.now()) {
     await database.prepare("DELETE FROM auth_sessions WHERE token = ?").run(token);
     return null;
   }
   if (options.renew) {
-    // Renewed forward only: a device's long session is never cut back to 30 days.
-    const expires = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+    // A device signed in with a code renews for its own longer time; renewal
+    // only ever moves the end forward.
+    const ttl = row.device_name !== null ? DEVICE_SESSION_TTL_SECONDS * 1000 : SESSION_TTL_MS;
+    const expires = new Date(Date.now() + ttl).toISOString();
     if (expires > row.expires_at) {
       await database.prepare("UPDATE auth_sessions SET expires_at = ?, last_seen = datetime('now') WHERE token = ?").run(expires, token);
     } else {

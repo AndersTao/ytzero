@@ -460,7 +460,7 @@ export const da: Locale = {
     "tvPairingApprovedTitle": "Enhed godkendt",
     "tvPairingApprovedDescription": "Du kan gå tilbage til enheden. Den logger selv ind.",
     "tvPairingSecurityTitle": "Før du godkender",
-    "tvPairingSecurityDescription": "Godkend kun en enhed, du kender. Den har adgang til profilen ovenfor, til den logger ud, eller du logger den ud under Indstillinger → Klientadgang.",
+    "tvPairingSecurityDescription": "Godkend kun en enhed, du kender. Den har adgang til profilen ovenfor, så længe den bliver brugt, til den logger ud, eller du logger den ud under Indstillinger → Klientadgang.",
     "webSubTitle": "Push-opdateringer fra YouTube",
     "webSubHint": "I stedet for at vente på næste feed-tjek giver YouTubes WebSub-hub denne server besked inden for få minutter efter en ny upload. De almindelige feed-tjek kører videre som backup.",
     "webSubEnable": "Brug push-opdateringer",
