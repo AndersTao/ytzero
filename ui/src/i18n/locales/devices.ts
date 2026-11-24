@@ -19,6 +19,10 @@ const en = {
   devicesRename: "Rename",
   devicesSave: "Save",
   devicesRenamed: "Name saved",
+  clientAppsTitle: "Sign-in token for apps",
+  clientAppsHint: "For apps that sign in with this profile's name and a token instead of a code, such as Yattee and Rivulet. One token per profile: making a new one signs every app using the old one out.",
+  serverWideTitle: "For the whole server",
+  serverWideHint: "Only an administrator sees this. It applies to every profile.",
 };
 
 type DeviceMessages = typeof en;
@@ -40,6 +44,10 @@ const da: DeviceMessages = {
   devicesRename: "Omdøb",
   devicesSave: "Gem",
   devicesRenamed: "Navnet er gemt",
+  clientAppsTitle: "Login-token til apps",
+  clientAppsHint: "Til apps, der logger ind med profilens navn og et token i stedet for en kode, fx Yattee og Rivulet. Ét token pr. profil: Laver du et nyt, bliver alle apps med det gamle logget ud.",
+  serverWideTitle: "For hele serveren",
+  serverWideHint: "Kun en administrator ser dette. Det gælder alle profiler.",
 };
 
 /*

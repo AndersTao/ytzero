@@ -60,9 +60,7 @@ export default function DeviceSessions({ showToast }: { showToast: (message: str
 
   return (
     <>
-      <SettingRow label={t("devicesTitle")} description={t("devicesHint")}>
-        {devices.length === 0 && <Text>{t("devicesEmpty")}</Text>}
-      </SettingRow>
+      {devices.length === 0 && <Text tone="secondary">{t("devicesEmpty")}</Text>}
       {devices.map((device) => (
         <SettingRow
           key={device.id}
