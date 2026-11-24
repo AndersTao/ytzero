@@ -18,6 +18,8 @@ struct DownloadsScreen: View {
                     } retry: {
                         guard let client = session.client else { return }
                         store.retry(entry.id, client: client)
+                    } delete: {
+                        store.remove(entry.id)
                     }
                     .swipeActions(edge: .trailing) {
                         Button("Delete", systemImage: "trash", role: .destructive) {
@@ -67,8 +69,30 @@ private struct DownloadRow: View {
     let client: APIClient?
     let play: () -> Void
     let retry: () -> Void
+    let delete: () -> Void
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
+        HStack(spacing: 16) {
+            summary
+            // On the iPad's wider rows a button of its own, as well as the swipe.
+            if horizontalSizeClass == .regular {
+                Button(action: delete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(.red)
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(Text("Delete download"))
+                .accessibilityIdentifier("delete-\(entry.id)")
+            }
+        }
+    }
+
+    private var summary: some View {
         Button(action: play) {
             HStack(alignment: .top, spacing: 12) {
                 Thumbnail(source: entry.video.thumbnail, client: client)

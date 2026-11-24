@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observation
 
 /// Videos kept on this device to watch without a connection.
@@ -68,6 +69,11 @@ final class OfflineStore {
 
     private var work: [String: Task<Void, Never>] = [:]
     private var transfers: OfflineTransfers!
+    /// The profile in use's session, for handing over what waited for a
+    /// connection the moment there is one again.
+    var client: APIClient?
+    private let network = NWPathMonitor()
+    private var online = true
 
     static var directory: URL {
         URL.applicationSupportDirectory.appending(path: "Offline", directoryHint: .isDirectory)
@@ -107,6 +113,13 @@ final class OfflineStore {
             all = saved
         }
         transfers = OfflineTransfers()
+        // Back online: positions and finishes reached offline go to the
+        // server, and copies that stopped half way carry on.
+        network.pathUpdateHandler = { path in
+            let reachable = path.status == .satisfied
+            Task { @MainActor in OfflineStore.shared.networkChanged(reachable: reachable) }
+        }
+        network.start(queue: .global(qos: .utility))
     }
 
     // MARK: Reading
@@ -287,6 +300,12 @@ final class OfflineStore {
         }
     }
 
+    private func networkChanged(reachable: Bool) {
+        defer { online = reachable }
+        guard reachable, !online, profile != 0, let client else { return }
+        Task { await resume(client: client) }
+    }
+
     // MARK: Where it was watched to
 
     /// Back from the player: kept here for a video on this device, and handed
@@ -305,6 +324,8 @@ final class OfflineStore {
             }
             $0.unsynced = true
         }
+        // Gone from Main at once, also when it was played from Downloads.
+        if finished { NotificationCenter.default.post(name: .offlineFinished, object: video) }
         let ended = finished
         Task { await sync(video.id, finished: ended, client: client) }
     }
@@ -324,6 +345,8 @@ final class OfflineStore {
                 try await client.saveProgress(id, position: position, duration: duration)
             }
             update(id) { $0.unsynced = false }
+            // The server has it now: lists asked from here on show it.
+            NotificationCenter.default.post(name: .offlineSynced, object: id)
         } catch {}
     }
 
@@ -442,4 +465,11 @@ nonisolated final class OfflineTransfers: NSObject, URLSessionDownloadDelegate, 
             OfflineStore.shared.backgroundCompletion = nil
         }
     }
+}
+
+extension Notification.Name {
+    /// A video kept on this device was watched to the end (object: the `Video`).
+    static let offlineFinished = Notification.Name("YTZeroOfflineFinished")
+    /// The server has heard of a position or a finish reached offline (object: the video id).
+    static let offlineSynced = Notification.Name("YTZeroOfflineSynced")
 }
