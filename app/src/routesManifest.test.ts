@@ -86,8 +86,10 @@ describe("HTTP route manifest", () => {
     const offlineCopyRoute = "GET /videos/:id/offline.mp4";
     // A TV holding one paired session per profile moves between them.
     const deviceProfileRoutes = ["GET /auth/device/profiles", "POST /auth/device/profiles/switch", "DELETE /auth/device/profiles/:id"];
+    // Settings → Devices: what is signed in with a code, renamed or signed out.
+    const deviceSessionRoutes = ["GET /auth/devices", "PUT /auth/devices/:id", "DELETE /auth/devices/:id"];
     for (const route of deviceProfileRoutes) expect(routes).toContain(route);
-    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, offlineCopyRoute, ...providerRoutes, ...deviceProfileRoutes, ...invidiousRoutes, ...dailymotionRoutes];
+    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, offlineCopyRoute, ...providerRoutes, ...deviceProfileRoutes, ...deviceSessionRoutes, ...invidiousRoutes, ...dailymotionRoutes];
     const publicShareManagementRoutes = [
       "GET /public-shares", "PUT /public-shares/policy", "POST /public-shares",
       "PATCH /public-shares/:id", "POST /public-shares/:id/rotate", "DELETE /public-shares/:id",

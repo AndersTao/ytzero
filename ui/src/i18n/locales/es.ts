@@ -5,6 +5,7 @@ import { clusterMessages } from "./cluster";
 import { notificationMessages } from "./notifications";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { deviceMessages } from "./devices";
 import { liveStreamMessages } from "./liveStreams";
 import type { Locale } from "../types";
 
@@ -29,6 +30,7 @@ export const es: Locale = {
     ...notificationMessages.es,
     ...tvPairingMessages.es,
     ...webSubMessages.es,
+    ...deviceMessages.es,
     ...liveStreamMessages.es,
     navToday: "Inicio",
     navSocial: "Social",

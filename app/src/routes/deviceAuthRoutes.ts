@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import { AUTH_SESSION_TTL_SECONDS, authSessionCookie, createSession, requestOrigin } from "../auth";
+import { DEVICE_SESSION_TTL_SECONDS, authSessionCookie, createSession, requestOrigin } from "../auth";
 import { bearerSessionToken, isSameOriginJsonRequest } from "../deviceSessionAuth";
 import { database } from "../database";
 import {
@@ -10,6 +10,7 @@ import {
   normalizeDeviceUserCode,
 } from "../deviceAuth";
 import { linkDeviceSession } from "../deviceProfiles";
+import { listDeviceSessions, renameDeviceSession, revokeDeviceSession } from "../deviceSessions";
 import { log } from "../logger";
 import { registerDeviceProfileRoutes } from "./deviceProfileRoutes";
 
@@ -28,8 +29,8 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
 
   api.post("/auth/device/code", async (c) => {
     c.header("Cache-Control", "no-store");
-    const { device_name } = await c.req.json().catch(() => ({}));
-    const authorization = await beginDeviceAuthorization(device_name);
+    const { device_name, device_kind } = await c.req.json().catch(() => ({}));
+    const authorization = await beginDeviceAuthorization(device_name, device_kind);
     const verificationUri = `${requestOrigin(c)}/tv/pair`;
     return c.json({
       device_code: authorization.deviceCode,
@@ -52,6 +53,7 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
     return c.json({
       user_code: userCode,
       device_name: authorization.deviceName,
+      device_kind: authorization.deviceKind,
       approved: authorization.approved,
       profile_name: profile?.name ?? "",
     });
@@ -61,12 +63,36 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
     c.header("Cache-Control", "no-store");
     const uid = access.currentUserId(c);
     if (!uid) return c.json({ error: "unauthenticated" }, 401);
-    const { user_code } = await c.req.json().catch(() => ({}));
+    const { user_code, device_name } = await c.req.json().catch(() => ({}));
     const normalized = normalizeDeviceUserCode(user_code);
     if (!normalized) return c.json({ error: "invalid or expired device code" }, 404);
-    const approved = await approveDeviceAuthorization(normalized, uid);
+    const approved = await approveDeviceAuthorization(normalized, uid, device_name);
     if (!approved) return c.json({ error: "invalid, expired, or already approved device code" }, 404);
     log.info("auth.device_approved", { profileId: uid });
+    return c.json({ ok: true });
+  });
+
+  // Settings → Devices: what is signed in to this profile with a code.
+  api.get("/auth/devices", async (c) => {
+    c.header("Cache-Control", "no-store");
+    const uid = access.currentUserId(c);
+    if (!uid) return c.json({ error: "unauthenticated" }, 401);
+    return c.json({ devices: await listDeviceSessions(uid, access.sessionToken(c)) });
+  });
+
+  api.put("/auth/devices/:id", async (c) => {
+    const uid = access.currentUserId(c);
+    if (!uid) return c.json({ error: "unauthenticated" }, 401);
+    const { name } = await c.req.json().catch(() => ({}));
+    if (!await renameDeviceSession(uid, c.req.param("id"), name)) return c.json({ error: "not found" }, 404);
+    return c.json({ ok: true });
+  });
+
+  api.delete("/auth/devices/:id", async (c) => {
+    const uid = access.currentUserId(c);
+    if (!uid) return c.json({ error: "unauthenticated" }, 401);
+    if (!await revokeDeviceSession(uid, c.req.param("id"))) return c.json({ error: "not found" }, 404);
+    log.info("auth.device_signed_out", { profileId: uid });
     return c.json({ ok: true });
   });
 
@@ -82,7 +108,8 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
     if (authorization.kind === "pending") return c.json({ error: "authorization_pending" }, 428);
     if (authorization.kind === "expired") return c.json({ error: "expired_token" }, 400);
     const scope = access.canSwitchProfiles() ? "account" : "profile";
-    const accessToken = await createSession(authorization.userId, scope);
+    // Named as it was approved, and kept until it signs out (see DEVICE_SESSION_TTL_SECONDS).
+    const accessToken = await createSession(authorization.userId, scope, false, null, { name: authorization.deviceName, kind: authorization.deviceKind });
     // "Add profile" on a TV that is already signed in: the new session joins
     // the one it has (its bearer token, or the cookie the request carries), so
     // the TV can move between the two. Only that session can ask for it.
@@ -94,9 +121,9 @@ export function registerDeviceAuthRoutes(api: Api, access: DeviceAuthRouteAccess
     // session as the same HttpOnly cookie a normal sign-in sets, so the token
     // never passes through page JavaScript.
     if (set_cookie === true) {
-      c.header("Set-Cookie", authSessionCookie(accessToken));
-      return c.json({ token_type: "cookie", expires_in: AUTH_SESSION_TTL_SECONDS, linked });
+      c.header("Set-Cookie", authSessionCookie(accessToken, DEVICE_SESSION_TTL_SECONDS));
+      return c.json({ token_type: "cookie", expires_in: DEVICE_SESSION_TTL_SECONDS, linked });
     }
-    return c.json({ access_token: accessToken, token_type: "Bearer", expires_in: AUTH_SESSION_TTL_SECONDS, linked });
+    return c.json({ access_token: accessToken, token_type: "Bearer", expires_in: DEVICE_SESSION_TTL_SECONDS, linked });
   });
 }

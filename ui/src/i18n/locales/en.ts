@@ -6,6 +6,7 @@ import { notificationMessages } from "./notifications";
 import { feedBuilderMessages } from "./feedBuilder";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { deviceMessages } from "./devices";
 import { liveStreamMessages } from "./liveStreams";
 // English defines the message keys; `pl` and `de` are type-checked against them.
 export const en = {
@@ -28,6 +29,7 @@ export const en = {
     ...notificationMessages.en,
     ...tvPairingMessages.en,
     ...webSubMessages.en,
+    ...deviceMessages.en,
     ...liveStreamMessages.en,
     ...feedBuilderMessages.en,
     navToday: "Main",

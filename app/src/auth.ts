@@ -106,15 +106,28 @@ export function rpId(c: any): string {
 export const AUTH_SESSION_COOKIE = "ytzero_session";
 export const AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 const SESSION_TTL_MS = AUTH_SESSION_TTL_SECONDS * 1000;
+/**
+ * A phone, tablet or TV signed in with a code stays signed in until it signs
+ * out, or is signed out under Settings → Devices: it is not asked to sign in
+ * again every so often. Ten years stands for that.
+ */
+export const DEVICE_SESSION_TTL_SECONDS = 10 * 365 * 24 * 60 * 60;
 
 export type SessionScope = "account" | "profile";
 
-export async function createSession(userId: number | null, scope: SessionScope, isAdmin = false, permissionGroupUuid: string | null = null): Promise<string> {
+export async function createSession(
+  userId: number | null,
+  scope: SessionScope,
+  isAdmin = false,
+  permissionGroupUuid: string | null = null,
+  device: { name: string; kind: string } | null = null,
+): Promise<string> {
   const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+  const ttl = device ? DEVICE_SESSION_TTL_SECONDS * 1000 : SESSION_TTL_MS;
+  const expires = new Date(Date.now() + ttl).toISOString();
   await database.prepare(
-    "INSERT INTO auth_sessions (token, user_id, scope, is_admin, permission_group_uuid, expires_at, last_seen) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))"
-  ).run(token, userId, scope, isAdmin ? 1 : 0, permissionGroupUuid, expires);
+    "INSERT INTO auth_sessions (token, user_id, scope, is_admin, permission_group_uuid, expires_at, last_seen, device_name, device_kind) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)"
+  ).run(token, userId, scope, isAdmin ? 1 : 0, permissionGroupUuid, expires, device?.name ?? null, device?.kind ?? null);
   return token;
 }
 
@@ -132,8 +145,13 @@ export async function validateSession(
     return null;
   }
   if (options.renew) {
+    // Renewed forward only: a device's long session is never cut back to 30 days.
     const expires = new Date(Date.now() + SESSION_TTL_MS).toISOString();
-    await database.prepare("UPDATE auth_sessions SET expires_at = ?, last_seen = datetime('now') WHERE token = ?").run(expires, token);
+    if (expires > row.expires_at) {
+      await database.prepare("UPDATE auth_sessions SET expires_at = ?, last_seen = datetime('now') WHERE token = ?").run(expires, token);
+    } else {
+      await database.prepare("UPDATE auth_sessions SET last_seen = datetime('now') WHERE token = ?").run(token);
+    }
   } else {
     await database.prepare("UPDATE auth_sessions SET last_seen = datetime('now') WHERE token = ?").run(token);
   }
@@ -148,10 +166,8 @@ export async function cleanupSessions() {
   await database.prepare("DELETE FROM auth_sessions WHERE expires_at <= datetime('now')").run();
 }
 
-export function authSessionCookie(token: string) {
-  return `${AUTH_SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${Math.floor(
-    SESSION_TTL_MS / 1000
-  )}; SameSite=Lax; HttpOnly`;
+export function authSessionCookie(token: string, maxAgeSeconds = Math.floor(SESSION_TTL_MS / 1000)) {
+  return `${AUTH_SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax; HttpOnly`;
 }
 export function clearAuthSessionCookie() {
   return `${AUTH_SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly`;

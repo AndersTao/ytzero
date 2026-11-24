@@ -7,6 +7,7 @@ import { notificationMessages } from "./notifications";
 import { feedBuilderMessages } from "./feedBuilder";
 import { tvPairingMessages } from "./tvPairing";
 import { webSubMessages } from "./websub";
+import { deviceMessages } from "./devices";
 import { liveStreamMessages } from "./liveStreams";
 export const pl: Locale = {
   messages: {
@@ -28,6 +29,7 @@ export const pl: Locale = {
     ...notificationMessages.pl,
     ...tvPairingMessages.pl,
     ...webSubMessages.pl,
+    ...deviceMessages.pl,
     ...liveStreamMessages.pl,
     ...feedBuilderMessages.pl,
     navToday: "Główna",

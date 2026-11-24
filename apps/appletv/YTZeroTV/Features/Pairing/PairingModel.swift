@@ -15,10 +15,10 @@ final class PairingModel {
 
     /// `link`: adding a profile on a device that is signed in already; the new
     /// session joins the one `client` has.
-    func run(client: APIClient, deviceName: String = "Apple TV", link: Bool = false, onToken: (String) -> Void) async {
+    func run(client: APIClient, deviceName: String = "Apple TV", deviceKind: String = "tv", link: Bool = false, onToken: (String) -> Void) async {
         while !Task.isCancelled {
             do {
-                let code = try await client.beginPairing(deviceName: deviceName)
+                let code = try await client.beginPairing(deviceName: deviceName, deviceKind: deviceKind)
                 state = .waiting(code: code.userCode, link: code.verificationURIComplete ?? code.verificationURI, address: code.verificationURI)
                 let deadline = ContinuousClock.now + .seconds(max(30, code.expiresIn))
                 while ContinuousClock.now < deadline {
@@ -30,6 +30,15 @@ final class PairingModel {
                         continue
                     } catch APIError.expired {
                         break
+                    } catch {
+                        if Task.isCancelled { return }
+                        // Approving on the same phone means leaving for the
+                        // browser, and iOS suspends the app with this request
+                        // in flight: it comes back cut off. The code is still
+                        // good and may be approved by now, so ask again with
+                        // it. Starting over here showed a network error and a
+                        // new code nobody had approved, again and again.
+                        continue
                     }
                 }
                 // The code ran out: start over with a new one.
