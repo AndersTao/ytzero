@@ -29,9 +29,17 @@ describe("cross-database schema migrations", () => {
     await database.exec("CREATE TABLE videos (video_id TEXT PRIMARY KEY)");
     await database.exec("CREATE TABLE downloads (video_id TEXT PRIMARY KEY)");
     await database.exec("INSERT INTO user_playlist_videos VALUES (1, 'later', '2026-01-02'), (1, 'earlier', '2026-01-01')");
+    // A profile's one client token from before tokens had names.
+    await database.exec("CREATE TABLE invidious_tokens (user_id INTEGER NOT NULL PRIMARY KEY, token_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_used_at TEXT)");
+    await database.exec("INSERT INTO invidious_tokens (user_id, token_hash, created_at) VALUES (1, 'abc123', '2026-11-23 17:55:19')");
 
-    expect(await applyDatabaseMigrations(database)).toBe(210);
-    expect(await applyDatabaseMigrations(database)).toBe(210);
+    expect(await applyDatabaseMigrations(database)).toBe(211);
+    expect(await applyDatabaseMigrations(database)).toBe(211);
+    // It carries over unnamed, so the apps using it stay signed in.
+    expect(await database.prepare("SELECT user_id, name, token_hash, created_at FROM client_tokens").all()).toEqual([
+      { user_id: 1, name: "", token_hash: "abc123", created_at: "2026-11-23 17:55:19" },
+    ]);
+    expect(await database.prepare("SELECT 1 FROM sqlite_master WHERE name = 'invidious_tokens'").get()).toBeNull();
     expect((await database.prepare("PRAGMA table_info(auth_sessions)").all() as Array<{ name: string }>).some((column) => column.name === "permission_group_uuid")).toBe(true);
     expect((await database.prepare("PRAGMA table_info(auth_sessions)").all() as Array<{ name: string }>).some((column) => column.name === "device_group")).toBe(true);
 
@@ -113,7 +121,7 @@ describe("cross-database schema migrations", () => {
         .run(migration.version, migration.name, "2026-09-03T00:00:00.000Z");
     }
 
-    expect(await applyDatabaseMigrations(database)).toBe(210);
+    expect(await applyDatabaseMigrations(database)).toBe(211);
     const columns = await database.prepare('PRAGMA table_info("downloads")').all<{ name: string }>();
     for (const name of ["progress_percent", "progress_total_bytes", "progress_speed", "worker_id", "worker_heartbeat_at_ms"]) {
       expect(columns.some((column) => column.name === name)).toBe(true);

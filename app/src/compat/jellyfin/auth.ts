@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { createSession, validateSession } from "../../auth";
 import { database } from "../../database";
 import { mediaSecret } from "../invidious/media";
-import { profileForNameAndToken } from "../invidious/tokens";
+import { profileForNameAndToken, stampStands, tokenStamp } from "../invidious/tokens";
 export { clientFields, presentedToken } from "./headers";
 
 /**
@@ -14,8 +14,8 @@ export { clientFields, presentedToken } from "./headers";
  *
  * The client gets back an access token of this dialect's own, good for the
  * `/jellyfin` routes and nothing else: signed with the server's media key and
- * naming the profile and which client token it was given for. Regenerating or
- * removing that client token ends it, as it ends Yattee's sign-in.
+ * naming the profile and which client token it was given for. Revoking that
+ * client token ends it, as it ends Yattee's sign-in.
  *
  * Behind it the routes ask the server's own API as the profile, with a
  * profile session that is this process's and never leaves it. A client that
@@ -36,8 +36,7 @@ const PREFIX = "jf1";
 export async function signIn(name: string, password: string): Promise<{ accessToken: string; user: JellyfinUser } | null> {
   const userId = await profileForNameAndToken(name, password);
   if (userId === null) return null;
-  const stamp = await tokenStamp(userId);
-  if (!stamp) return null;
+  const stamp = await tokenStamp(password);
   const payload = `${userId}.${stamp}`;
   return { accessToken: `${PREFIX}.${payload}.${await signature(payload)}`, user: await userFor(userId) };
 }
@@ -50,14 +49,8 @@ export async function userForAccessToken(token: string | null): Promise<Jellyfin
   const expected = await signature(`${id}.${stamp}`);
   if (presented.length !== expected.length || !timingSafeEqual(Buffer.from(presented), Buffer.from(expected))) return null;
   const userId = Number(id);
-  if (!Number.isInteger(userId) || userId <= 0 || await tokenStamp(userId) !== stamp) return null;
+  if (!Number.isInteger(userId) || userId <= 0 || !await stampStands(userId, stamp)) return null;
   return userFor(userId);
-}
-
-/** Which client token a profile has now: part of its stored hash, which changes with it. */
-async function tokenStamp(userId: number): Promise<string | null> {
-  const row = await database.prepare("SELECT token_hash FROM invidious_tokens WHERE user_id = ?").get(userId) as { token_hash: string } | null;
-  return row ? row.token_hash.slice(0, 16) : null;
 }
 
 async function signature(payload: string): Promise<string> {

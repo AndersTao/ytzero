@@ -1237,10 +1237,10 @@ export interface ClusterStatus {
 }
 
 /** What the settings screen may know about a profile's client token. */
-export interface InvidiousTokenState {
+export interface ClientToken { id: number; name: string; created_at: string; last_used_at: string | null; }
+export interface ClientTokenList {
   /** Whether this server speaks the dialect at all. */
   enabled: boolean;
-  configured: boolean;
-  created_at: string | null;
-  last_used_at: string | null;
+  limit: number;
+  tokens: ClientToken[];
 }

@@ -113,9 +113,10 @@ describe("HTTP route manifest", () => {
     expect(routes).toContain("GET /videos/:id/live-hls/:file");
     for (const route of ourRoutes) expect(routes).toContain(route);
     expect(invidiousRoutes).toEqual([
-      "GET /invidious/token",
-      "POST /invidious/token",
-      "DELETE /invidious/token",
+      "GET /invidious/tokens",
+      "POST /invidious/tokens",
+      "PATCH /invidious/tokens/:id",
+      "DELETE /invidious/tokens/:id",
     ]);
     expect(routes).toContain(transcriptRoute);
     expect(routes).toContain(playbackAdjacentRoute);

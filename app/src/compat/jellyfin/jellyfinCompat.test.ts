@@ -16,7 +16,7 @@ if (process.env[ISOLATION_FLAG] !== "1") {
 
   const { db } = await import("../../db");
   const { api } = await import("../../routes");
-  const { mintToken } = await import("../invidious/tokens");
+  const { mintToken, revokeToken } = await import("../invidious/tokens");
   const { registerJellyfinCompat } = await import("./index");
   const { presentedToken } = await import("./headers");
   const { jellyfinDate, videoItem } = await import("./items");
@@ -70,7 +70,7 @@ if (process.env[ISOLATION_FLAG] !== "1") {
   const client = 'MediaBrowser Client="Rivulet", Device="Apple TV", DeviceId="test", Version="1.0"';
 
   async function signedIn(app: Hono) {
-    const token = await mintToken(1);
+    const { token } = await mintToken(1);
     const response = await app.request("/jellyfin/Users/AuthenticateByName", {
       method: "POST",
       headers: { Authorization: client, "Content-Type": "application/json" },
@@ -123,10 +123,11 @@ if (process.env[ISOLATION_FLAG] !== "1") {
 
     test("signs in to these routes only, for as long as the client token stands", async () => {
       const app = server();
+      const minted = await mintToken(1, "Rivulet");
       const response = await app.request("/jellyfin/Users/AuthenticateByName", {
         method: "POST",
         headers: { Authorization: client, "Content-Type": "application/json" },
-        body: JSON.stringify({ Username: name, Pw: await mintToken(1) }),
+        body: JSON.stringify({ Username: name, Pw: minted.token }),
       });
       const { AccessToken } = await response.json() as { AccessToken: string };
       // Not a session of the server: the rest of the API stays shut to it.
@@ -136,8 +137,10 @@ if (process.env[ISOLATION_FLAG] !== "1") {
       // A tampered token is refused.
       const tampered = { Authorization: `${client}, Token="${AccessToken.slice(0, -1)}${AccessToken.endsWith("0") ? "1" : "0"}"` };
       expect((await app.request("/jellyfin/UserViews", { headers: tampered })).status).toBe(401);
-      // A new client token ends every sign-in made with the old one.
-      await mintToken(1);
+      // Another app's token leaves it signed in; revoking its own ends it.
+      await mintToken(1, "Yattee");
+      expect((await app.request("/jellyfin/UserViews", { headers })).status).toBe(200);
+      await revokeToken(1, minted.id);
       expect((await app.request("/jellyfin/UserViews", { headers })).status).toBe(401);
     });
 

@@ -3,7 +3,7 @@ import "./SettingsPage.css";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArchiveRestore, ArrowRight, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, Download, ExternalLink, Eye, EyeOff, FileText, Filter, FolderUp, GripVertical, Info, ListMinus, LoaderCircle, ListMusic, Pencil, Play, Plug, Plus, RefreshCw, RotateCcw, ShieldCheck, Sparkles, Trash2, Tv, UserMinus, UserPlus, UsersRound, Wrench, X, Zap } from "lucide-react";
-import { api, type AppChangelog, type AppLogs, type AppLogStreamEvent, type AppVersion, type AuthMethod, type Channel, type ChannelManualStatus, type ChildLockStatus, type FilterRule, type FollowedPlaylist, type InvidiousTokenState, type MembersOnlyVisibility, type PluginManifest, type PluginSettingsResponse, type Profile, type ProfilePermissionArea, type ProfilePermissions, type Rule, type ShortsFeedMode, type Tag, type UpdateCheck, type UserPlaylist, type UserPlaylistRule, type Video, SB_CATEGORIES } from "../api";
+import { api, type AppChangelog, type AppLogs, type AppLogStreamEvent, type AppVersion, type AuthMethod, type Channel, type ChannelManualStatus, type ChildLockStatus, type FilterRule, type FollowedPlaylist, type ClientTokenList, type MembersOnlyVisibility, type PluginManifest, type PluginSettingsResponse, type Profile, type ProfilePermissionArea, type ProfilePermissions, type Rule, type ShortsFeedMode, type Tag, type UpdateCheck, type UserPlaylist, type UserPlaylistRule, type Video, SB_CATEGORIES } from "../api";
 import { parseCustomPlaybackSpeeds } from "../../../shared/playbackSpeeds";
 import { normalizeWatchCommentsMode, type WatchCommentsMode } from "../../../shared/watchComments";
 import { normalizeChannelOpenSyncMode, type ChannelOpenSyncMode } from "../../../shared/channelSyncModes";
@@ -179,7 +179,7 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
   const [adminDelegationAvailable, setAdminDelegationAvailable] = useState(false);
   const [activeAuthMethod, setActiveAuthMethod] = useState<AuthMethod>("none");
   const [isChildProfile, setIsChildProfile] = useState<boolean | null>(null);
-  const [invidiousAccess, setInvidiousAccess] = useState<InvidiousTokenState | null>(null);
+  const [invidiousAccess, setInvidiousAccess] = useState<ClientTokenList | null>(null);
   const [shortsFeedMode, setShortsFeedMode] = useState<ShortsFeedMode>("0");
   const [showTopChannels, setShowTopChannels] = useState(true);
   const [hideLiveFromFeed, setHideLiveFromFeed] = useState(false);
@@ -444,7 +444,7 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
         api.health(),
         // Loaded with the rest so the navigation is right the first time it is
         // drawn, and never fatal: an instance without the route still settles.
-        api.invidiousToken().catch(() => null),
+        api.clientTokens().catch(() => null),
       ]);
       // "Admin" = primary profile OR an OIDC session in the configured admin group.
       // is_admin drives the admin-only tabs/sections (kept in the isPrimary var).
