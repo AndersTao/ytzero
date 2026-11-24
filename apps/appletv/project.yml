@@ -121,6 +121,8 @@ targets:
       properties:
         # Sound keeps going with the screen off, and picture in picture.
         UIBackgroundModes: [audio]
+        # Only the system's HTTPS: no export compliance questions per build.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(YTZERO_IOS_BUNDLE_ID)
