@@ -57,7 +57,8 @@ struct PairingView: View {
         }
         .task {
             guard let client = session.client else { return }
-            await model.run(client: client, deviceName: UIDevice.current.name, link: adding) { token in
+            let kind = UIDevice.current.userInterfaceIdiom == .pad ? "tablet" : "phone"
+            await model.run(client: client, deviceName: UIDevice.current.name, deviceKind: kind, link: adding) { token in
                 if adding {
                     session.added(token: token)
                     onDone()

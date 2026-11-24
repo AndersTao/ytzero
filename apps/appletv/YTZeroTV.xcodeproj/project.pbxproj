@@ -86,6 +86,7 @@
 		CCD3D53ECB3B91C7921FAAC5 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935C1E5B61141FDA2C2D95CB /* APIError.swift */; };
 		CEBA92659B33D6483692777A /* ProfilePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA5BA805658EEBD7E174391 /* ProfilePickerView.swift */; };
 		D04ECD8468E6482D13819A3A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE312D45691D46B45EBE8B7 /* SettingsView.swift */; };
+		D085C4BFCC1FF2375BAC843C /* PairingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B183BF2B69238EB57588C43D /* PairingUITests.swift */; };
 		D4F9E73803DBCBF2BB58B440 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA6869E5E8D57AF63B4DBA1 /* HomeView.swift */; };
 		D5C8CC2F2BB2B55B837080E7 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A273A0861CEDEB84A088577 /* APIClient.swift */; };
 		D6367919D853C10B7BFCD0E6 /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6333A58D19FFA2EEF31EA35 /* ProgressBar.swift */; };
@@ -192,6 +193,7 @@
 		ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeModel.swift; sourceTree = "<group>"; };
 		AE1D959238F7E64A3705011B /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		AF17AEF8F21E2E9F784CFDF3 /* SideMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuUITests.swift; sourceTree = "<group>"; };
+		B183BF2B69238EB57588C43D /* PairingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingUITests.swift; sourceTree = "<group>"; };
 		B260288B1DF469CB6DA178DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B486D70CC870516246D0DC18 /* YTZeroiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = YTZeroiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B6A23B3ADD661A78D8E6DAAC /* YTZeroTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YTZeroTV.entitlements; sourceTree = "<group>"; };
@@ -534,6 +536,7 @@
 			isa = PBXGroup;
 			children = (
 				D8F55FE53888837EBA37EACB /* OfflineUITests.swift */,
+				B183BF2B69238EB57588C43D /* PairingUITests.swift */,
 				6ABDEB5980A218417D5E5951 /* PlaybackUITests.swift */,
 				2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */,
 				CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */,
@@ -837,6 +840,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				494C2F7CFD8A9CA7E056A2B4 /* OfflineUITests.swift in Sources */,
+				D085C4BFCC1FF2375BAC843C /* PairingUITests.swift in Sources */,
 				78380E9E6D8794AE1E135539 /* PlaybackUITests.swift in Sources */,
 				EA0EB7C783FF66CBA9A92029 /* ProfilesUITests.swift in Sources */,
 				1460A8A2DEFD8C672C4F86CF /* PullToRefreshUITests.swift in Sources */,

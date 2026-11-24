@@ -1,5 +1,6 @@
 import type { Locale } from "../types";
 import { localeFormats } from "../localeFormats";
+import { deviceMessages } from "./devices";
 
 // Danish. Every message is listed here directly rather than spread from the
 // per-feature modules, so the type check below catches any key added later.
@@ -442,10 +443,10 @@ export const da: Locale = {
     "notificationDeliveryTest": "Send en testnotifikation",
     "notificationDeliveryTestSent": "Testnotifikation sendt.",
     "notificationDeliveryNoLinkWarning": "Der er ikke angivet nogen offentlig adresse, så videresendte notifikationer får et relativt link. En administrator kan angive en nedenfor.",
-    "tvPairingTitle": "Par et tv",
-    "tvPairingDescription": "Indtast koden, som YT Zero viser på dit tv, og godkend derefter adgang til denne profil.",
-    "tvPairingConfirmDescription": "Tjek enhed og profil, og tillad derefter adgang på dit tv.",
-    "tvPairingCodeLabel": "Tv-kode",
+    "tvPairingTitle": "Godkend en enhed",
+    "tvPairingDescription": "Indtast koden, som YT Zero viser på enheden, og godkend derefter adgang til denne profil.",
+    "tvPairingConfirmDescription": "Tjek enhed og profil, giv enheden et navn, og giv den derefter adgang.",
+    "tvPairingCodeLabel": "Kode",
     "tvPairingCodeHint": "Koden består af otte bogstaver eller tal og udløber efter 10 minutter.",
     "tvPairingCheck": "Tjek kode",
     "tvPairingChecking": "Tjekker…",
@@ -453,13 +454,13 @@ export const da: Locale = {
     "tvPairingApprovalFailed": "Kunne ikke godkende adgang. Prøv igen.",
     "tvPairingDevice": "Enhed",
     "tvPairingProfile": "Profil",
-    "tvPairingApprove": "Tillad dette tv",
+    "tvPairingApprove": "Giv adgang",
     "tvPairingApproving": "Godkender…",
     "tvPairingAlreadyApproved": "Godkendt",
-    "tvPairingApprovedTitle": "Tv parret",
-    "tvPairingApprovedDescription": "Du kan gå tilbage til tv'et. Feedet åbner automatisk.",
+    "tvPairingApprovedTitle": "Enhed godkendt",
+    "tvPairingApprovedDescription": "Du kan gå tilbage til enheden. Den logger selv ind.",
     "tvPairingSecurityTitle": "Før du godkender",
-    "tvPairingSecurityDescription": "Godkend kun et tv, du kender. Det får adgang til profilen ovenfor i 30 dage.",
+    "tvPairingSecurityDescription": "Godkend kun en enhed, du kender. Den har adgang til profilen ovenfor, så længe den bliver brugt, til den logger ud, eller du logger den ud under Indstillinger → Klientadgang.",
     "webSubTitle": "Push-opdateringer fra YouTube",
     "webSubHint": "I stedet for at vente på næste feed-tjek giver YouTubes WebSub-hub denne server besked inden for få minutter efter en ny upload. De almindelige feed-tjek kører videre som backup.",
     "webSubEnable": "Brug push-opdateringer",
@@ -2127,6 +2128,7 @@ export const da: Locale = {
     "cleanupConfirmConfirm": "Ryd",
     "cleanupConfirmBody": "{count} bliver markeret som: {action}. Du kan fortryde det lige efter.",
     "playlistReorderHint": "Træk for at ændre rækkefølgen",
+    ...deviceMessages.da,
   },
   buckets: {
     today: "I dag",

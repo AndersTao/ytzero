@@ -1,7 +1,7 @@
 import { database } from "./database";
-import { normalizeDeviceUserCode, sanitizeDeviceName } from "./deviceAuthInput";
+import { normalizeDeviceUserCode, sanitizeDeviceKind, sanitizeDeviceName, type DeviceKind } from "./deviceAuthInput";
 
-export { normalizeDeviceUserCode, sanitizeDeviceName } from "./deviceAuthInput";
+export { normalizeDeviceUserCode, sanitizeDeviceKind, sanitizeDeviceName, type DeviceKind } from "./deviceAuthInput";
 
 const DEVICE_FLOW_PREFIX = "tv-device:";
 const DEVICE_FLOW_TTL_MS = 10 * 60 * 1000;
@@ -10,6 +10,8 @@ const DEVICE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 type DeviceFlowState = {
   kind: "tv-device";
   deviceName: string;
+  /** Missing in flows begun before devices said what they are: a TV. */
+  deviceKind?: DeviceKind;
   approved: boolean;
 };
 
@@ -22,7 +24,7 @@ export type DeviceAuthorization = {
 
 export type DeviceAuthorizationStatus =
   | { kind: "pending" }
-  | { kind: "approved"; userId: number }
+  | { kind: "approved"; userId: number; deviceName: string; deviceKind: DeviceKind }
   | { kind: "expired" };
 
 const databaseTimestamp = (milliseconds: number) => new Date(milliseconds).toISOString().replace("T", " ").slice(0, 19);
@@ -42,13 +44,13 @@ function parseState(value: string | null): DeviceFlowState | null {
   try {
     const state = JSON.parse(value) as Partial<DeviceFlowState>;
     if (state.kind !== "tv-device" || typeof state.deviceName !== "string" || typeof state.approved !== "boolean") return null;
-    return { kind: "tv-device", deviceName: sanitizeDeviceName(state.deviceName), approved: state.approved };
+    return { kind: "tv-device", deviceName: sanitizeDeviceName(state.deviceName), deviceKind: sanitizeDeviceKind(state.deviceKind), approved: state.approved };
   } catch {
     return null;
   }
 }
 
-export async function beginDeviceAuthorization(deviceName: unknown): Promise<DeviceAuthorization> {
+export async function beginDeviceAuthorization(deviceName: unknown, deviceKind?: unknown): Promise<DeviceAuthorization> {
   void database.prepare("DELETE FROM auth_flows WHERE expires_at <= datetime('now')").run().catch(() => {});
   let userCode = "";
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -62,7 +64,7 @@ export async function beginDeviceAuthorization(deviceName: unknown): Promise<Dev
   if (!userCode) throw new Error("could not allocate device code");
 
   const deviceCode = crypto.randomUUID();
-  const state: DeviceFlowState = { kind: "tv-device", deviceName: sanitizeDeviceName(deviceName), approved: false };
+  const state: DeviceFlowState = { kind: "tv-device", deviceName: sanitizeDeviceName(deviceName), deviceKind: sanitizeDeviceKind(deviceKind), approved: false };
   await database.prepare("INSERT INTO auth_flows (id, value, user_id, nonce, expires_at) VALUES (?, ?, NULL, ?, ?)")
     .run(deviceCode, flowValue(userCode), JSON.stringify(state), databaseTimestamp(Date.now() + DEVICE_FLOW_TTL_MS));
   return {
@@ -73,16 +75,17 @@ export async function beginDeviceAuthorization(deviceName: unknown): Promise<Dev
   };
 }
 
-export async function inspectDeviceAuthorization(userCodeInput: unknown): Promise<{ deviceName: string; approved: boolean } | null> {
+export async function inspectDeviceAuthorization(userCodeInput: unknown): Promise<{ deviceName: string; deviceKind: DeviceKind; approved: boolean } | null> {
   const userCode = normalizeDeviceUserCode(userCodeInput);
   if (!userCode) return null;
   const row = await database.prepare("SELECT nonce FROM auth_flows WHERE value = ? AND expires_at > datetime('now')")
     .get<{ nonce: string | null }>(flowValue(userCode));
   const state = parseState(row?.nonce ?? null);
-  return state ? { deviceName: state.deviceName, approved: state.approved } : null;
+  return state ? { deviceName: state.deviceName, deviceKind: sanitizeDeviceKind(state.deviceKind), approved: state.approved } : null;
 }
 
-export async function approveDeviceAuthorization(userCodeInput: unknown, userId: number): Promise<boolean> {
+/** `deviceName`: what the person approving calls the device, kept with its session. */
+export async function approveDeviceAuthorization(userCodeInput: unknown, userId: number, deviceName?: unknown): Promise<boolean> {
   const userCode = normalizeDeviceUserCode(userCodeInput);
   if (!userCode || !Number.isSafeInteger(userId) || userId < 1) return false;
   return database.transaction(async () => {
@@ -90,7 +93,8 @@ export async function approveDeviceAuthorization(userCodeInput: unknown, userId:
       .get<{ id: string; nonce: string | null }>(flowValue(userCode));
     const state = parseState(row?.nonce ?? null);
     if (!row || !state || state.approved) return false;
-    const approved: DeviceFlowState = { ...state, approved: true };
+    const named = typeof deviceName === "string" && deviceName.trim() ? sanitizeDeviceName(deviceName) : state.deviceName;
+    const approved: DeviceFlowState = { ...state, deviceName: named, approved: true };
     const updated = await database.prepare("UPDATE auth_flows SET user_id = ?, nonce = ? WHERE id = ? AND user_id IS NULL RETURNING id")
       .get<{ id: string }>(userId, JSON.stringify(approved), row.id);
     return Boolean(updated);
@@ -104,7 +108,9 @@ export async function exchangeDeviceAuthorization(deviceCode: unknown): Promise<
       "DELETE FROM auth_flows WHERE id = ? AND value LIKE 'tv-device:%' AND user_id IS NOT NULL AND expires_at > datetime('now') RETURNING user_id, nonce",
     ).get<{ user_id: number; nonce: string | null }>(deviceCode);
     const approvedState = parseState(approved?.nonce ?? null);
-    if (approved && approvedState?.approved) return { kind: "approved", userId: approved.user_id } as const;
+    if (approved && approvedState?.approved) {
+      return { kind: "approved", userId: approved.user_id, deviceName: approvedState.deviceName, deviceKind: sanitizeDeviceKind(approvedState.deviceKind) } as const;
+    }
 
     const pending = await database.prepare("SELECT nonce, expires_at FROM auth_flows WHERE id = ? AND value LIKE 'tv-device:%'")
       .get<{ nonce: string | null; expires_at: string }>(deviceCode);

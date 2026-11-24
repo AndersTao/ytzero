@@ -1,5 +1,5 @@
 const { api } = await import("../src/routes");
-const { AUTH_SESSION_TTL_SECONDS, createSession } = await import("../src/auth");
+const { DEVICE_SESSION_TTL_SECONDS, createSession } = await import("../src/auth");
 const { database } = await import("../src/database");
 const { setSetting } = await import("../src/db");
 
@@ -10,7 +10,7 @@ await setSetting("auth_shared_password_hash", await Bun.password.hash("device-fl
 const begin = await api.request("http://localhost/auth/device/code", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ device_name: "Living room" }),
+  body: JSON.stringify({ device_name: "Living room", device_kind: "phone" }),
 });
 const authorization = await begin.json() as any;
 const pairingUrl = new URL(authorization.verification_uri_complete);
@@ -38,10 +38,12 @@ const verification = await api.request(
   `http://localhost/auth/device/verification?user_code=${encodeURIComponent(authorization.user_code)}`,
   { headers: { Cookie: cookie } },
 );
+const verificationBody = await verification.clone().json() as any;
 const approval = await api.request("http://localhost/auth/device/authorize", {
   method: "POST",
   headers: { Cookie: cookie, "Content-Type": "application/json" },
-  body: JSON.stringify({ user_code: authorization.user_code }),
+  // Named as the person approving calls it.
+  body: JSON.stringify({ user_code: authorization.user_code, device_name: "Kitchen iPhone" }),
 });
 const tokenResponse = await api.request("http://localhost/auth/device/token", {
   method: "POST",
@@ -51,6 +53,25 @@ const tokenResponse = await api.request("http://localhost/auth/device/token", {
 const tokenBody = await tokenResponse.json() as any;
 const token = tokenBody.access_token ?? "";
 const bearer = `Bearer ${token}`;
+// Kept as named, and for half a year from its last use rather than 30 days.
+const named = await database.prepare("SELECT device_name, device_kind, expires_at FROM auth_sessions WHERE token = ?")
+  .get<{ device_name: string | null; device_kind: string | null; expires_at: string }>(token);
+const longLived = new Date(named?.expires_at ?? 0).getTime() >= Date.now() + (DEVICE_SESSION_TTL_SECONDS - 60) * 1000;
+// Settings → Devices: listed, renamed, and another device signed out.
+const owner = (await database.prepare("SELECT user_id FROM auth_sessions WHERE token = ?").get<{ user_id: number }>(token))?.user_id ?? 1;
+const otherDevice = await createSession(owner, "profile", false, null, { name: "Old tablet", kind: "tablet" });
+const listed = await (await api.request("http://localhost/auth/devices", { headers: { Authorization: bearer } })).json() as any;
+const self = listed.devices?.find((device: any) => device.current);
+const other = listed.devices?.find((device: any) => device.name === "Old tablet");
+const renamed = await api.request(`http://localhost/auth/devices/${self?.id}`, {
+  method: "PUT",
+  headers: { Authorization: bearer, "Content-Type": "application/json" },
+  body: JSON.stringify({ name: "Kitchen phone" }),
+});
+const signedOut = await api.request(`http://localhost/auth/devices/${other?.id}`, { method: "DELETE", headers: { Authorization: bearer } });
+const signedOutAgain = await api.request(`http://localhost/auth/devices/${other?.id}`, { method: "DELETE", headers: { Authorization: bearer } });
+const afterSignOut = await (await api.request("http://localhost/auth/devices", { headers: { Authorization: bearer } })).json() as any;
+const otherGone = await database.prepare("SELECT token FROM auth_sessions WHERE token = ?").get(otherDevice);
 const nearlyExpiredAt = new Date(Date.now() + 60_000).toISOString();
 await database.prepare("UPDATE auth_sessions SET expires_at = ? WHERE token = ?").run(nearlyExpiredAt, token);
 const renewalStartedAt = Date.now();
@@ -131,10 +152,22 @@ if (
   || approval.status !== 200
   || tokenResponse.status !== 200
   || tokenBody.token_type !== "Bearer"
-  || tokenBody.expires_in !== AUTH_SESSION_TTL_SECONDS
+  || tokenBody.expires_in !== DEVICE_SESSION_TTL_SECONDS
+  || verificationBody.device_kind !== "phone"
+  || named?.device_name !== "Kitchen iPhone"
+  || named.device_kind !== "phone"
+  || !longLived
+  || !self || self.kind !== "phone" || JSON.stringify(self).includes(token)
+  || renamed.status !== 200
+  || signedOut.status !== 200
+  || signedOutAgain.status !== 404
+  || otherGone !== null
+  || afterSignOut.devices?.length !== 1
+  || afterSignOut.devices[0].name !== "Kitchen phone"
   || feed.status !== 200
-  || renewedExpiresAt < renewalStartedAt + (AUTH_SESSION_TTL_SECONDS - 5) * 1000
-  || renewedExpiresAt > renewalObservedAt + AUTH_SESSION_TTL_SECONDS * 1000
+  // Used, a device's session runs on for its own time from now.
+  || renewedExpiresAt < renewalStartedAt + (DEVICE_SESSION_TTL_SECONDS - 5) * 1000
+  || renewedExpiresAt > renewalObservedAt + DEVICE_SESSION_TTL_SECONDS * 1000
   || status.status !== 200
   || statusBody.authenticated !== true
   || statusBody.scope !== "account"

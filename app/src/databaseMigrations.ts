@@ -801,6 +801,30 @@ export const DATABASE_MIGRATIONS: readonly DatabaseMigration[] = [
       { kind: "add-column", table: "auth_sessions", column: "device_group", definition: "TEXT" },
       { kind: "sql", statement: "CREATE INDEX IF NOT EXISTS idx_auth_sessions_device_group ON auth_sessions(device_group)" },
     ],
+  },  {
+    version: 210,
+    name: "device-session-names",
+    schemaHashes: {
+      "app/src/schema.sql": "04a51fc4bf3531dc29b8a959fa81e2c31dd4d919e7b713137bc8143d6a6a4a52",
+      "app/src/channelPostsSchema.sql": "70a7df33bf373524cf6cd0687e46d7987a7cd90a2619fd9586d12d6f940d45a5",
+      "app/src/tubeArchivistSchema.sql": "31e77b7af023276f38d1075b0a5a2197fef150513f010b90bab5909971871056",
+      "app/src/dailymotionSchema.sql": "6e43314a30a4f5038dfd3cc2f44df69dc48090be8c68be4315090846259cdc7a",
+      "app/src/invidiousSchema.sql": "4f77a9670470989f8822b8cc02cc36e073fa57edb20cd81804bf2af4ca3a415b",
+      "app/src/websubSchema.sql": "89b7db61d2e146ba8f80d5994a80704af4519c02a94a540a4cfd8acee0cc4e99",
+    },
+    /*
+     * A session made by signing a phone, tablet or TV in with a code keeps
+     * the name it was approved under and what it is, for Settings → Devices.
+     * NULL is a browser's own sign-in, as every existing session is.
+     */
+    sqlite: [
+      { kind: "add-column", table: "auth_sessions", column: "device_name", definition: "TEXT" },
+      { kind: "add-column", table: "auth_sessions", column: "device_kind", definition: "TEXT" },
+    ],
+    postgres: [
+      { kind: "add-column", table: "auth_sessions", column: "device_name", definition: "TEXT" },
+      { kind: "add-column", table: "auth_sessions", column: "device_kind", definition: "TEXT" },
+    ],
   },
 ];
 

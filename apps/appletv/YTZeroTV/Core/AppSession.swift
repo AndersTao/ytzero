@@ -73,6 +73,11 @@ final class AppSession {
         // and may hand in more sessions (YTZERO_UITEST_TOKENS, comma separated)
         // to show more than one profile.
         let environment = ProcessInfo.processInfo.environment
+        // A server and no session: the sign-in, as on a first launch.
+        if let server = environment["YTZERO_UITEST_SERVER"].flatMap(URL.init(string:)), environment["YTZERO_UITEST_PAIRING"] == "1" {
+            serverURL = server
+            return
+        }
         if let server = environment["YTZERO_UITEST_SERVER"].flatMap(URL.init(string:)), let token = environment["YTZERO_UITEST_TOKEN"] {
             serverURL = server
             let extra = (environment["YTZERO_UITEST_TOKENS"] ?? "").split(separator: ",").map(String.init).filter { $0 != token }

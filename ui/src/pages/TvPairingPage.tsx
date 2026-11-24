@@ -1,9 +1,10 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, CheckCircle2, Pencil, Play, ShieldCheck, Tv, UserRound } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, Pencil, Play, ShieldCheck, UserRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import type { DevicePairingVerification } from "../devicePairingApi";
 import { Alert, Badge, Button, Field, FormActions, Input, PageHeader, SettingRow, SettingsSection, Stack } from "../components/ui";
+import { DeviceKindIcon } from "../components/DeviceSessions";
 import { useI18n } from "../i18n";
 import { AppNameContext, useDocumentTitle } from "../useDocumentTitle";
 import { normalizePairingCode as normalizeCode, pairingCodeFromLocation } from "../tvPairingCode";
@@ -23,6 +24,8 @@ export default function TvPairingPage({ appIconColor }: { appIconColor: string }
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState(false);
   const [approved, setApproved] = useState(false);
+  /** What the device is called from now on: its own name until changed here. */
+  const [deviceName, setDeviceName] = useState("");
 
   useEffect(() => {
     if (verification) stageRef.current?.focus();
@@ -40,6 +43,7 @@ export default function TvPairingPage({ appIconColor }: { appIconColor: string }
     try {
       const result = await api.devicePairingVerification(normalized);
       setVerification(result);
+      setDeviceName(result.device_name);
       setApproved(result.approved);
       const search = new URLSearchParams(location.search);
       search.delete("code");
@@ -63,7 +67,7 @@ export default function TvPairingPage({ appIconColor }: { appIconColor: string }
     setApproving(true);
     setError(false);
     try {
-      await api.authorizeDevice(verification.user_code);
+      await api.authorizeDevice(verification.user_code, deviceName.trim() || undefined);
       setApproved(true);
       setVerification((current) => current ? { ...current, approved: true } : current);
     } catch {
@@ -72,6 +76,10 @@ export default function TvPairingPage({ appIconColor }: { appIconColor: string }
       setApproving(false);
     }
   };
+
+  const kindLabel = verification?.device_kind === "phone"
+    ? t("devicePairingKindPhone")
+    : verification?.device_kind === "tablet" ? t("devicePairingKindTablet") : t("devicePairingKindTv");
 
   return (
     <div className="tv-pairing-page" data-stage={approved ? "approved" : verification ? "confirm" : "code"}>
@@ -133,7 +141,23 @@ export default function TvPairingPage({ appIconColor }: { appIconColor: string }
                 }}>{t("edit")}</Button>}
               </div>
               <div className="tv-pairing-details">
-                <SettingRow label={<span className="tv-pairing-detail-label"><Tv />{t("tvPairingDevice")}</span>}><strong>{verification.device_name}</strong></SettingRow>
+                <SettingRow label={<span className="tv-pairing-detail-label"><DeviceKindIcon kind={verification.device_kind} />{t("tvPairingDevice")}</span>}>
+                  <strong>{kindLabel}</strong>
+                </SettingRow>
+                {approved ? (
+                  <SettingRow label={t("devicePairingNameLabel")}><strong>{deviceName}</strong></SettingRow>
+                ) : (
+                  <Field label={t("devicePairingNameLabel")} htmlFor="tv-pairing-device-name">
+                    <Input
+                      id="tv-pairing-device-name"
+                      value={deviceName}
+                      maxLength={80}
+                      disabled={approving}
+                      onChange={(event) => setDeviceName(event.target.value)}
+                    />
+                    <p className="tv-pairing-hint">{t("devicePairingNameHint")}</p>
+                  </Field>
+                )}
                 <SettingRow label={<span className="tv-pairing-detail-label"><UserRound />{t("tvPairingProfile")}</span>}><strong>{verification.profile_name}</strong></SettingRow>
               </div>
               {approved ? (
@@ -147,7 +171,7 @@ export default function TvPairingPage({ appIconColor }: { appIconColor: string }
                   </Alert>
                   {error && <Alert variant="danger">{t("tvPairingApprovalFailed")}</Alert>}
                   <FormActions className="tv-pairing-approve">
-                    <Button variant="primary" leadingIcon={<Tv />} onClick={() => void approve()} disabled={approving}>
+                    <Button variant="primary" leadingIcon={<DeviceKindIcon kind={verification.device_kind} />} onClick={() => void approve()} disabled={approving}>
                       {approving ? t("tvPairingApproving") : t("tvPairingApprove")}
                     </Button>
                   </FormActions>
