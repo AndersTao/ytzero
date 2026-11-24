@@ -1,4 +1,5 @@
 import { database } from "./database";
+import { refilteringWrites } from "./filterRules";
 import { log } from "./logger";
 import {
   fetchVideoInfo,
@@ -113,7 +114,7 @@ export async function syncChannelVideoAvailability(
     WHERE video_id = ? AND status != 'done'
   `);
   // Both columns at once: see titleUpdateFor for which is being answered.
-  const rememberTitle = database.prepare("UPDATE videos SET title = ?, title_original = ? WHERE video_id = ?");
+  const rememberTitle = refilteringWrites(database.prepare("UPDATE videos SET title = ?, title_original = ? WHERE video_id = ?"), 2);
   const result: ChannelAvailabilitySyncResult = {
     checked: 0, deleted: 0, private: 0, retitled: 0, failed: 0, rateLimited: false, skipped: 0,
   };

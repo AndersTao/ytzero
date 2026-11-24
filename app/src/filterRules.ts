@@ -87,3 +87,70 @@ export async function applyFilterRuleToAll(ruleId: number): Promise<number> {
   }
   return count;
 }
+
+/*
+ * A video is filtered once, when it arrives, by the words it had then. Those
+ * can change later: a live stream announced under one title goes out under
+ * another ("… | 2 Players Live"), a feed title is swapped for the channel
+ * page's, a description fills in. Without a second look, a reject rule that
+ * fits the words the video ended up with never sees them.
+ *
+ * So a write that may change them is wrapped: when a video that was already
+ * here comes out of it with other words, the reject rules run on it again.
+ * Only reject rules, and only for a video still in a profile's inbox: a later
+ * title can still keep a video out of a feed, but it never takes away one a
+ * whitelist let in, and nothing the profile already sorted is touched.
+ */
+type VideoWords = { channel_id: string; title: string; title_original: string | null; description: string };
+
+const wordsOf = database.prepare("SELECT channel_id, title, title_original, description FROM videos WHERE video_id = ?");
+
+async function videoWords(videoId: string): Promise<VideoWords | null> {
+  return ((await wordsOf.get(videoId)) as VideoWords | null) ?? null;
+}
+
+// An uploader's title filled in with what was shown all along is no new word.
+function sameWords(a: VideoWords, b: VideoWords): boolean {
+  return a.title === b.title && (a.title_original || a.title) === (b.title_original || b.title) && a.description === b.description;
+}
+
+/** The reject rules again, on the words a video has now: the shown title and the uploader's own. */
+export async function refilterVideo(videoId: string): Promise<void> {
+  const words = await videoWords(videoId);
+  if (!words) return;
+  const rules = await database
+    .prepare("SELECT * FROM filter_rules WHERE action = 'reject' AND user_id IS NOT NULL AND (channel_id IS NULL OR channel_id = ?)")
+    .all(words.channel_id) as FilterRule[];
+  const titles = [words.title, words.title_original ?? ""].filter((title, k, all) => title && all.indexOf(title) === k);
+  if (!titles.length) titles.push(""); // a description rule still has something to look at
+  const archived = new Set<number>();
+  for (const rule of rules) {
+    const userId = rule.user_id as number;
+    if (archived.has(userId)) continue;
+    if (titles.some((title) => matches(rule, title, words.description))) {
+      await archiveForUser.run(userId, videoId);
+      archived.add(userId);
+    }
+  }
+}
+
+type Statement = { run: (...params: any[]) => Promise<unknown> };
+
+/**
+ * A statement that writes a video's words, which runs the reject rules again
+ * when it changed them. `videoIdAt` is where the video id is in its parameters.
+ * A video it creates is left alone: arriving, it is filtered where it arrives.
+ */
+export function refilteringWrites<T extends Statement>(statement: T, videoIdAt = 0): T {
+  const run = async (...params: unknown[]) => {
+    const videoId = String(params[videoIdAt]);
+    const before = await videoWords(videoId);
+    const result = await statement.run(...params);
+    if (before) {
+      const after = await videoWords(videoId);
+      if (after && !sameWords(before, after)) await refilterVideo(videoId);
+    }
+    return result;
+  };
+  return { ...statement, run } as T;
+}

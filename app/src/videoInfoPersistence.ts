@@ -1,6 +1,7 @@
 import { database } from "./database";
 import type { VideoInfo } from "./youtube";
 import { DIRECT_VIDEO_INFO_UPSERT_SQL } from "./videoUpserts";
+import { refilteringWrites } from "./filterRules";
 
 /**
  * Persist metadata obtained directly from the video's player response.
@@ -9,7 +10,8 @@ import { DIRECT_VIDEO_INFO_UPSERT_SQL } from "./videoUpserts";
  * request, and this runs on paths that have already paid for one.
  */
 export async function persistDirectVideoInfo(info: VideoInfo, isShort: boolean | null = null): Promise<void> {
-  await database.prepare(DIRECT_VIDEO_INFO_UPSERT_SQL).run(
+  // The watch page is where a stream's final title shows up first: filtered again when it changed.
+  await refilteringWrites(database.prepare(DIRECT_VIDEO_INFO_UPSERT_SQL)).run(
     info.videoId,
     info.channelId,
     info.title,
