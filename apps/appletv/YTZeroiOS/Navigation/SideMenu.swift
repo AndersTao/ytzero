@@ -53,6 +53,7 @@ extension EnvironmentValues {
 struct SideMenuContainer: View {
     @Environment(AppSession.self) private var session
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State private var destination: MenuDestination = .main
     @State private var isOpen = false
     /// How far the panel is being dragged, while a finger is on it.
@@ -118,8 +119,14 @@ struct SideMenuContainer: View {
         .task(id: session.activeProfile?.id) {
             let profile = session.activeProfile?.id ?? 0
             OfflineStore.shared.profile = profile
+            OfflineStore.shared.client = profile != 0 ? session.client : nil
             guard profile != 0, let client = session.client else { return }
             await OfflineStore.shared.resume(client: client)
+        }
+        // Back in the app, maybe after watching offline: whatever waited is handed over.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, OfflineStore.shared.profile != 0, let client = OfflineStore.shared.client else { return }
+            Task { await OfflineStore.shared.resume(client: client) }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(model: profiles)

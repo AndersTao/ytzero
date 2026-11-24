@@ -61,6 +61,15 @@ struct HomeView: View {
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
         }
+        // Watched to the end from Downloads, maybe without a connection: off
+        // Main straight away, as when it is finished from here.
+        .onReceive(NotificationCenter.default.publisher(for: .offlineFinished)) { note in
+            if let video = note.object as? Video { model.finished(video) }
+        }
+        // A position reached offline reached the server: Continue watching follows.
+        .onReceive(NotificationCenter.default.publisher(for: .offlineSynced)) { _ in
+            run { client in await model.loadContinue(client: client) }
+        }
     }
 
     @ToolbarContentBuilder
