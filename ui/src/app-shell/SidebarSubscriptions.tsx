@@ -1,27 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { ChevronRight, Users } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Users } from "lucide-react";
 import { api } from "../api";
 import { subscribe } from "../events";
 import { img } from "../img";
 import { useI18n } from "../i18n";
 import { VideoThumbnail, watchProgress } from "../components/VideoThumbnail";
+import { useSubsCollapsed } from "./sidebarSubsCollapsed";
 
 type RecentChannel = {
-  channel_id: string;
-  title: string;
-  thumbnail: string;
-  latest_thumbnail: string | null;
-  latest_video_id: string | null;
-  watched: number;
-  watch_position: number | null;
-  watch_duration: number | null;
+  channel_id: string; title: string; thumbnail: string; latest_thumbnail: string | null; latest_video_id: string | null;
+  watched: number; watch_position: number | null; watch_duration: number | null;
 };
 
 export default function SidebarSubscriptions() {
   const { t } = useI18n();
   const [channels, setChannels] = useState<RecentChannel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsed, toggleCollapsed] = useSubsCollapsed();
   const visibleChannels = channels.slice(0, 5);
 
   const loadChannels = useCallback(() => {
@@ -35,12 +31,16 @@ export default function SidebarSubscriptions() {
   useEffect(() => subscribe("channels-changed", loadChannels), [loadChannels]);
 
   return (
-    <div className="sidebar-subs">
-      <div className="sidebar-subs-header">{t("subscriptions")}</div>
+    <div className={`sidebar-subs${collapsed ? " collapsed" : ""}`}>
+      <div className="sidebar-subs-header">
+        <span>{t("subscriptions")}</span>
+        <button className="sidebar-add-btn" onClick={toggleCollapsed} title={t("collapse")} aria-label={t("collapse")}><ChevronUp size={16} /></button>
+      </div>
       <NavLink to="/subscriptions" className={({ isActive }) => `sidebar-subs-compact${isActive ? " active" : ""}`}>
         <Users size={18} />
         <span>{t("subscriptions")}</span>
       </NavLink>
+      <button className="sidebar-add-btn sidebar-subs-expand" onClick={toggleCollapsed} title={t("expand")} aria-label={t("expand")}><ChevronDown size={16} /></button>
       <div className="sidebar-subs-list">
         {loading && channels.length === 0 && (
           <div className="sidebar-skeleton-list" aria-label={t("loading")}>

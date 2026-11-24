@@ -235,13 +235,23 @@ body.sidebar-hidden .sidebar { width: 0; padding: 0; }
   flex-shrink: 0;
 }
 .sidebar-subs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding: 8px 12px 6px;
+  padding: 8px 8px 6px 12px;
 }
+/* Folded into one menu item, with a button beside it to unfold it again. */
+.sidebar-subs { position: relative; }
+.sidebar-subs-expand { display: none; position: absolute; right: 8px; bottom: 9px; }
+.sidebar-subs.collapsed .sidebar-subs-header,
+.sidebar-subs.collapsed .sidebar-subs-list { display: none; }
+.sidebar-subs.collapsed .sidebar-subs-compact { display: flex; padding-right: 44px; }
+.sidebar-subs.collapsed .sidebar-subs-expand { display: grid; }
 .sidebar-subs-compact {
   display: none;
   align-items: center;
