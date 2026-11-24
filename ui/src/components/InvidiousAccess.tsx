@@ -3,7 +3,6 @@ import { Copy, KeyRound, LoaderCircle, Trash2 } from "lucide-react";
 import { api, type InvidiousTokenState } from "../api";
 import { useI18n } from "../i18n";
 import { Alert, Button, Inline, SettingRow, Text } from "./ui";
-import DeviceSessions from "./DeviceSessions";
 import "./DatabaseSettings.css";
 
 /**
@@ -98,9 +97,6 @@ export default function InvidiousAccess({ showToast }: { showToast: (message: st
           </Inline>
         </Alert>
       )}
-
-      {/* The phones, tablets and TVs signed in with a code, beside the token apps sign in with. */}
-      <DeviceSessions showToast={showToast} />
     </>
   );
 }
