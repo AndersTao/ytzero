@@ -30,7 +30,12 @@ Sådan hænger det sammen:
    (1 afviser, 2 markerer som set, 3 opdaterer), men vises ikke. Farveknapperne
    bruges ikke, fordi LG-TV'et selv fanger dem (billed- og
    energiindstillinger).
-4. Back på forsiden lukker appen.
+   Knappen øverst til venstre (Op og så Venstre) går til de samme steder som
+   Apple TV-appen: Main, Anbefalinger, Shorts (en række lodrette kort pr. dag),
+   Planlagt (Venstre/Højre på en række vælger I dag, I aften, I morgen,
+   I morgen aften, Weekend eller X for at fjerne den) og profilens playlister.
+   Back fra et af dem går til Main.
+4. Back på Main lukker appen.
 
 Indhold:
 

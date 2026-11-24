@@ -6,11 +6,15 @@
   <meta name="robots" content="noindex">
   <title>YT Zero</title>
   <!--
-    A view-only television page: "Continue watching" and the Main feed (thumbnail,
-    channel, title) and a full-screen player. Remote keys only:
+    A view-only television page, the same places as the Apple TV app: Main
+    ("Continue watching" and the feed by day), Recommendations, Shorts (a row of
+    upright cards per day), Scheduled (with the times to move a video to) and the
+    profile's playlists, and a full-screen player. Remote keys only:
       browse  arrows move, OK plays, OK held opens a menu (watched / reject),
               Up from the top row reaches Refresh in the top right, Left from it the
-              profile button (switch profile, add one by pairing again), Back leaves the app
+              profile button (switch profile, add one by pairing again) and the
+              place button at the left (choose where to be), Back goes to Main and
+              from there leaves the app
       player  Right +30 s, Left −15 s, OK (or a click) pauses/plays, Back returns
       numbers 1 rejects, 2 marks as watched, 3 refreshes: shortcuts, not shown.
               (The colour keys are taken by the LG TV itself.)
@@ -86,6 +90,7 @@
       font: inherit; font-size: 32px; font-weight: 600; text-align: left; color: var(--fg); background: transparent;
       cursor: pointer; outline: none;
     }
+    .menu-item[hidden] { display: none; }
     .menu-item.focused { background: #333; box-shadow: inset 0 0 0 4px var(--accent); }
 
     .section-title { margin: 8px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
@@ -132,7 +137,7 @@
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     #message { padding: 160px 80px; text-align: center; font-size: 36px; color: var(--muted); }
-    #message[hidden], #player[hidden] { display: none; }
+    #message[hidden], #player[hidden], #grid[hidden] { display: none; }
 
     #toast {
       position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 20;
@@ -165,13 +170,73 @@
     #flash.show { opacity: 1; }
     #playerError { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 36px; padding: 0 200px; }
     #playerError[hidden] { display: none; }
+
+    /* The place button at the left of the top row: where this is, and the way elsewhere. */
+    #placeBtn {
+      margin-right: auto; font: inherit; font-size: 26px; font-weight: 700; color: #d6d6d6; background: #272727;
+      border: 0; border-radius: 999px; padding: 12px 30px 12px 24px; cursor: pointer; outline: none;
+      display: inline-flex; align-items: center; gap: 14px;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    #placeBtn svg { width: 28px; height: 28px; }
+    #placeBtn.focused { background: #3a3a3a; color: var(--fg); box-shadow: 0 0 0 4px var(--accent); transform: scale(1.06); }
+    #places { position: fixed; inset: 0; z-index: 16; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.78); }
+    #places[hidden] { display: none; }
+    #placesBox { width: 760px; max-height: 920px; overflow-y: auto; padding: 40px 44px 32px; border-radius: 26px; background: #1f1f1f; box-shadow: 0 30px 80px rgba(0,0,0,.6); scrollbar-width: none; }
+    #placesBox::-webkit-scrollbar { display: none; }
+    #placesTitle { margin: 0 8px 16px; font-size: 32px; font-weight: 600; }
+    .places-heading { margin: 22px 8px 12px; font-size: 22px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .profile-item svg { flex: none; width: 34px; height: 34px; }
+    .profile-item .count { margin-left: auto; font-size: 22px; color: var(--muted); }
+
+    /* Shorts: a row a day of upright cards, the words on the picture. */
+    #rows { padding: 12px 0 120px; }
+    #rows[hidden] { display: none; }
+    .rows-title { display: flex; align-items: center; gap: 28px; margin: 28px 80px 0; font-size: 28px; font-weight: 600; color: #d6d6d6; }
+    .rows-title::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: rgba(255,255,255,.18); }
+    .rows-title svg { width: 30px; height: 30px; color: var(--muted); }
+    .short-row { display: flex; gap: 32px; overflow-x: auto; scrollbar-width: none; padding: 28px 80px 36px; scroll-padding: 0 80px; }
+    .short-row::-webkit-scrollbar { display: none; }
+    .card.tall { flex: 0 0 calc((1920px - 160px - 5 * 32px) / 6); }
+    .card.tall .thumb { aspect-ratio: 9 / 16; border-radius: 18px; }
+    .card.tall .thumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 45%, rgba(0,0,0,.85)); }
+    .short-caption { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 18px 18px 20px; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+    .short-caption .title { margin: 0 0 10px; font-size: 24px; }
+    .short-channel { display: flex; align-items: center; gap: 10px; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .short-channel img { flex: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .short-meta { margin-top: 6px; font-size: 18px; color: rgba(255,255,255,.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Scheduled: a row a video, as the web lists it, with the times to move it to. */
+    .sched-row { display: flex; align-items: center; gap: 32px; margin: 0 80px; padding: 22px 0; border-bottom: 2px solid rgba(255,255,255,.08); }
+    .sched-row .card { flex: 0 0 300px; }
+    .sched-row .card .channel, .sched-row .card .title { display: none; }
+    .sched-info { flex: 1; min-width: 0; }
+    .sched-info .title { margin: 0 0 8px; }
+    .sched-info .channel, .sched-info .due { margin: 0 0 4px; font-size: 22px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sched-row.focused .card .thumb { box-shadow: 0 0 0 5px var(--accent); }
+    .sched-row.focused .card.focused { transform: scale(1.04); }
+    .sched-picker { display: flex; align-items: flex-end; gap: 22px; }
+    .sched-group { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .sched-group span { font-size: 20px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .sched-group div { display: flex; gap: 8px; padding: 6px; border-radius: 16px; background: #222; }
+    .sched-btn {
+      width: 64px; height: 56px; border: 0; border-radius: 12px; background: transparent; color: #d6d6d6;
+      display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline: none;
+    }
+    .sched-btn svg { width: 30px; height: 30px; }
+    .sched-btn.wide { width: 104px; }
+    .sched-btn.chosen { background: rgba(62,166,255,.28); color: var(--accent); }
+    .sched-btn.focused { box-shadow: 0 0 0 4px var(--accent); background: #3a3a3a; color: var(--fg); }
+    .sched-btn.remove { width: 60px; height: 60px; border-radius: 50%; background: #2a2a2a; }
+    .sched-btn.remove.focused { box-shadow: 0 0 0 4px #e5484d; }
   </style>
 </head>
 <body>
-  <div id="topbar"><button id="profileBtn" type="button" tabindex="-1" hidden><span class="avatar" id="profileAvatar"></span><span id="profileName"></span></button><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
+  <div id="topbar"><button id="placeBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="placeName">Main</span></button><button id="profileBtn" type="button" tabindex="-1" hidden><span class="avatar" id="profileAvatar"></span><span id="profileName"></span></button><button id="refreshBtn" type="button" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>Opdater</button></div>
   <div id="continueTitle" class="section-title" hidden>Fortsæt med at se</div>
   <div id="continueRow" role="list" hidden></div>
   <div id="grid" role="list"></div>
+  <div id="rows" hidden></div>
   <div id="message">Henter videoer…</div>
   <div id="toast" role="status"></div>
 
@@ -179,8 +244,16 @@
     <div id="menuBox">
       <div id="menuTitle"></div>
       <button class="menu-item" type="button" tabindex="-1" data-act="watched">Markér som set</button>
+      <button class="menu-item" type="button" tabindex="-1" data-act="unschedule">Fjern fra Planlagt</button>
       <button class="menu-item" type="button" tabindex="-1" data-act="reject">Afvis</button>
       <button class="menu-item" type="button" tabindex="-1" data-act="cancel">Annuller</button>
+    </div>
+  </div>
+
+  <div id="places" role="dialog" aria-modal="true" hidden>
+    <div id="placesBox">
+      <div id="placesTitle">Gå til</div>
+      <div id="placesList"></div>
     </div>
   </div>
 
@@ -243,6 +316,14 @@
     var generation = 0; // bumps on refresh, so late answers from before it are dropped
     // Rejected or watched here: kept out even if a list fetched later still has them.
     var removed = {};
+
+    var rowsEl = document.getElementById("rows");
+    var placeBtn = document.getElementById("placeBtn");
+    // Where this is: Main, or one of the places the place button leads to.
+    var MAIN = { kind: "main", name: "Main" };
+    var place = MAIN;
+    var shortRows = []; // Shorts: the names of the day rows ("d0", "d1", …), top to bottom
+    var schedCol = 0; // Scheduled: 0 the video, 1–5 the times to move it to, 6 remove
 
     // ---------- API ----------
 
@@ -333,9 +414,9 @@
     // The grid in the rows it is drawn in: each day starts a row of its own,
     // so moving up and down follows those rows rather than steps of four.
     function gridRows() {
-      var rows = [], row = null, last = null, items = sections.grid.items;
+      var rows = [], row = null, last = null, items = sections.grid.items, byDay = place.kind === "main";
       for (var k = 0; k < items.length; k++) {
-        var key = dayIndex(items[k]);
+        var key = byDay ? dayIndex(items[k]) : 0;
         if (!row || key !== last || row.length === COLUMNS) { row = []; rows.push(row); }
         row.push(k);
         last = key;
@@ -348,6 +429,7 @@
     function drawDayTitles() {
       var old = gridEl.querySelectorAll(".day-title");
       for (var k = 0; k < old.length; k++) old[k].remove();
+      if (place.kind !== "main") return; // elsewhere the order is the list's own
       var last = null, items = sections.grid.items, cards = sections.grid.cards;
       for (var n = 0; n < items.length; n++) {
         var key = dayIndex(items[n]);
@@ -362,7 +444,7 @@
     }
 
     function playable(v) {
-      return v && v.video_id && !removed[v.video_id] && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
+      return v && v.video_id && (place.kind === "playlist" || !removed[v.video_id]) && !v.is_unavailable && !v.is_private && v.live_status !== "upcoming";
     }
 
     var toastTimer = null;
@@ -394,7 +476,8 @@
         badge.textContent = v.live_status === "live" ? "LIVE" : "Livestream";
         thumb.appendChild(badge);
       }
-      if (sectionName === "cont" && v.watch_position && v.watch_duration) {
+      var tall = isShortRow(sectionName);
+      if (!tall && v.watch_position && v.watch_duration) {
         var bar = document.createElement("div");
         bar.className = "progress";
         var fill = document.createElement("div");
@@ -417,12 +500,18 @@
       title.className = "title";
       title.textContent = v.title || "";
       card.appendChild(thumb);
-      card.appendChild(channel);
-      card.appendChild(title);
+      if (tall) {
+        card.classList.add("tall");
+        thumb.appendChild(shortCaption(v));
+      } else {
+        card.appendChild(channel);
+        card.appendChild(title);
+      }
       // Look the index up when clicked: cards move as videos are removed.
       card.addEventListener("click", function () {
         if (pointerHoldFired) { pointerHoldFired = false; return; }
         var i = sections[sectionName].cards.indexOf(card);
+        if (sectionName === "sched") schedCol = 0;
         if (i >= 0) { setFocus(sectionName, i); openPlayer(); }
       });
       // The Magic Remote's pointer: OK held on a card opens the menu too.
@@ -443,13 +532,230 @@
       return card;
     }
 
+    // A Short's words on its picture, as the web draws it: title, channel, views and age.
+    function shortCaption(v) {
+      var caption = document.createElement("div");
+      caption.className = "short-caption";
+      var title = document.createElement("div");
+      title.className = "title";
+      title.textContent = v.title || "";
+      var channel = document.createElement("div");
+      channel.className = "short-channel";
+      if (v.channel_thumbnail) {
+        var avatar = document.createElement("img");
+        avatar.alt = "";
+        avatar.src = thumbUrl(v.channel_thumbnail);
+        avatar.onerror = function () { avatar.remove(); };
+        channel.appendChild(avatar);
+      }
+      channel.appendChild(document.createTextNode(v.channel_title || ""));
+      var meta = document.createElement("div");
+      meta.className = "short-meta";
+      meta.textContent = [viewsText(v.views), publishedAgo(v)].filter(Boolean).join(" · ");
+      caption.appendChild(title);
+      caption.appendChild(channel);
+      caption.appendChild(meta);
+      return caption;
+    }
+
+    // "213 t. visninger", "1,2 mio. visninger", as Danish YouTube shortens them.
+    function viewsText(views) {
+      var n = Number(views);
+      if (!n || n < 0) return "";
+      var short = function (x) { return (x >= 100 ? String(Math.round(x)) : (Math.round(x * 10) / 10).toString().replace(".", ",")); };
+      if (n >= 1e6) return short(n / 1e6) + " mio. visninger";
+      if (n >= 1e3) return short(n / 1e3) + " t. visninger";
+      return n + " visninger";
+    }
+
+    function isShortRow(name) { return /^d\d+$/.test(name); }
+
+    // The Shorts row for a video's day, made the first time that day comes up.
+    function shortRowFor(v) {
+      var key = dayIndex(v), name = "d" + key;
+      if (sections[name]) return name;
+      var title = document.createElement("div");
+      title.className = "rows-title";
+      title.setAttribute("role", "heading");
+      title.textContent = dayTitle(key);
+      var row = document.createElement("div");
+      row.className = "short-row";
+      row.setAttribute("role", "list");
+      rowsEl.appendChild(title);
+      rowsEl.appendChild(row);
+      sections[name] = { el: row, items: [], cards: [], title: title };
+      shortRows.push(name);
+      return name;
+    }
+
+    // ---------- Scheduled ----------
+
+    var BUCKETS = ["today", "tonight", "tomorrow", "tomorrow_evening", "weekend"];
+    var ICONS = {
+      sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+      moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+      cup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v3M12 3v3"/></svg>',
+      x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+    };
+    var PICKER = [
+      { title: "I dag", buttons: [["today", "sun", "I dag"], ["tonight", "moon", "I aften"]] },
+      { title: "I morgen", buttons: [["tomorrow", "sun", "I morgen"], ["tomorrow_evening", "moon", "I morgen aften"]] },
+      { title: "Weekend", buttons: [["weekend", "cup", "Weekend"]] }
+    ];
+    var MONTHS = ["jan.", "feb.", "mar.", "apr.", "maj", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec."];
+
+    // Today (with tonight), Tomorrow (with tomorrow evening), Weekend, as the web groups them.
+    function schedGroup(v) {
+      var b = v.bucket || "";
+      if (b === "today" || b === "tonight") return "I dag";
+      if (b === "tomorrow" || b === "tomorrow_evening") return "I morgen";
+      if (b === "weekend") return "Weekend";
+      return "Senere";
+    }
+
+    function schedSorted(list) {
+      var rank = function (v) { var k = BUCKETS.indexOf(v.bucket || ""); return k < 0 ? BUCKETS.length : k; };
+      var due = function (v) { var d = parseStamp(v.show_from); return d ? d.getTime() : 0; };
+      return list.slice().sort(function (a, b) { return rank(a) - rank(b) || due(a) - due(b); });
+    }
+
+    // When it is due, as the web writes it: "i dag kl. 18.00", "lørdag 28. nov. kl. 00.00".
+    function dueText(v) {
+      var at = parseStamp(v.show_from);
+      if (!at) return "";
+      var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+      var time = pad(at.getHours()) + "." + pad(at.getMinutes());
+      var now = new Date();
+      var days = Math.round((new Date(at.getFullYear(), at.getMonth(), at.getDate()) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+      if (days <= 0) return "I dag kl. " + time;
+      if (days === 1) return "I morgen kl. " + time;
+      return WEEKDAYS[at.getDay()] + " " + at.getDate() + ". " + MONTHS[at.getMonth()] + " kl. " + time;
+    }
+
+    // A row a video: the card, what it is and when it is due, and the times to move it to.
+    function schedRow(v, card) {
+      var row = document.createElement("div");
+      row.className = "sched-row";
+      row.appendChild(card);
+      var info = document.createElement("div");
+      info.className = "sched-info";
+      [["title", v.title], ["channel", v.channel_title], ["due", dueText(v)]].forEach(function (line) {
+        var el = document.createElement("div");
+        el.className = line[0];
+        el.textContent = line[1] || "";
+        info.appendChild(el);
+      });
+      row.appendChild(info);
+      var picker = document.createElement("div");
+      picker.className = "sched-picker";
+      PICKER.forEach(function (group) {
+        var g = document.createElement("div");
+        g.className = "sched-group";
+        var label = document.createElement("span");
+        label.textContent = group.title;
+        var box = document.createElement("div");
+        group.buttons.forEach(function (b) {
+          box.appendChild(schedButton(card, b[0], ICONS[b[1]], b[2], v.bucket === b[0], b[0] === "weekend"));
+        });
+        g.appendChild(label);
+        g.appendChild(box);
+        picker.appendChild(g);
+      });
+      row.appendChild(picker);
+      row.appendChild(schedButton(card, null, ICONS.x, "Fjern fra Planlagt", false, false));
+      return row;
+    }
+
+    function schedButton(card, bucket, icon, label, chosen, wide) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.tabIndex = -1;
+      b.className = "sched-btn" + (bucket ? "" : " remove") + (chosen ? " chosen" : "") + (wide ? " wide" : "");
+      b.innerHTML = icon;
+      b.setAttribute("aria-label", label);
+      b.addEventListener("click", function () {
+        var i = sections.sched.cards.indexOf(card);
+        if (i < 0) return;
+        var buttons = Array.prototype.slice.call(card.parentNode.querySelectorAll(".sched-btn"));
+        schedCol = buttons.indexOf(b) + 1;
+        setFocus("sched", i, true);
+        schedAct(i);
+      });
+      return b;
+    }
+
+    function schedButtons(index) {
+      var card = sections.sched.cards[index];
+      return card ? Array.prototype.slice.call(card.parentNode.querySelectorAll(".sched-btn")) : [];
+    }
+
+    // The group headings, drawn again whenever rows come or go.
+    function drawSchedTitles() {
+      var old = rowsEl.querySelectorAll(".rows-title");
+      for (var k = 0; k < old.length; k++) old[k].remove();
+      var last = null, items = sections.sched.items, cards = sections.sched.cards;
+      for (var n = 0; n < items.length; n++) {
+        var group = schedGroup(items[n]);
+        if (group === last) continue;
+        var title = document.createElement("div");
+        title.className = "rows-title";
+        title.setAttribute("role", "heading");
+        title.innerHTML = group === "Weekend" ? ICONS.cup : ICONS.sun;
+        title.appendChild(document.createTextNode(group));
+        rowsEl.insertBefore(title, cards[n].parentNode);
+        last = group;
+      }
+    }
+
+    // OK on one of the times moves the video there; on the X it leaves Scheduled.
+    function schedAct(index) {
+      var v = sections.sched.items[index];
+      if (!v || busy) return;
+      if (schedCol >= 6) { actOn("unschedule", v); return; }
+      var bucket = BUCKETS[schedCol - 1];
+      if (!bucket || v.bucket === bucket) return;
+      busy = true;
+      api("/videos/" + encodeURIComponent(v.video_id) + "/queue", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bucket: bucket })
+      }).then(function () {
+        toast("Flyttet");
+        return reloadAll().then(function () {
+          var i = sections.sched.items.findIndex(function (x) { return x.video_id === v.video_id; });
+          if (i >= 0) setFocus("sched", i);
+        });
+      }).catch(function (error) {
+        if (String(error && error.message) !== "unauthenticated") toast("Det lykkedes ikke – prøv igen");
+      }).then(function () { busy = false; });
+    }
+
     function addItem(sectionName, v) {
       var sec = sections[sectionName];
       var card = makeCard(v, sectionName);
       sec.items.push(v);
       sec.cards.push(card);
-      sec.el.appendChild(card);
+      if (sectionName === "sched") sec.el.appendChild(schedRow(v, card));
+      else sec.el.appendChild(card);
       if (sectionName === "grid") drawDayTitles();
+    }
+
+    // The sections of the place on screen, top to bottom.
+    function sectionOrder() {
+      if (place.kind === "main") return ["cont", "grid"];
+      if (place.kind === "shorts") return shortRows.slice();
+      if (place.kind === "sched") return ["sched"];
+      return ["grid"];
+    }
+
+    function filledSections() { return sectionOrder().filter(hasSection); }
+
+    // Everything but Main's two sections goes when another place is shown.
+    function clearPlace() {
+      clearSection("cont");
+      clearSection("grid");
+      Object.keys(sections).forEach(function (name) { if (name !== "cont" && name !== "grid") delete sections[name]; });
+      shortRows = [];
+      rowsEl.innerHTML = "";
+      if (place.kind === "sched") sections.sched = { el: rowsEl, items: [], cards: [] };
     }
 
     function clearSection(sectionName) {
@@ -459,16 +765,27 @@
       sec.el.innerHTML = "";
     }
 
-    function hasSection(name) { return sections[name].cards.length > 0; }
+    function hasSection(name) { return Boolean(sections[name]) && sections[name].cards.length > 0; }
+
+    function emptyText() {
+      switch (place.kind) {
+        case "recs": return place.off ? "Anbefalinger er slået fra for denne profil" : "Ingen anbefalinger lige nu";
+        case "shorts": return "Ingen Shorts endnu";
+        case "sched": return "Intet er planlagt";
+        case "playlist": return "Playlisten er tom";
+      }
+      return "Ingen nye videoer";
+    }
 
     function updateChrome() {
-      var hasCont = hasSection("cont");
+      var hasCont = place.kind === "main" && hasSection("cont");
       continueEl.hidden = !hasCont;
       document.getElementById("continueTitle").hidden = !hasCont;
-      if (!hasCont && !hasSection("grid") && !loading) {
-        messageEl.textContent = "Ingen nye videoer";
+      var any = filledSections().length > 0;
+      if (!any && !loading) {
+        messageEl.textContent = emptyText();
         messageEl.hidden = false;
-      } else if (hasCont || hasSection("grid")) {
+      } else if (any) {
         messageEl.hidden = true;
       }
     }
@@ -482,6 +799,7 @@
     // ---------- Loading ----------
 
     function loadContinue() {
+      if (place.kind !== "main") return Promise.resolve();
       var gen = generation;
       return api("/in-progress").then(function (data) {
         if (gen !== generation) return;
@@ -499,30 +817,60 @@
       }).catch(function () {});
     }
 
+    // One page of what the place shows; Scheduled and a playlist come whole.
+    function pagePath() {
+      switch (place.kind) {
+        case "recs": return "/recommendations?limit=" + PAGE_SIZE + "&page=" + page + (place.fresh && page === 0 ? "&refresh=1" : "");
+        case "shorts": return "/feed?only_shorts=1&limit=" + PAGE_SIZE + "&page=" + page;
+        case "sched": return "/watchlist";
+        case "playlist": return "/playlists/" + encodeURIComponent(place.id) + "?sort=added-newest";
+      }
+      return "/feed?page=" + page;
+    }
+
+    function listed(videoId) {
+      for (var name in sections) {
+        if (sections[name].items.some(function (v) { return v.video_id === videoId; })) return true;
+      }
+      return false;
+    }
+
     function loadMore() {
       if (loading || !hasMore) return Promise.resolve();
       loading = true;
       var gen = generation;
-      return api("/feed?page=" + page)
+      return api(pagePath())
         .then(function (data) {
           if (gen !== generation) return;
           var batch = (data && data.videos) || [];
-          hasMore = batch.length === PAGE_SIZE;
+          if (place.kind === "recs") {
+            place.off = Boolean(data && data.enabled === false);
+            hasMore = Boolean(data && data.has_more);
+          } else {
+            hasMore = (place.kind === "main" || place.kind === "shorts") && batch.length === PAGE_SIZE;
+          }
           page += 1;
-          var ids = continueIds();
           var first = page === 1;
-          batch.filter(playable).forEach(function (v) { if (!ids[v.video_id]) addItem("grid", v); });
+          var list = batch.filter(playable);
+          if (place.kind === "sched") list = schedSorted(list);
+          list.forEach(function (v) {
+            if (listed(v.video_id)) return; // on the Continue shelf, or on an earlier page
+            var name = place.kind === "shorts" ? shortRowFor(v) : place.kind === "sched" ? "sched" : "grid";
+            addItem(name, v);
+          });
+          if (place.kind === "sched") drawSchedTitles();
           loading = false;
           updateChrome();
           if (first && !current && focus.s !== "top") {
-            if (hasSection("cont")) setFocus("cont", 0, true);
-            else if (hasSection("grid")) setFocus("grid", 0, true);
+            var firstFilled = filledSections()[0];
+            if (firstFilled) setFocus(firstFilled, 0, true);
+            else focusTop(true, 0); // nothing here: the way elsewhere
           }
         })
         .catch(function (error) {
           loading = false;
           if (String(error && error.message) === "unauthenticated" || gen !== generation) return;
-          if (!hasSection("grid") && !hasSection("cont")) {
+          if (!filledSections().length) {
             messageEl.textContent = "Kunne ikke hente videoer. Prøver igen…";
             messageEl.hidden = false;
           }
@@ -530,38 +878,67 @@
         });
     }
 
-    function reloadAll() {
+    function reloadAll(fresh) {
       generation += 1;
-      clearSection("grid");
+      if (place.kind === "main") clearSection("grid"); else clearPlace();
       page = 0;
       hasMore = true;
       loading = false;
+      place.fresh = Boolean(fresh);
       // Refreshed from the button: stay on it.
       if (focus.s !== "top") focus = { s: "grid", i: 0 };
       window.scrollTo(0, 0);
       return loadContinue().then(loadMore);
     }
 
+    // Another place: its own list from the top, under its name on the place button.
+    function showPlace(target) {
+      place = target;
+      document.getElementById("placeName").textContent = target.name;
+      gridEl.hidden = target.kind === "shorts" || target.kind === "sched";
+      rowsEl.hidden = !gridEl.hidden;
+      clearPlace();
+      messageEl.textContent = "Henter videoer…";
+      messageEl.hidden = false;
+      updateChrome();
+      // Into the new place: its first card once it is there.
+      clearMark();
+      focus = { s: "grid", i: 0 };
+      schedCol = 0;
+      reloadAll();
+    }
+
     // ---------- Focus ----------
 
     function focusedVideo() {
       var sec = sections[focus.s];
+      if (focus.s === "sched" && schedCol > 0) return null; // on a time, not the video
       return sec && sec.items[focus.i];
     }
 
     // Exactly one thing carries the mark; clear whatever had it.
     function clearMark() {
-      var marked = document.querySelectorAll(".card.focused, #refreshBtn.focused, #profileBtn.focused");
+      var marked = document.querySelectorAll(".card.focused, .sched-row.focused, .sched-btn.focused, #placeBtn.focused, #refreshBtn.focused, #profileBtn.focused");
       for (var k = 0; k < marked.length; k++) marked[k].classList.remove("focused");
     }
 
-    // The top row: the profile button (0) and Refresh (1). Up lands on Refresh.
+    // The top row: the place button, the profile button (once known) and Refresh.
+    // Up lands on Refresh.
+    function topButtons() { return [placeBtn, profileBtn, refreshBtn].filter(function (b) { return !b.hidden; }); }
+
     function focusTop(quiet, index) {
       clearMark();
-      var i = index === 0 && !profileBtn.hidden ? 0 : 1;
-      focus = { s: "top", i: i };
-      (i === 0 ? profileBtn : refreshBtn).classList.add("focused");
+      var buttons = topButtons();
+      var i = index == null || index < 0 ? buttons.length - 1 : Math.min(buttons.length - 1, index);
+      focus = { s: "top", i: i, btn: buttons[i] };
+      buttons[i].classList.add("focused");
       if (!quiet) window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function pressTop(button) {
+      if (button === placeBtn) openPlaces();
+      else if (button === profileBtn) openProfiles();
+      else refresh();
     }
 
     function setFocus(sectionName, index, quiet) {
@@ -571,7 +948,14 @@
       clearMark();
       focus = { s: sectionName, i: index };
       var card = sec.cards[index];
-      card.classList.add("focused");
+      if (sectionName === "sched") {
+        card.parentNode.classList.add("focused");
+        var buttons = schedButtons(index);
+        if (schedCol > 0 && buttons[schedCol - 1]) buttons[schedCol - 1].classList.add("focused");
+        else { schedCol = 0; card.classList.add("focused"); }
+      } else {
+        card.classList.add("focused");
+      }
       if (!quiet) {
         if (sectionName === "cont") {
           /*
@@ -591,6 +975,7 @@
       }
       // Fetch the next page while two rows remain below the focus.
       if (sectionName === "grid" && index >= sec.cards.length - COLUMNS * 2) loadMore();
+      if (isShortRow(sectionName) && sectionName === shortRows[shortRows.length - 1]) loadMore();
     }
 
     function restoreFocus(videoId) {
@@ -600,51 +985,86 @@
           if (i >= 0) { setFocus(name, i, true); return; }
         }
       }
-      if (focus.s === "top") focusTop(true, focus.i);
-      else if (sections[focus.s].cards.length) setFocus(focus.s, focus.i, true);
-      else if (hasSection("cont")) setFocus("cont", 0, true);
-      else if (hasSection("grid")) setFocus("grid", 0, true);
+      if (focus.s === "top") { focusTop(true, topButtons().indexOf(focus.btn)); return; }
+      if (hasSection(focus.s)) { setFocus(focus.s, focus.i, true); return; }
+      var filled = filledSections();
+      if (filled.length) setFocus(filled[0], 0, true);
     }
 
     function removeAt(sectionName, index, quiet) {
       var sec = sections[sectionName];
       var card = sec.cards[index];
       if (!card) return;
-      card.remove();
+      (sectionName === "sched" ? card.parentNode : card).remove();
       sec.cards.splice(index, 1);
       sec.items.splice(index, 1);
       if (sectionName === "grid") drawDayTitles();
+      if (sectionName === "sched") drawSchedTitles();
+      // A day of Shorts left empty loses its row and heading.
+      if (sec.title && !sec.cards.length) { sec.title.hidden = true; sec.el.hidden = true; }
       if (focus.s === sectionName && focus.i > index) focus.i -= 1;
       if (!quiet) restoreFocus(null);
     }
 
     function removeVideo(videoId) {
       removed[videoId] = true;
-      ["cont", "grid"].forEach(function (name) {
+      Object.keys(sections).forEach(function (name) {
         var i = sections[name].items.findIndex(function (v) { return v.video_id === videoId; });
         if (i >= 0) removeAt(name, i, true);
       });
-      if (focus.s !== "top" && !sections[focus.s].cards.length) focus = { s: hasSection("grid") ? "grid" : "cont", i: 0 };
+      if (focus.s !== "top" && !hasSection(focus.s)) {
+        // The next row down, or the last one there is.
+        var order = sectionOrder(), at = order.indexOf(focus.s), next = null;
+        for (var k = at + 1; k < order.length && !next; k++) if (hasSection(order[k])) next = order[k];
+        var filled = filledSections();
+        focus = { s: next || filled[filled.length - 1] || "grid", i: next ? 0 : focus.i };
+      }
       updateChrome();
       restoreFocus(null);
     }
 
     function browseKey(code) {
       var i = focus.i;
+      // Back from another place goes to Main; on Main it leaves the app.
+      if (place.kind !== "main" && (code === KEY.BACK || code === KEY.ESC || code === KEY.BACKSPACE)) {
+        clearTimeout(backTimer);
+        var was = place;
+        // As in the player: webOS may step back by itself.
+        if (code === KEY.BACK) backTimer = setTimeout(function () { if (place === was && !current) history.back(); }, 300);
+        else history.back();
+        return true;
+      }
       if (focus.s === "top") {
         switch (code) {
           case KEY.DOWN:
-            if (hasSection("cont")) setFocus("cont", 0);
-            else if (hasSection("grid")) setFocus("grid", 0);
+            var filled = filledSections();
+            if (filled.length) setFocus(filled[0], 0);
             return true;
-          case KEY.LEFT: focusTop(true, 0); return true;
-          case KEY.RIGHT: focusTop(true, 1); return true;
+          case KEY.LEFT: focusTop(true, Math.max(0, i - 1)); return true;
+          case KEY.RIGHT: focusTop(true, i + 1); return true;
           case KEY.UP: return true;
-          case KEY.ENTER: if (i === 0) openProfiles(); else refresh(); return true;
+          case KEY.ENTER: pressTop(topButtons()[i]); return true;
         }
         return false;
       }
-      if (focus.s === "cont") {
+      if (focus.s === "sched") {
+        switch (code) {
+          case KEY.LEFT: if (schedCol > 0) { schedCol -= 1; setFocus("sched", i, true); } return true;
+          case KEY.RIGHT: if (schedCol < 6) { schedCol += 1; setFocus("sched", i, true); } return true;
+          case KEY.UP: if (i > 0) setFocus("sched", i - 1); else focusTop(); return true;
+          case KEY.DOWN: setFocus("sched", i + 1); return true;
+          case KEY.ENTER: schedAct(i); return true;
+        }
+      } else if (isShortRow(focus.s)) {
+        var rowsShown = filledSections(), at = rowsShown.indexOf(focus.s);
+        var other = function (name) { setFocus(name, Math.min(i, sections[name].cards.length - 1)); };
+        switch (code) {
+          case KEY.LEFT: setFocus(focus.s, i - 1); return true;
+          case KEY.RIGHT: setFocus(focus.s, i + 1); return true;
+          case KEY.UP: if (at > 0) other(rowsShown[at - 1]); else focusTop(); return true;
+          case KEY.DOWN: if (at + 1 < rowsShown.length) other(rowsShown[at + 1]); return true;
+        }
+      } else if (focus.s === "cont") {
         switch (code) {
           case KEY.LEFT: setFocus("cont", i - 1); return true;
           case KEY.RIGHT: setFocus("cont", i + 1); return true;
@@ -665,7 +1085,7 @@
           case KEY.RIGHT: if (c + 1 < row.length) setFocus("grid", row[c + 1]); return true;
           case KEY.UP:
             if (r > 0) setFocus("grid", rows[r - 1][Math.min(c, rows[r - 1].length - 1)]);
-            else if (hasSection("cont")) setFocus("cont", Math.min(c, sections.cont.cards.length - 1));
+            else if (place.kind === "main" && hasSection("cont")) setFocus("cont", Math.min(c, sections.cont.cards.length - 1));
             else focusTop();
             return true;
           case KEY.DOWN:
@@ -688,9 +1108,19 @@
     var pointerHold = null;
     var pointerHoldFired = false;
 
+    var menuShown = menuItems;
+
+    // What the menu offers here: Scheduled can take a video off it; a playlist
+    // keeps what is rejected elsewhere, so it only marks as watched.
+    function menuAllows(act) {
+      if (act === "unschedule") return place.kind === "sched";
+      if (act === "reject") return place.kind !== "playlist";
+      return true;
+    }
+
     function markMenu(index) {
-      menuIndex = Math.max(0, Math.min(menuItems.length - 1, index));
-      menuItems.forEach(function (b, k) { b.classList.toggle("focused", k === menuIndex); });
+      menuIndex = Math.max(0, Math.min(menuShown.length - 1, index));
+      menuShown.forEach(function (b, k) { b.classList.toggle("focused", k === menuIndex); });
     }
 
     function openMenu() {
@@ -700,6 +1130,8 @@
       menuPressed = false;
       menuVideo = v;
       document.getElementById("menuTitle").textContent = v.title || "";
+      menuItems.forEach(function (b) { b.hidden = !menuAllows(b.getAttribute("data-act")); });
+      menuShown = menuItems.filter(function (b) { return !b.hidden; });
       markMenu(0);
       menuEl.hidden = false;
       // Back closes it through history, like the player.
@@ -724,7 +1156,7 @@
     }
 
     function chooseMenu(index) {
-      var act = menuItems[index].getAttribute("data-act");
+      var act = menuShown[index].getAttribute("data-act");
       if (act === "cancel") leaveMenu();
       else leaveMenu(function (v) { actOn(act, v); });
     }
@@ -748,11 +1180,12 @@
     // pointer hold that opened it must not pick or dismiss anything.
     var menuPressed = false;
     menuEl.addEventListener("mousedown", function () { menuPressed = true; }, true);
-    menuItems.forEach(function (b, k) {
-      b.addEventListener("click", function (e) { e.stopPropagation(); if (menuPressed) chooseMenu(k); });
+    menuItems.forEach(function (b) {
+      b.addEventListener("click", function (e) { e.stopPropagation(); if (menuPressed) chooseMenu(menuShown.indexOf(b)); });
     });
     menuEl.addEventListener("click", function (e) { if (e.target === menuEl && menuPressed) leaveMenu(); });
     refreshBtn.addEventListener("click", function () { focusTop(true); refresh(); });
+    placeBtn.addEventListener("click", function () { focusTop(true, 0); openPlaces(); });
 
     // ---------- Number keys ----------
 
@@ -762,9 +1195,10 @@
       var v = video || current || focusedVideo();
       if (!v || busy) return;
       busy = true;
-      var path = "/videos/" + encodeURIComponent(v.video_id) + (kind === "reject" ? "/archive" : "/complete");
-      post(path).then(function () {
-        toast(kind === "reject" ? "Afvist" : "Markeret som set");
+      var ending = { reject: "/archive", unschedule: "/dequeue" }[kind] || "/complete";
+      var done = { reject: "Afvist", unschedule: "Fjernet fra Planlagt" }[kind] || "Markeret som set";
+      post("/videos/" + encodeURIComponent(v.video_id) + ending).then(function () {
+        toast(done);
         if (current === v) history.back(); // close the player; the video leaves the lists below
         removeVideo(v.video_id);
       }).catch(function (error) {
@@ -777,9 +1211,13 @@
       if (refreshing || current) return;
       refreshing = true;
       toast("Opdaterer…", 0);
-      // Ask the server to check the subscriptions first, then reload what is shown.
-      post("/refresh").then(function (r) {
-        return reloadAll().then(function () {
+      // Ask the server to check the subscriptions first (for what they bring:
+      // Main and Shorts), then reload what is shown. Recommendations are worked
+      // out again instead.
+      var checks = place.kind === "main" || place.kind === "shorts";
+      (checks ? post("/refresh") : Promise.resolve(null)).then(function (r) {
+        return reloadAll(place.kind === "recs").then(function () {
+          if (!checks) { toast("Opdateret"); return; }
           var added = r && typeof r.added === "number" ? r.added : 0;
           toast(added ? "Opdateret · " + added + (added === 1 ? " ny video" : " nye videoer") : "Opdateret · ingen nye videoer");
         });
@@ -799,6 +1237,145 @@
       return false;
     }
 
+
+    // ---------- Places ----------
+
+    /*
+     * Where to be, as the Apple TV app's side menu: Main, Recommendations,
+     * Shorts, Scheduled and the profile's playlists. Leaving Main puts a row
+     * in history, so Back comes back to Main and only there leaves the app.
+     */
+    var placesEl = document.getElementById("places");
+    var placesListEl = document.getElementById("placesList");
+    var placesOpen = false;
+    var placesOpenedAt = 0;
+    var placeItems = [];
+    var placeIndex = 0;
+    var placesAfter = null;
+    var playlists = [];
+    var PLACE_ICONS = {
+      main: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>',
+      recs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
+      shorts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 9l3 3-3 3z" fill="currentColor"/></svg>',
+      sched: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+      playlist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M19 6v10.5"/><circle cx="17" cy="17" r="2"/></svg>'
+    };
+    var PLACES = [
+      MAIN,
+      { kind: "recs", name: "Anbefalinger" },
+      { kind: "shorts", name: "Shorts" },
+      { kind: "sched", name: "Planlagt" }
+    ];
+
+    function samePlace(a, b) { return a.kind === b.kind && a.id === b.id; }
+
+    function placeItem(target, icon, note) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.tabIndex = -1;
+      b.className = "profile-item action";
+      b.innerHTML = icon;
+      var text = document.createElement("span");
+      text.textContent = target.name;
+      b.appendChild(text);
+      var extra = document.createElement("span");
+      extra.className = samePlace(target, place) ? "note" : "count";
+      extra.textContent = samePlace(target, place) ? "Her" : note || "";
+      b.appendChild(extra);
+      var run = function () { leavePlaces(function () { goPlace(target); }); };
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (Date.now() - placesOpenedAt > 500) run();
+      });
+      placeItems.push({ el: b, run: run, target: target });
+      placesListEl.appendChild(b);
+    }
+
+    function renderPlaces(keep) {
+      var was = placeItems[placeIndex] && placeItems[placeIndex].target;
+      placeItems = [];
+      placesListEl.innerHTML = "";
+      PLACES.forEach(function (target) { placeItem(target, PLACE_ICONS[target.kind]); });
+      if (playlists.length) {
+        var heading = document.createElement("div");
+        heading.className = "places-heading";
+        heading.textContent = "Mine playlister";
+        placesListEl.appendChild(heading);
+        playlists.forEach(function (target) {
+          placeItem(target, PLACE_ICONS.playlist, target.count ? String(target.count) : "");
+        });
+      }
+      var start = 0;
+      placeItems.forEach(function (item, k) { if (samePlace(item.target, keep && was ? was : place)) start = k; });
+      markPlace(start);
+    }
+
+    function markPlace(index) {
+      placeIndex = Math.max(0, Math.min(placeItems.length - 1, index));
+      placeItems.forEach(function (item, k) { item.el.classList.toggle("focused", k === placeIndex); });
+      var el = placeItems[placeIndex] && placeItems[placeIndex].el;
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    }
+
+    function loadPlaylists() {
+      return api("/playlists").then(function (data) {
+        playlists = ((data && data.playlists) || []).map(function (p) {
+          return { kind: "playlist", id: p.id, name: p.name || "", count: p.video_count || 0 };
+        });
+      }).catch(function () {});
+    }
+
+    function openPlaces() {
+      if (placesOpen || profilesOpen || current || menuOpen) return;
+      placesOpen = true;
+      placesOpenedAt = Date.now();
+      renderPlaces(false);
+      placesEl.hidden = false;
+      history.pushState({ tvPlaces: true }, "");
+      // A playlist made on the web meanwhile shows up.
+      loadPlaylists().then(function () { if (placesOpen) renderPlaces(true); });
+    }
+
+    // Close, then go where was chosen; the popstate handler runs it.
+    function leavePlaces(after) {
+      if (!placesOpen) return;
+      placesAfter = after || null;
+      history.back();
+    }
+
+    function closePlaces() {
+      placesOpen = false;
+      placesEl.hidden = true;
+      var after = placesAfter;
+      placesAfter = null;
+      restoreFocus(null);
+      if (after) after();
+    }
+
+    function goPlace(target) {
+      if (samePlace(target, place)) return;
+      if (target.kind === "main") { history.back(); return; } // the row leaving Main put there
+      if (place.kind === "main") history.pushState({ tvPlace: true }, "");
+      showPlace(target);
+    }
+
+    function placesKey(code, e) {
+      // The OK that opened the list, still held or repeating, must not pick from it.
+      if (code === KEY.ENTER && (e.repeat || Date.now() - placesOpenedAt < 500)) return true;
+      switch (code) {
+        case KEY.BACK:
+          clearTimeout(backTimer);
+          backTimer = setTimeout(function () { if (placesOpen) history.back(); }, 300);
+          return true;
+        case KEY.ESC: case KEY.BACKSPACE: leavePlaces(); return true;
+        case KEY.UP: markPlace(placeIndex - 1); return true;
+        case KEY.DOWN: markPlace(placeIndex + 1); return true;
+        case KEY.ENTER: if (placeItems[placeIndex]) placeItems[placeIndex].run(); return true;
+      }
+      return true; // nothing else reaches the page while the list is open
+    }
+
+    placesEl.addEventListener("click", function (e) { if (e.target === placesEl) leavePlaces(); });
 
     // ---------- Profiles ----------
 
@@ -973,7 +1550,7 @@
     }
 
     function openProfiles() {
-      if (profilesOpen || current || menuOpen) return;
+      if (profilesOpen || placesOpen || current || menuOpen) return;
       profilesOpen = true;
       profilesOpenedAt = Date.now();
       profilesView = "list";
@@ -1121,7 +1698,7 @@
       return true; // nothing else reaches the page while the list is open
     }
 
-    profileBtn.addEventListener("click", function () { focusTop(true, 0); openProfiles(); });
+    profileBtn.addEventListener("click", function () { focusTop(true, topButtons().indexOf(profileBtn)); openProfiles(); });
     profilesEl.addEventListener("click", function (e) { if (e.target === profilesEl) leaveProfiles(); });
 
     // ---------- Player ----------
@@ -1279,7 +1856,8 @@
       overlayEl.classList.remove("show");
       playerEl.hidden = true;
       document.body.classList.remove("playing");
-      if (finished) { removeVideo(finished); finished = null; }
+      // Played to the end it leaves the lists, though not a playlist.
+      if (finished) { if (place.kind !== "playlist") removeVideo(finished); finished = null; }
       restoreFocus(null);
       // What was just watched now belongs on (or moves within) the Continue shelf,
       // once its new position is stored.
@@ -1327,8 +1905,11 @@
     window.addEventListener("popstate", function () {
       clearTimeout(backTimer);
       if (profilesOpen) closeProfiles();
+      else if (placesOpen) closePlaces();
       else if (menuOpen) closeMenu();
-      else closePlayer();
+      else if (current) closePlayer();
+      else if (place.kind !== "main") showPlace(MAIN); // Back from another place
+
     });
 
     /*
@@ -1355,6 +1936,10 @@
         if (profilesKey(code, e)) e.preventDefault();
         return;
       }
+      if (placesOpen) {
+        if (placesKey(code, e)) e.preventDefault();
+        return;
+      }
       if (menuOpen) {
         // The OK still held from opening the menu must not pick its first line.
         if (code === KEY.ENTER && okIsRepeat(e)) { e.preventDefault(); return; }
@@ -1362,7 +1947,8 @@
         if (menuKey(code)) e.preventDefault();
         return;
       }
-      if (code === KEY.ENTER && !current && focus.s !== "top") {
+      // On a card OK is decided on release (a hold opens the menu); on a time in Scheduled it acts at once.
+      if (code === KEY.ENTER && !current && focus.s !== "top" && !(focus.s === "sched" && schedCol > 0)) {
         e.preventDefault();
         if (okIsRepeat(e)) return;
         okDown = true;
@@ -1381,7 +1967,7 @@
       okDown = false;
       okHeld = false;
       clearTimeout(okTimer);
-      if (pressed && !current && !menuOpen && !profilesOpen) openPlayer();
+      if (pressed && !current && !menuOpen && !profilesOpen && !placesOpen) openPlayer();
     });
 
     /*
@@ -1395,16 +1981,25 @@
     document.addEventListener("mousemove", function (e) {
       var moved = !pointerAt || pointerAt.x !== e.screenX || pointerAt.y !== e.screenY;
       pointerAt = { x: e.screenX, y: e.screenY };
-      if (!moved || current || menuOpen || profilesOpen) return;
+      if (!moved || current || menuOpen || profilesOpen || placesOpen) return;
       var target = e.target && e.target.closest ? e.target : null;
       if (!target) return;
-      if (target.closest("#profileBtn")) { if (focus.s !== "top" || focus.i !== 0) focusTop(true, 0); return; }
-      if (target.closest("#refreshBtn")) { if (focus.s !== "top" || focus.i !== 1) focusTop(true, 1); return; }
+      var top = target.closest("#placeBtn, #profileBtn, #refreshBtn");
+      if (top) { var at = topButtons().indexOf(top); if (focus.s !== "top" || focus.i !== at) focusTop(true, at); return; }
+      var timeBtn = target.closest(".sched-btn");
+      if (timeBtn) {
+        var rowCard = timeBtn.closest(".sched-row").querySelector(".card");
+        var ri = sections.sched ? sections.sched.cards.indexOf(rowCard) : -1;
+        var col = Array.prototype.slice.call(timeBtn.closest(".sched-row").querySelectorAll(".sched-btn")).indexOf(timeBtn) + 1;
+        if (ri >= 0 && !(focus.s === "sched" && focus.i === ri && schedCol === col)) { schedCol = col; setFocus("sched", ri, true); }
+        return;
+      }
       var card = target.closest(".card");
       if (!card) return;
       var name = card.dataset.section;
+      var backOnVideo = name === "sched" && schedCol !== 0;
       var i = sections[name] ? sections[name].cards.indexOf(card) : -1;
-      if (i >= 0 && !(focus.s === name && focus.i === i)) setFocus(name, i, true);
+      if (i >= 0 && (backOnVideo || !(focus.s === name && focus.i === i))) { schedCol = 0; setFocus(name, i, true); }
     });
 
     window.addEventListener("pagehide", function () { saveProgress(true); });
