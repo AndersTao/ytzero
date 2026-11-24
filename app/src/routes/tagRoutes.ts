@@ -136,7 +136,7 @@ api.patch("/filter-rules/:id", async (c) => {
   if (action !== undefined) await database.prepare("UPDATE filter_rules SET action = ? WHERE id = ?").run(action, id);
   if (channel_id !== undefined) await database.prepare("UPDATE filter_rules SET channel_id = ? WHERE id = ?").run(channel_id || null, id);
   const rule = await database.prepare("SELECT fr.*, COALESCE(c.custom_title, c.title) AS channel_title FROM filter_rules fr LEFT JOIN channels c ON c.channel_id = fr.channel_id WHERE fr.id = ?").get(id);
-  return c.json({ rule });
+  return c.json({ rule, archived: await applyFilterRuleToAll(Number(id)) }); // an edited rule applies to the inbox, as a new one does
 });
 
 api.delete("/filter-rules/:id", async (c) => {

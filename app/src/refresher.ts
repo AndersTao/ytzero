@@ -3,7 +3,7 @@ import { classifyIsShort, fetchAllChannelStreams, fetchAllChannelVideos, fetchCh
 import { MetadataCookieFallbackBudget } from "./videoMetadataFallback"; import { isRecordedStream } from "./streamVerification";
 import { applyAutoTags } from "./autotags";
 import { applyPlaylistRulesToVideo } from "./userPlaylists";
-import { applyFilterRules } from "./filterRules";
+import { applyFilterRules, refilteringWrites } from "./filterRules";
 import { log } from "./logger";
 import { CHANNEL_PLAYLIST_CACHE_VERSION, ensureChannelPlaylist, saveChannelPlaylists, savePlaylistMemberships } from "./channelPlaylists";
 import { preserveChannelMedia, preservePlaylistMedia } from "./channelMedia";
@@ -22,7 +22,7 @@ import { CHANNEL_SYNC_VIDEO_UPSERT_SQL, localisedTitleUpdates, RSS_VIDEO_UPSERT_
 import { syncChannelVideoAvailability } from "./videoAvailabilitySync";
 import { isYouTubeRefusal, videoInfoRefusalQuiet, YouTubeRefusingError } from "./youtubeRefusalQuiet";
 import { inferIsShortFromMetadata, shortCheckRetryInterval } from "./shortClassification";
-const upsertVideo = database.prepare(RSS_VIDEO_UPSERT_SQL);
+const upsertVideo = refilteringWrites(database.prepare(RSS_VIDEO_UPSERT_SQL)); // a changed title is filtered again
 const videoExists = database.prepare("SELECT 1 FROM videos WHERE video_id = ?");
 // Politeness limits for the playlist scan during a manual sync, to avoid
 // tripping YouTube's rate limiting (HTTP 429).
@@ -419,7 +419,7 @@ export async function refreshChannel(channelId: string, userId?: number): Promis
       const rows = await database.prepare(
         `SELECT video_id, title FROM videos WHERE channel_id = ? AND video_id IN (${feed.videos.map(() => "?").join(",") || "NULL"})`
       ).all(channelId, ...feed.videos.map((video) => video.videoId)) as { video_id: string; title: string }[];
-      const relabel = database.prepare("UPDATE videos SET title = ? WHERE video_id = ?");
+      const relabel = refilteringWrites(database.prepare("UPDATE videos SET title = ? WHERE video_id = ?"), 1);
       const updates = localisedTitleUpdates(listed, rows);
       for (const update of updates) await relabel.run(update.title, update.videoId);
       if (updates.length) log.info("channel.titles_localised", { channelId, relabelled: updates.length });
@@ -835,7 +835,7 @@ async function runChannelSync(channelId: string, userId?: number): Promise<Chann
   const scrapedVideos = [...new Map([...scraped, ...streams].map((v) => [v.videoId, v])).values()];
 
   const feedMap = new Map(feed.videos.map((v) => [v.videoId, v]));
-  const insertOrUpdate = database.prepare(CHANNEL_SYNC_VIDEO_UPSERT_SQL);
+  const insertOrUpdate = refilteringWrites(database.prepare(CHANNEL_SYNC_VIDEO_UPSERT_SQL));
   const markArchivedStream = database.prepare(
     "UPDATE videos SET live_status = 'was_live' WHERE video_id = ? AND live_status = 'none'"
   );
