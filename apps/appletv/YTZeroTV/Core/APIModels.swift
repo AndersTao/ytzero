@@ -110,6 +110,19 @@ nonisolated enum APIModels {
         }
     }
 
+    /// The parts of a video to skip, by the profile's SponsorBlock settings on the web.
+    struct SkipSegments: Decodable, Sendable {
+        let enabled: Bool
+        let segments: [SkipSegment]
+    }
+
+    struct SkipSegment: Decodable, Sendable, Equatable {
+        let category: String
+        let start: Double
+        let end: Double
+        let uuid: String
+    }
+
     struct UserPlaylists: Decodable, Sendable {
         let playlists: [UserPlaylist]
     }

@@ -84,12 +84,14 @@ describe("HTTP route manifest", () => {
     const relayHlsRoute = "GET /videos/:id/relay-hls/:file";
     // Those tracks in one MP4, for an iPhone or iPad to keep offline.
     const offlineCopyRoute = "GET /videos/:id/offline.mp4";
+    // What the apps and the TV page skip, by the profile's SponsorBlock settings.
+    const skipSegmentsRoute = "GET /videos/:id/skip-segments";
     // A TV holding one paired session per profile moves between them.
     const deviceProfileRoutes = ["GET /auth/device/profiles", "POST /auth/device/profiles/switch", "DELETE /auth/device/profiles/:id"];
     // Settings → Devices: what is signed in with a code, renamed or signed out.
     const deviceSessionRoutes = ["GET /auth/devices", "PUT /auth/devices/:id", "DELETE /auth/devices/:id"];
     for (const route of deviceProfileRoutes) expect(routes).toContain(route);
-    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, offlineCopyRoute, ...providerRoutes, ...deviceProfileRoutes, ...deviceSessionRoutes, ...invidiousRoutes, ...dailymotionRoutes];
+    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, offlineCopyRoute, skipSegmentsRoute, ...providerRoutes, ...deviceProfileRoutes, ...deviceSessionRoutes, ...invidiousRoutes, ...dailymotionRoutes];
     const publicShareManagementRoutes = [
       "GET /public-shares", "PUT /public-shares/policy", "POST /public-shares",
       "PATCH /public-shares/:id", "POST /public-shares/:id/rotate", "DELETE /public-shares/:id",

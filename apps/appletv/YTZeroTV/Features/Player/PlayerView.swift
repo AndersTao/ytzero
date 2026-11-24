@@ -27,6 +27,16 @@ struct PlayerView: View {
                     .background(.black.opacity(0.6), in: .rect(cornerRadius: 24))
                     .transition(.opacity)
             }
+            if let notice = model.skipNotice {
+                Text(notice)
+                    .font(.system(size: 30, weight: .semibold))
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 16)
+                    .background(.black.opacity(0.65), in: .capsule)
+                    .padding(60)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .transition(.opacity)
+            }
             phaseMessage
         }
         .ignoresSafeArea()
@@ -43,6 +53,7 @@ struct PlayerView: View {
         }
         .onExitCommand { dismiss() }
         .animation(.easeOut(duration: 0.25), value: model.flash)
+        .animation(.easeOut(duration: 0.25), value: model.skipNotice)
         .animation(.easeOut(duration: 0.3), value: model.showsOverlay)
         .task {
             guard let client = session.client else { return }
