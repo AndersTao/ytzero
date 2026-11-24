@@ -71,7 +71,8 @@ struct VideoCard: View {
 }
 
 /// On a card whose video is kept on this device: a filled arrow when it is
-/// all here, a ring of how far it has come while it is on its way.
+/// all here; while it is on its way a ring and how far, the server's part the
+/// first half and the transfer the second.
 struct OfflineBadge: View {
     let id: String
 
@@ -79,17 +80,24 @@ struct OfflineBadge: View {
         if let entry = OfflineStore.shared.entry(for: id), entry.state != .failed {
             Group {
                 if entry.state == .ready {
-                    Image(systemName: "arrow.down.circle.fill")
+                    Image(systemName: entry.pinned ? "lock.circle.fill" : "arrow.down.circle.fill")
                         .font(.system(size: 18, weight: .semibold))
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .black.opacity(0.6))
                 } else {
-                    ProgressView(value: entry.state == .transferring ? entry.progress : entry.progress * 0.5)
-                        .progressViewStyle(.circular)
-                        .controlSize(.small)
-                        .tint(.white)
-                        .padding(3)
-                        .background(.black.opacity(0.6), in: .circle)
+                    let done = entry.state == .transferring ? 0.5 + entry.progress * 0.5 : entry.progress * 0.5
+                    HStack(spacing: 4) {
+                        ProgressView(value: done)
+                            .progressViewStyle(.circular)
+                            .controlSize(.mini)
+                            .tint(.white)
+                        Text(verbatim: done.formatted(.percent.precision(.fractionLength(0))))
+                            .font(.caption2.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(.black.opacity(0.6), in: .capsule)
                 }
             }
             .padding(8)

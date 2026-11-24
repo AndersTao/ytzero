@@ -329,11 +329,11 @@ nonisolated struct APIClient: Sendable {
     // MARK: Offline
 
     /// A copy of the video for this device to keep: the H.264 and AAC the
-    /// apps stream, in one MP4. While the server fetches them it answers with
+    /// apps stream, no higher than `height` (480, 720 or 1080), in one MP4. While the server fetches them it answers with
     /// how far it is; then with the file's address, a ticket in it.
-    func offlineCopy(_ id: String) async throws -> APIModels.OfflineCopy {
-        struct Body: Encodable, Sendable { let source: String }
-        let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "POST", body: Body(source: "offline")))
+    func offlineCopy(_ id: String, height: Int) async throws -> APIModels.OfflineCopy {
+        struct Body: Encodable, Sendable { let source: String; let height: Int }
+        let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "POST", body: Body(source: "offline", height: height)))
         if response.statusCode == 202 {
             let progress = (try? Self.decoder.decode(APIModels.Preparing.self, from: data))?.progress
             return .preparing(progress: progress)

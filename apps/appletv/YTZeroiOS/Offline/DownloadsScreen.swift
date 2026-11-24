@@ -3,10 +3,15 @@ import SwiftUI
 /// Downloads in the side menu: the videos kept on this device, newest first,
 /// each with how far it has come — the server fetching it, the transfer here,
 /// or ready, with its size. Tap a ready one to play it, with or without a
-/// connection; swipe to delete. Works with no server in reach.
+/// connection; swipe left to delete, right to lock it against being deleted
+/// by the settings (the gear: quality, delete once watched, days kept).
+/// Works with no server in reach.
 struct DownloadsScreen: View {
     @Environment(AppSession.self) private var session
     @State private var player = PlayerPresenter()
+    @State private var showingSettings = false
+    @State private var confirmingDeleteAll = false
+    @AppStorage(OfflineSettings.keepDaysKey) private var keepDays = 0
     private var store: OfflineStore { .shared }
 
     var body: some View {
@@ -22,21 +27,45 @@ struct DownloadsScreen: View {
                         store.remove(entry.id)
                     }
                     .swipeActions(edge: .trailing) {
-                        Button("Delete", systemImage: "trash", role: .destructive) {
+                        Button(role: .destructive) {
                             store.remove(entry.id)
+                        } label: {
+                            Image(systemName: "trash")
                         }
+                        // Its own colour: the app's tint is white, which made
+                        // the button a white disc with a white bin on it.
+                        .tint(.red)
+                        .accessibilityLabel(Text("Delete"))
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            store.togglePin(entry.id)
+                        } label: {
+                            Image(systemName: entry.pinned ? "lock.open" : "lock")
+                        }
+                        .tint(.orange)
+                        .accessibilityLabel(entry.pinned ? Text("Unlock") : Text("Lock"))
                     }
                     .contextMenu {
+                        Button(entry.pinned ? "Unlock" : "Lock", systemImage: entry.pinned ? "lock.open" : "lock") {
+                            store.togglePin(entry.id)
+                        }
                         Button("Delete download", systemImage: "trash", role: .destructive) {
                             store.remove(entry.id)
                         }
                     }
                 }
-                if store.totalBytes > 0 {
+                if !store.entries.isEmpty {
                     Section {
-                        LabeledContent("On this device", value: store.totalBytes.formatted(.byteCount(style: .file)))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                        if store.totalBytes > 0 {
+                            LabeledContent("On this device", value: store.totalBytes.formatted(.byteCount(style: .file)))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        Button("Delete all downloads", systemImage: "trash", role: .destructive) {
+                            confirmingDeleteAll = true
+                        }
+                        .accessibilityIdentifier("delete-all")
                     }
                 }
             }
@@ -50,12 +79,27 @@ struct DownloadsScreen: View {
             .navigationTitle(Text("Downloads"))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { MenuButton() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Download settings", systemImage: "gearshape") { showingSettings = true }
+                        .accessibilityIdentifier("download-settings")
+                }
             }
+            .confirmationDialog(Text("Delete all downloads?"), isPresented: $confirmingDeleteAll, titleVisibility: .visible) {
+                Button("Delete all", role: .destructive) { store.removeAll(keepingPinned: false) }
+                if store.entries.contains(where: \.pinned) {
+                    Button("Delete all but the locked") { store.removeAll(keepingPinned: true) }
+                }
+            } message: {
+                Text("They can be downloaded again while there is a connection.")
+            }
+            .sheet(isPresented: $showingSettings) { OfflineSettingsView() }
         }
         .task {
             guard store.profile != 0, let client = session.client else { return }
             await store.resume(client: client)
         }
+        // Fewer days kept: what is now too old goes at once.
+        .onChange(of: keepDays) { store.expire() }
     }
 
     private func play(_ entry: OfflineStore.Entry) {
@@ -154,7 +198,13 @@ private struct DownloadRow: View {
         case .ready:
             HStack(spacing: 4) {
                 Image(systemName: "arrow.down.circle.fill")
-                Text(verbatim: (entry.bytes ?? 0).formatted(.byteCount(style: .file)))
+                Text(verbatim: [(entry.bytes ?? 0).formatted(.byteCount(style: .file)), entry.height.map { "\($0)p" }]
+                    .compactMap { $0 }.joined(separator: " · "))
+                if entry.pinned {
+                    Image(systemName: "lock.fill")
+                        .foregroundStyle(.orange)
+                        .accessibilityLabel(Text("Locked"))
+                }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -199,6 +249,63 @@ struct DownloadMenuItem: View {
             Button("Download", systemImage: "arrow.down.circle") {
                 OfflineStore.shared.download(video, client: client)
             }
+        }
+    }
+}
+
+/// How copies are made and kept on this device: the quality asked of the
+/// server, deleting once watched, and how many days a copy stays. Locked
+/// copies stay whatever these say.
+struct OfflineSettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(OfflineSettings.qualityKey) private var quality = 1080
+    @AppStorage(OfflineSettings.deleteWhenWatchedKey) private var deleteWhenWatched = false
+    @AppStorage(OfflineSettings.keepDaysKey) private var keepDays = 0
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Quality", selection: $quality) {
+                        ForEach(OfflineSettings.qualities, id: \.self) { height in
+                            Text(verbatim: "\(height)p").tag(height)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("download-quality")
+                } header: {
+                    Text("Quality")
+                } footer: {
+                    Text("For new downloads. Lower takes less space: roughly a third at 720p, a sixth at 480p.")
+                }
+                Section {
+                    Toggle("Delete when watched", isOn: $deleteWhenWatched)
+                        .accessibilityIdentifier("delete-when-watched")
+                    Picker("Keep on device", selection: $keepDays) {
+                        ForEach(OfflineSettings.keepChoices, id: \.self) { days in
+                            keepText(days).tag(days)
+                        }
+                    }
+                    .accessibilityIdentifier("keep-days")
+                } footer: {
+                    Text("Locked downloads stay until you delete them. Swipe right on a download to lock it.")
+                }
+            }
+            .navigationTitle(Text("Download settings"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func keepText(_ days: Int) -> Text {
+        switch days {
+        case 0: Text("Until deleted")
+        case 1: Text("1 day")
+        default: Text("\(days) days")
         }
     }
 }

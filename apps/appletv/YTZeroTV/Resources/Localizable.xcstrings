@@ -1281,6 +1281,176 @@
           }
         }
       }
+    },
+    "Lock" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås"
+          }
+        }
+      }
+    },
+    "Unlock" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås op"
+          }
+        }
+      }
+    },
+    "Locked" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Låst"
+          }
+        }
+      }
+    },
+    "Delete all downloads" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet alle downloads"
+          }
+        }
+      }
+    },
+    "Delete all downloads?" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet alle downloads?"
+          }
+        }
+      }
+    },
+    "Delete all" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet alle"
+          }
+        }
+      }
+    },
+    "Delete all but the locked" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet alle undtagen de låste"
+          }
+        }
+      }
+    },
+    "They can be downloaded again while there is a connection." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De kan hentes igen, når der er forbindelse."
+          }
+        }
+      }
+    },
+    "Download settings" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download-indstillinger"
+          }
+        }
+      }
+    },
+    "Quality" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kvalitet"
+          }
+        }
+      }
+    },
+    "For new downloads. Lower takes less space: roughly a third at 720p, a sixth at 480p." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gælder nye downloads. Lavere fylder mindre: cirka en tredjedel ved 720p, en sjettedel ved 480p."
+          }
+        }
+      }
+    },
+    "Delete when watched" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slet når set"
+          }
+        }
+      }
+    },
+    "Keep on device" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bliv på enheden"
+          }
+        }
+      }
+    },
+    "Locked downloads stay until you delete them. Swipe right on a download to lock it." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Låste downloads bliver, til du selv sletter dem. Stryg til højre på en download for at låse den."
+          }
+        }
+      }
+    },
+    "Until deleted" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til de slettes"
+          }
+        }
+      }
+    },
+    "1 day" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 dag"
+          }
+        }
+      }
+    },
+    "%lld days" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dage"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

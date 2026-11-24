@@ -33,7 +33,7 @@ final class OfflineUITests: XCTestCase {
         let row = app.buttons["download-day01xxxxxx"]
         XCTAssertTrue(row.waitForExistence(timeout: 10), "the video is listed under Downloads")
         snapshot("offline-01-coming")
-        let size = app.staticTexts.matching(NSPredicate(format: "label MATCHES '.*[0-9] (kB|MB|GB)'")).firstMatch
+        let size = app.staticTexts.matching(NSPredicate(format: "label MATCHES '.*[0-9] (kB|MB|GB)( · [0-9]+p)?'")).firstMatch
         XCTAssertTrue(size.waitForExistence(timeout: 120), "the whole file arrives, with its size shown")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'På denne enhed'")).firstMatch.exists, "the space used is shown")
         snapshot("offline-02-ready")
@@ -129,6 +129,105 @@ final class OfflineUITests: XCTestCase {
                        "watched offline: gone from Main")
         snapshot("offline-sync-02-main")
         signal("done")
+    }
+
+    /// The settings, locking, deleting all and deleting once watched. Needs
+    /// the relay's 720p tracks of "Video 5 timer gammel" and "Video 1 timer
+    /// gammel" (eight seconds each) in the server's cache, and no copies on
+    /// the device yet.
+    func testSettingsLockAndDeleteAll() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let server = environment["YTZERO_UITEST_SERVER"], let token = environment["YTZERO_UITEST_TOKEN"] else {
+            throw XCTSkip("Set YTZERO_UITEST_SERVER and YTZERO_UITEST_TOKEN to run against a server.")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment["YTZERO_UITEST_SERVER"] = server
+        app.launchEnvironment["YTZERO_UITEST_TOKEN"] = token
+        app.launchArguments += ["-AppleLanguages", "(da)", "-AppleLocale", "da_DK"]
+        XCUIDevice.shared.orientation = .portrait
+        app.launch()
+        XCTAssertTrue(app.staticTexts["I dag"].waitForExistence(timeout: 20), "the lists should load")
+        let card = { (title: String) in app.buttons.matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch }
+        func openDownloads() {
+            app.buttons["menu-button"].tap()
+            app.buttons["Downloads"].tap()
+        }
+
+        // 720p for what is downloaded from now on.
+        openDownloads()
+        app.buttons["download-settings"].tap()
+        XCTAssertTrue(app.buttons["720p"].waitForExistence(timeout: 5), "the settings offer the quality")
+        app.buttons["720p"].tap()
+        let toggle = app.switches["delete-when-watched"]
+        XCTAssertTrue(toggle.exists)
+        // Off to begin with, whatever an earlier run left.
+        if toggle.value as? String == "1" { toggle.switches.firstMatch.tap() }
+        XCTAssertTrue(app.buttons["keep-days"].exists || app.otherElements["keep-days"].exists, "how long copies stay")
+        snapshot("settings-01")
+        app.buttons["Færdig"].tap()
+
+        app.buttons["menu-button"].tap()
+        app.buttons["Main"].tap()
+        for title in ["Video 5 timer gammel", "Video 1 timer gammel"] {
+            XCTAssertTrue(card(title).waitForExistence(timeout: 10))
+            card(title).press(forDuration: 1.2)
+            app.buttons["Download"].tap()
+        }
+        openDownloads()
+        let five = app.buttons["download-day01xxxxxx"]
+        let one = app.buttons["download-day00xxxxxx"]
+        let ready = app.staticTexts.matching(NSPredicate(format: "label ENDSWITH ' · 720p'"))
+        for _ in 0..<60 where ready.count < 2 { sleep(1) }
+        XCTAssertEqual(ready.count, 2, "both arrive, made at 720p")
+
+        // Swipe right to lock.
+        five.swipeRight()
+        let lock = app.buttons["Lås"]
+        XCTAssertTrue(lock.waitForExistence(timeout: 5), "a swipe to the right offers Lock")
+        lock.tap()
+        XCTAssertTrue(app.images["Låst"].waitForExistence(timeout: 5) || app.otherElements["Låst"].exists, "locked shows")
+        snapshot("settings-02-locked")
+
+        // Delete all but the locked.
+        app.buttons["delete-all"].tap()
+        let keepLocked = app.buttons["Slet alle undtagen de låste"]
+        XCTAssertTrue(keepLocked.waitForExistence(timeout: 5))
+        keepLocked.tap()
+        XCTAssertTrue(one.waitForNonExistence(timeout: 5), "the unlocked one went")
+        XCTAssertTrue(five.exists, "the locked one stayed")
+
+        // The swipe to delete shows a bin.
+        five.swipeLeft()
+        let bin = app.buttons["Slet"]
+        XCTAssertTrue(bin.waitForExistence(timeout: 5))
+        snapshot("settings-03-bin")
+        bin.tap()
+        XCTAssertTrue(app.staticTexts["Ingen downloads"].waitForExistence(timeout: 5))
+
+        // Deleted once watched.
+        app.buttons["download-settings"].tap()
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        toggle.switches.firstMatch.tap()
+        XCTAssertEqual(toggle.value as? String, "1", "delete when watched is on")
+        app.buttons["Færdig"].tap()
+        app.buttons["menu-button"].tap()
+        app.buttons["Main"].tap()
+        XCTAssertTrue(card("Video 5 timer gammel").waitForExistence(timeout: 10))
+        card("Video 5 timer gammel").press(forDuration: 1.2)
+        app.buttons["Download"].tap()
+        openDownloads()
+        XCTAssertTrue(ready.firstMatch.waitForExistence(timeout: 60))
+        five.tap()
+        sleep(14)
+        XCTAssertTrue(app.staticTexts["Ingen downloads"].waitForExistence(timeout: 20), "watched to the end, it went by itself")
+        snapshot("settings-04-gone")
+
+        // As it was, for the other tests.
+        app.buttons["download-settings"].tap()
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        toggle.switches.firstMatch.tap()
+        app.buttons["1080p"].tap()
+        app.buttons["Færdig"].tap()
     }
 
     private func snapshot(_ name: String) {
