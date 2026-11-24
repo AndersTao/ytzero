@@ -2,9 +2,8 @@ import XCTest
 
 /// Download from a video's menu, see it arrive under Downloads, play it from
 /// the device and delete it again. Needs a server and a session (see
-/// PlaybackUITests), downloads turned on for the profile, and the server
-/// already holding its own copy of "Video 5 timer gammel" so nothing has to
-/// come from YouTube.
+/// PlaybackUITests), and the relay's two tracks of "Video 5 timer gammel"
+/// already in the server's cache, so nothing has to come from YouTube.
 @MainActor
 final class OfflineUITests: XCTestCase {
     func testDownloadPlayAndDelete() throws {
@@ -74,8 +73,9 @@ final class OfflineUITests: XCTestCase {
     /// in front with the server there. The server is taken away and brought
     /// back from outside the test: it signals through files in
     /// YTZERO_UITEST_SIGNALS ("ready", then waits for "offline"; "played",
-    /// then waits for "online"). Needs the server's own copy of a short
-    /// "Video 5 timer gammel" and no copy of it on the device yet.
+    /// then waits for "online"). Needs the relay's two tracks of a short
+    /// "Video 5 timer gammel" in the server's cache and no copy of it on the
+    /// device yet.
     func testFinishedOfflineReachesTheServer() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let server = environment["YTZERO_UITEST_SERVER"], let token = environment["YTZERO_UITEST_TOKEN"],

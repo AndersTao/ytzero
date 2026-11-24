@@ -326,23 +326,21 @@ nonisolated struct APIClient: Sendable {
         _ = try? await send(request("/videos/\(id)/playback-ticket", method: "DELETE", body: body))
     }
 
-    // MARK: Downloads
+    // MARK: Offline
 
-    /// Has the server fetch its own copy of the video, ahead of anything else
-    /// it is fetching: what a copy on this device is made from.
-    func requestServerDownload(_ id: String) async throws {
-        struct Body: Encodable, Sendable { let priority: Bool }
-        var asked = try request("/videos/\(id)/download", method: "POST", body: Body(priority: true))
-        // Importing a video the server has never seen can take a while.
-        asked.timeoutInterval = 60
-        let (data, response) = try await send(asked)
-        try expectSuccess(data, response)
-    }
-
-    /// How far the server's own copy of the video is.
-    func serverDownload(_ id: String) async throws -> APIModels.ServerDownload {
-        let (data, response) = try await send(request("/videos/\(id)/download"))
-        return try decode(APIModels.ServerDownload.self, from: data, status: response.statusCode)
+    /// A copy of the video for this device to keep: the H.264 and AAC the
+    /// apps stream, in one MP4. While the server fetches them it answers with
+    /// how far it is; then with the file's address, a ticket in it.
+    func offlineCopy(_ id: String) async throws -> APIModels.OfflineCopy {
+        struct Body: Encodable, Sendable { let source: String }
+        let (data, response) = try await send(request("/videos/\(id)/playback-ticket", method: "POST", body: Body(source: "offline")))
+        if response.statusCode == 202 {
+            let progress = (try? Self.decoder.decode(APIModels.Preparing.self, from: data))?.progress
+            return .preparing(progress: progress)
+        }
+        let ticket = try decode(APIModels.PlaybackTicket.self, from: data, status: response.statusCode)
+        guard let url = URL(string: ticket.url, relativeTo: baseURL)?.absoluteURL else { throw APIError.invalidAddress }
+        return .ready(url)
     }
 
     // MARK: Images

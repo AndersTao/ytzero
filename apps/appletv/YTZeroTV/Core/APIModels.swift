@@ -7,18 +7,14 @@ nonisolated enum APIModels {
         let videos: [Video]
     }
 
-    /// The server's own copy of a video (GET /videos/:id/download): "queued",
-    /// "downloading", "done", "error" or "deleted", with how far it is.
-    struct ServerDownload: Decodable, Sendable {
-        struct Download: Decodable, Sendable {
-            let status: String
-            let error: String?
-        }
-        struct Progress: Decodable, Sendable {
-            let percent: Double?
-        }
-        let download: Download?
-        let progress: Progress?
+    /// Where the server's copy of a video for a device is.
+    enum OfflineCopy: Sendable {
+        case preparing(progress: Double?)
+        case ready(URL)
+    }
+
+    struct Preparing: Decodable, Sendable {
+        let progress: Double?
     }
 
     /// A page of recommendations; `enabled` is false where the profile has them off.

@@ -1262,32 +1262,12 @@
         }
       }
     },
-    "The server no longer has the video." : {
+    "This video cannot be kept offline." : {
       "localizations" : {
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serveren har ikke længere videoen."
-          }
-        }
-      }
-    },
-    "The server could not fetch the video." : {
-      "localizations" : {
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serveren kunne ikke hente videoen."
-          }
-        }
-      }
-    },
-    "Downloads are off for this profile: turn on “Allow downloads for this profile” on the Downloads page on the web." : {
-      "localizations" : {
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Downloads er slået fra for denne profil: slå “Tillad downloads for denne profil” til på siden Downloads på web."
+            "value" : "Denne video kan ikke gemmes offline."
           }
         }
       }
