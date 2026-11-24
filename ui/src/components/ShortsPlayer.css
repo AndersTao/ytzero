@@ -314,4 +314,7 @@
   .sidebar-subs-compact {
     display: flex;
   }
+  .sidebar-subs.collapsed .sidebar-subs-expand {
+    display: none;
+  }
 }
