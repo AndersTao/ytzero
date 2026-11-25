@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Full screen. Right +30 s, left −15 s, select or Play/Pause pauses and
-/// plays, Menu goes back to the shelves.
+/// plays, Menu goes back to the shelves. Holding Select offers Mark as
+/// watched and Reject, as the LG TV's 2 and 1 keys do while a video plays.
 struct PlayerView: View {
     let video: Video
     let onFinished: () -> Void
@@ -11,6 +12,7 @@ struct PlayerView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
     @State private var model = PlayerModel()
+    @State private var showingActions = false
 
     var body: some View {
         ZStack {
@@ -43,6 +45,12 @@ struct PlayerView: View {
         .focusable()
         .focusEffectDisabled()
         .onTapGesture { model.togglePlay() }
+        .onLongPressGesture(minimumDuration: 0.6) { showingActions = true }
+        .confirmationDialog(Text(verbatim: video.title), isPresented: $showingActions, titleVisibility: .visible) {
+            Button("Mark as watched") { act(success: String(localized: "Marked as watched")) { try await $0.markWatched(video.id) } }
+            Button("Reject", role: .destructive) { act(success: String(localized: "Rejected")) { try await $0.reject(video.id) } }
+            Button("Cancel", role: .cancel) {}
+        }
         .onPlayPauseCommand { model.togglePlay() }
         .onMoveCommand { direction in
             switch direction {
@@ -70,6 +78,22 @@ struct PlayerView: View {
         }
     }
 
+    /// Marked as watched or rejected while it plays: it leaves the lists, the
+    /// position is not kept, and the player closes.
+    private func act(success: String, _ action: @escaping (APIClient) async throws -> Void) {
+        guard let client = session.client else { return }
+        Task {
+            do {
+                try await action(client)
+                model.dropPosition()
+                onFinished()
+                dismiss()
+            } catch {
+                model.showFlash(String(localized: "Something went wrong – try again"))
+            }
+        }
+    }
+
     @ViewBuilder
     private var overlay: some View {
         if model.showsOverlay {
@@ -83,9 +107,14 @@ struct PlayerView: View {
                     .lineLimit(2)
                 ProgressView(value: model.duration > 0 ? min(1, model.position / model.duration) : 0)
                     .tint(.white)
-                Text(verbatim: "\(PlaybackTime.text(model.position)) / \(PlaybackTime.text(model.duration))")
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text(verbatim: "\(PlaybackTime.text(model.position)) / \(PlaybackTime.text(model.duration))")
+                        .font(.callout.monospacedDigit())
+                    Spacer()
+                    Text("Hold Select for more")
+                        .font(.callout)
+                }
+                .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 96)
             .padding(.bottom, 72)

@@ -212,6 +212,12 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
     }
 
+    /// Saved for later from the browser extension: newest first, unwatched only.
+    func savedForLater() async throws -> [Video] {
+        let (data, response) = try await send(request("/saved-for-later"))
+        return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
+    }
+
     /// The profile's own playlists, in the order the web client shows them.
     func playlists() async throws -> [APIModels.UserPlaylist] {
         let (data, response) = try await send(request("/playlists"))

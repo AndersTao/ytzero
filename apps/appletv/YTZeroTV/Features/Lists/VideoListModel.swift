@@ -39,6 +39,7 @@ final class VideoListModel {
     private var page = 0
     private var hasMore = false
     private var isLoading = false
+    private var isRefreshing = false
     /// Watched, rejected or taken off here: kept out even if a later answer still lists it.
     private var removed: Set<String> = []
 
@@ -72,6 +73,29 @@ final class VideoListModel {
             page = 1
         } catch {
             handle(error)
+        }
+    }
+
+    /// Refresh: Shorts first have the server check the channels for new
+    /// videos, as Main's Refresh does; Recommendations are worked out anew.
+    func refresh(client: APIClient) async {
+        switch kind {
+        case .shorts:
+            guard !isRefreshing else { return }
+            isRefreshing = true
+            defer { isRefreshing = false }
+            notice = String(localized: "Refreshing…")
+            let added = try? await client.refreshSubscriptions()
+            await load(client: client)
+            notice = switch added {
+            case .some(0): String(localized: "Up to date · no new videos")
+            case .some(let count): String(localized: "Updated · \(count) new videos")
+            case .none: String(localized: "Updated")
+            }
+        case .recommendations:
+            await load(client: client, fresh: true)
+        case .scheduled:
+            await load(client: client)
         }
     }
 

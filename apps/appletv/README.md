@@ -5,21 +5,28 @@ En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-side
 
 - **Sidebjælke:** Apples egen sidebjælke (`TabView` med `.sidebarAdaptable`)
   med Main, Anbefalinger, Shorts, Planlagt og Abonnementer og, under "Mine
-  playlister", profilens egne playlister. Den foldes ind til en knap øverst
-  til venstre. Op fra øverste række (via Opdater) åbner den, og Select på et
-  sted folder den ind igen. Anbefalinger, Shorts, Planlagt og Abonnementer
-  viser "Kommer snart" indtil videre.
-- **Forside:** "Fortsæt med at se" øverst og Main nedenunder. Hvert kort viser
-  miniature, kanal og titel. Klik afspiller.
+  playlister", profilens egne playlister med antal videoer. Den foldes ind
+  til en knap øverst til venstre. Op fra øverste række åbner den direkte, og
+  Select på et sted folder den ind igen. Øverst i sidebjælken (tvOS 27) står
+  billedet af den, der ser med, og Opdater, som opdaterer det sted, der vises.
+  Før tvOS 27 har hver skærm sin egen Opdater-knap.
+- **Forside:** "Fortsæt med at se" øverst, så "Gemt til senere" (videoer gemt
+  med browserudvidelsens højreklik) og Main nedenunder. En video står kun i én
+  række. Hvert kort viser miniature, kanal og titel. Klik afspiller.
+- **Anbefalinger, Shorts og Planlagt** som på nettet. Opdater på Shorts tjekker
+  også abonnementerne for nye videoer.
+- **Abonnementer:** de fulgte kanaler med billede, navn og seneste video,
+  nyeste først. Select åbner kanalens videoer.
 - **Playliste:** Videoerne i et gitter, senest tilføjet først. Klik afspiller.
 - **Top Shelf:** Når YT Zero ligger i øverste række på Apple TV'ets
   hjemmeskærm, viser feltet over den "Fortsæt med at se" (med hvor langt du
-  er nået) og det nyeste fra Main. Select eller Play på en video åbner appen og
+  er nået), "Gemt til senere" og det nyeste fra Main. Select eller Play på en video åbner appen og
   afspiller den derfra, hvor du slap.
 - **Langt tryk på et kort:** Markér som set eller Afvis (i en playliste kun
   Markér som set).
-- **Øverst til højre:** Opdater, som tjekker abonnementerne og henter igen, og
-  billedet af den, der ser med, som åbner "Hvem ser med?".
+- **Opdater og profilbillede:** i sidebjælken (før tvOS 27 øverst til højre).
+  Opdater på Main tjekker abonnementerne og henter igen; billedet åbner
+  "Hvem ser med?".
 - **Hvem ser med?** fylder hele skærmen: store runde profilbilleder, der
   løfter sig med systemets lys og skygge, når fjernbetjeningen står på dem,
   "Tilføj profil" til sidst og "Log ud" nedenunder. Et langt tryk på en profil
@@ -27,6 +34,7 @@ En enkel, native tvOS-app (SwiftUI) til YT Zero, med samme oplevelse som TV-side
 - **Afspiller i fuld skærm:**
   - Højre spoler 30 s frem, og venstre 15 s tilbage.
   - Klik eller Play/Pause sætter pause og starter igen.
+  - Hold Select nede for Markér som set eller Afvis (som LG's taster 2 og 1).
   - Menu går tilbage.
 - **Fremskridt:** Videoen fortsætter, hvor du slap, positionen gemmes undervejs,
   og en færdigset video markeres som set.

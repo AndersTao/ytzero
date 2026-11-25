@@ -1,16 +1,19 @@
 import SwiftUI
 
-/// Continue watching and Main, nothing else. Select plays full screen.
-/// Up from the top row reaches the header, and Up again the sidebar.
+/// Continue watching, Saved for later and Main. Select plays full screen.
+/// Up from the top row reaches the sidebar (tvOS 27, where it holds Refresh
+/// and the profile picture), or before that a header of its own first.
 struct HomeView: View {
     @Environment(AppSession.self) private var session
     /// Loaded by the tab view before it shows: see MainTabView.
     let model: HomeModel
     /// A video to play as soon as it is found, e.g. from the Top Shelf.
     @Binding var playRequest: String?
-    @State private var profiles = ProfilesModel()
+    /// Raised by the sidebar's Refresh.
+    let refreshSignal: Int
+    /// Refresh and the profile picture on the screen itself, before tvOS 27.
+    let header: ScreenHeader?
     @State private var playing: Video?
-    @State private var showingProfiles = false
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var focusedVideo: String?
 
@@ -19,9 +22,14 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 48) {
-                header
+                if let header {
+                    headerView(header)
+                }
                 if !model.continueWatching.isEmpty {
-                    continueShelf
+                    shelf("Continue watching", videos: model.continueWatching)
+                }
+                if !model.savedForLater.isEmpty {
+                    shelf("Saved for later", videos: model.savedForLater)
                 }
                 mainGrid
             }
@@ -42,18 +50,19 @@ struct HomeView: View {
             guard let client = session.client else { return }
             if !model.hasLoaded { await model.loadFirstPage(client: client) }
             focusedVideo = firstVideoID
-            // Who is watching, for the header: names and pictures come from the server.
-            await profiles.load(session: session)
+        }
+        .onChange(of: refreshSignal) {
+            run { client in await model.refresh(client: client) }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, model.isStale, playing == nil {
                 run { client in await model.loadFirstPage(client: client) }
             }
         }
-        // What the Top Shelf shows follows the two lists.
+        // What the Top Shelf shows follows the shelves.
         .task(id: topShelfKey) {
             guard let client = session.client else { return }
-            await TopShelfPublisher.publish(continueWatching: model.continueWatching, main: model.main, client: client)
+            await TopShelfPublisher.publish(continueWatching: model.continueWatching, savedForLater: model.savedForLater, main: model.main, client: client)
         }
         .task(id: playRequest) { await playRequested() }
         .onChange(of: model.needsSignIn) { _, needsSignIn in
@@ -69,11 +78,6 @@ struct HomeView: View {
                 reloadShelf()
             }
         }
-        // "Who is watching?" on the whole screen, as the Apple TV's own apps ask it.
-        .fullScreenCover(isPresented: $showingProfiles) {
-            ProfilePickerView(model: profiles)
-                .environment(session)
-        }
     }
 
     @ViewBuilder
@@ -87,16 +91,16 @@ struct HomeView: View {
         }
     }
 
-    /// Refresh and who is watching, at the right. No title: the sidebar's
-    /// folded button at the top left already names the place.
-    private var header: some View {
+    /// Refresh and who is watching, at the right, before tvOS 27. No title:
+    /// the sidebar's folded button at the top left already names the place.
+    private func headerView(_ header: ScreenHeader) -> some View {
         HStack(spacing: 28) {
             Spacer()
             // Never disabled: the server takes half a minute to check the
             // channels, and a focused button that turns disabled leaves the
             // remote with nothing to move. A second press is ignored instead.
             Button {
-                run { client in await model.refresh(client: client) }
+                header.refresh()
             } label: {
                 if model.isRefreshing {
                     Label { Text("Refreshing…") } icon: { ProgressView() }
@@ -107,7 +111,7 @@ struct HomeView: View {
             // Who is watching, at the far right: the picture itself opens the
             // list of profiles to switch to.
             Button {
-                showingProfiles = true
+                header.showProfiles?()
             } label: {
                 profileBadge
             }
@@ -122,13 +126,14 @@ struct HomeView: View {
         .focusSection()
     }
 
-    private var continueShelf: some View {
+    /// A row of four cards across under a title: Continue watching, Saved for later.
+    private func shelf(_ title: LocalizedStringKey, videos: [Video]) -> some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text("Continue watching")
+            Text(title)
                 .font(.headline)
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 48) {
-                    ForEach(model.continueWatching) { video in
+                    ForEach(videos) { video in
                         card(for: video)
                             .containerRelativeFrame(.horizontal, count: 4, spacing: 48)
                     }
@@ -177,7 +182,7 @@ struct HomeView: View {
 
     /// Where the remote starts: the first video, not the Refresh button.
     private var firstVideoID: String? {
-        model.continueWatching.first?.id ?? model.main.first?.id
+        model.continueWatching.first?.id ?? model.savedForLater.first?.id ?? model.main.first?.id
     }
 
     private func card(for video: Video) -> some View {
@@ -209,14 +214,14 @@ struct HomeView: View {
 
     /// Changes when a video on the Top Shelf would change: which, and how far watched.
     private var topShelfKey: [String] {
-        (model.continueWatching + model.main.prefix(10)).map { "\($0.id) \(Int(($0.progress ?? 0) * 100))" }
+        (model.continueWatching + model.savedForLater.prefix(10) + model.main.prefix(10)).map { "\($0.id) \(Int(($0.progress ?? 0) * 100))" }
     }
 
     /// Plays the video asked for, looking for it again in Continue watching
     /// when it is not on screen (watched further elsewhere since).
     private func playRequested() async {
         guard let id = playRequest, let client = session.client else { return }
-        var video = (model.continueWatching + model.main).first { $0.id == id }
+        var video = (model.continueWatching + model.savedForLater + model.main).first { $0.id == id }
         if video == nil {
             await model.loadContinue(client: client)
             video = model.continueWatching.first { $0.id == id }

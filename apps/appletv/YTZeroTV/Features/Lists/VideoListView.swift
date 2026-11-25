@@ -3,26 +3,35 @@ import SwiftUI
 /// Shorts, Scheduled or Recommendations from the sidebar, as the iPhone and
 /// iPad have them: Main's cards in a grid of four, under the headings the
 /// kind of list has; Shorts upright, a row a day. Select plays full screen; touch and hold for what can be
-/// done to a video. Refresh loads the list again, and for Recommendations has
-/// the server work them out anew.
+/// done to a video. Refresh (in the sidebar from tvOS 27) loads the list
+/// again; for Shorts it first has the server check the channels, as Main's
+/// does, and for Recommendations it has the server work them out anew.
 struct VideoListView: View {
     @Environment(AppSession.self) private var session
     @State private var model: VideoListModel
     @State private var playing: Video?
     @FocusState private var focusedVideo: String?
     private let systemImage: String
+    /// Raised by the sidebar's Refresh.
+    private let refreshSignal: Int
+    /// Refresh on the screen itself, before tvOS 27.
+    private let header: ScreenHeader?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 48, alignment: .top), count: 4)
 
-    init(kind: VideoListKind, systemImage: String) {
+    init(kind: VideoListKind, systemImage: String, refreshSignal: Int = 0, header: ScreenHeader? = nil) {
         _model = State(initialValue: VideoListModel(kind: kind))
         self.systemImage = systemImage
+        self.refreshSignal = refreshSignal
+        self.header = header
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 48) {
-                header
+                if let header {
+                    headerView(header)
+                }
                 // Each heading's grid is a full-width focus section of its
                 // own, as Main's days are, so Down from a short row still
                 // reaches the next one.
@@ -89,6 +98,9 @@ struct VideoListView: View {
             await model.load(client: client)
             focusedVideo = model.videos.first?.id
         }
+        .onChange(of: refreshSignal) {
+            run { client in await model.refresh(client: client) }
+        }
         .onChange(of: model.needsSignIn) { _, needsSignIn in
             if needsSignIn { session.signOut() }
         }
@@ -101,13 +113,13 @@ struct VideoListView: View {
         }
     }
 
-    /// Refresh at the right. No title: the sidebar's folded button at the top
-    /// left already names the place.
-    private var header: some View {
+    /// Refresh at the right, before tvOS 27. No title: the sidebar's folded
+    /// button at the top left already names the place.
+    private func headerView(_ header: ScreenHeader) -> some View {
         HStack {
             Spacer()
             Button {
-                run { client in await model.load(client: client, fresh: true) }
+                header.refresh()
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }
