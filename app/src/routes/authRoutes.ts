@@ -30,6 +30,7 @@ import { accessControlSnapshot } from "../accessControl";
 import { externalRoleMappingConfig, type ExternalRoleMappingConfig } from "../externalRoleMappings";
 import { registerAuthStatusRoute } from "./authStatusRoute";
 import { registerDeviceAuthRoutes } from "./deviceAuthRoutes";
+import { clearLoginReturnCookie, LOGIN_RETURN_COOKIE, loginReturnCookie, safeReturnPath } from "../loginReturn";
 
 type ApiEnvironment = { Variables: { userId: number; sessionAdmin?: boolean; profileAdmin?: boolean } };
 type Api = Hono<ApiEnvironment>;
@@ -176,6 +177,7 @@ api.get("/auth/oidc/login", async (c) => {
       "Set-Cookie",
       `${OIDC_FLOW_COOKIE}=${encodeURIComponent(flowId)}; Path=/; Max-Age=600; SameSite=Lax; HttpOnly`
     );
+    c.header("Set-Cookie", loginReturnCookie(safeReturnPath(c.req.query("return_to"))), { append: true });
     return c.redirect(url);
   } catch (e: any) {
     log.error("auth.oidc.login_failed", oidcErrorDetail(e));
@@ -185,14 +187,16 @@ api.get("/auth/oidc/login", async (c) => {
 
 api.get("/auth/oidc/callback", async (c) => {
   try {
-    const flowId = parseCookies(c.req.header("cookie"))[OIDC_FLOW_COOKIE];
+    const cookies = parseCookies(c.req.header("cookie"));
+    const flowId = cookies[OIDC_FLOW_COOKIE];
     const { user_id, mode, is_admin, permission_group_uuid } = await oidcCallback(c, flowId, c.req.url);
     const scope = mode === "gateway" ? "account" : "profile";
     c.header("Set-Cookie", authSessionCookie(await createSession(scope === "account" ? null : user_id, scope, is_admin, permission_group_uuid)));
     if (user_id !== null) c.header("Set-Cookie", profileCookie(user_id), { append: true });
     c.header("Set-Cookie", `${OIDC_FLOW_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly`, { append: true });
+    c.header("Set-Cookie", clearLoginReturnCookie(), { append: true });
     log.info("auth.login", { method: "oidc", scope, id: user_id, admin: is_admin });
-    return c.redirect("/");
+    return c.redirect(safeReturnPath(cookies[LOGIN_RETURN_COOKIE]));
   } catch (e: any) {
     log.error("auth.oidc.callback_failed", oidcErrorDetail(e));
     return c.redirect("/?auth_error=oidc");
