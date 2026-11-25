@@ -8,6 +8,7 @@ import { useDocumentTitle } from "../useDocumentTitle";
 import { Button, ButtonAnchor, Input } from "../components/ui";
 import LoginBackdrop from "./LoginBackdrop";
 import { rememberProfile } from "../profilePreference";
+import { loginReturnPath, oidcLoginHref, returnAfterLogin } from "../loginReturn";
 
 /**
  * Full-screen sign-in shown when `auth/status` reports the request is not
@@ -25,7 +26,9 @@ export default function LoginPage({ status }: { status: AuthStatus }) {
   const login = status.login ?? { password: false, passkey: false, oidc: false };
   const showUsername = Boolean(status.username_field);
 
-  const done = () => window.location.replace("/");
+  // Back to the page the login was shown on, e.g. a TV's approval page.
+  const returnTo = loginReturnPath(window.location);
+  const done = () => returnAfterLogin(returnTo);
 
   const submitPassword = async (e: FormEvent) => {
     e.preventDefault();
@@ -100,7 +103,7 @@ export default function LoginPage({ status }: { status: AuthStatus }) {
         )}
 
         {login.oidc && (
-          <ButtonAnchor className="login-btn" variant="primary" href="/api/auth/oidc/login" leadingIcon={<LogIn size={18} />}>{t("loginWithSso")}</ButtonAnchor>
+          <ButtonAnchor className="login-btn" variant="primary" href={oidcLoginHref(returnTo)} leadingIcon={<LogIn size={18} />}>{t("loginWithSso")}</ButtonAnchor>
         )}
 
         {error && <div className="login-error">{error}</div>}
