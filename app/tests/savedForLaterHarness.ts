@@ -26,6 +26,10 @@ const listed = await json(await request(1, "/saved-for-later"));
 await Bun.sleep(1100);
 const again = await json(await request(1, "/saved-for-later", "POST", { video_id: "savedVid001" }));
 const relisted = await json(await request(1, "/saved-for-later"));
+await request(1, "/videos/savedVid002/archive", "POST");
+const afterReject = await json(await request(1, "/saved-for-later"));
+await request(1, "/saved-for-later", "POST", { video_id: "savedVid002" });
+const afterResave = await json(await request(1, "/saved-for-later"));
 const invalid = await json(await request(1, "/saved-for-later", "POST", { video_id: "../etc" }));
 const [racedA, racedB] = await Promise.all([
   request(secondary.id, "/saved-for-later", "POST", { video_id: "savedVid001" }).then(json),
@@ -44,6 +48,8 @@ console.log("RESULT " + JSON.stringify({
   relistedIds: relisted.body.videos.map((video: any) => video.video_id),
   primaryRows: count("SELECT COUNT(*) AS n FROM user_playlist_videos WHERE playlist_id = ?", first.body.playlist?.id),
   primaryPlaylists: count("SELECT COUNT(*) AS n FROM user_playlists WHERE user_id = 1"),
+  afterRejectIds: afterReject.body.videos.map((video: any) => video.video_id),
+  afterResaveIds: afterResave.body.videos.map((video: any) => video.video_id),
   invalidStatus: invalid.status,
   racedStatuses: [racedA.status, racedB.status],
   secondaryPlaylists: count("SELECT COUNT(*) AS n FROM user_playlists WHERE user_id = ?", secondary.id),
