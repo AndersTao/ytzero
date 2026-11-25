@@ -53,6 +53,11 @@ describe("save for later", () => {
     expect(result.primaryRows).toBe(3);
   });
 
+  test("a rejected video leaves the row, and saving it again brings it back", () => {
+    expect(result.afterRejectIds).toEqual(["savedVid001"]);
+    expect(result.afterResaveIds).toEqual(["savedVid002", "savedVid001"]);
+  });
+
   test("rejects an invalid video id", () => {
     expect(result.invalidStatus).toBe(400);
   });

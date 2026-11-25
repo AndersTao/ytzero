@@ -82,8 +82,8 @@ export function registerSavedForLaterRoutes(
 ): void {
   const { currentUserId, attachTags } = access;
 
-  // The row on Main: newest first, leaving out what has been watched or
-  // can no longer be played. The playlist page still lists everything.
+  // The row on Main: newest first, leaving out what has been watched,
+  // rejected, or can no longer be played. The playlist page still lists everything.
   api.get("/saved-for-later", async (c) => {
     const uid = currentUserId(c);
     const playlist = await existingPlaylist(uid);
@@ -94,6 +94,7 @@ export function registerSavedForLaterRoutes(
        JOIN user_playlist_videos upv ON upv.video_id = saved.video_id
        WHERE upv.playlist_id = ?
          AND COALESCE(saved.watched, 0) = 0
+         AND COALESCE(saved.status, '') <> 'archived'
          AND COALESCE(saved.is_unavailable, 0) = 0
          AND COALESCE(saved.is_private, 0) = 0
          AND ${shortsUiVisibilitySql(uid, "saved")}
@@ -117,6 +118,8 @@ export function registerSavedForLaterRoutes(
         throw error;
       }
     }
+    // Saving is asking for it again, so an earlier rejection no longer applies.
+    await database.prepare("UPDATE user_videos SET status = 'inbox' WHERE user_id = ? AND video_id = ? AND status = 'archived'").run(uid, videoId);
     const playlist = await ensurePlaylist(uid);
     // Saving again moves it back to the front of the row.
     const existing = await database.prepare("SELECT 1 FROM user_playlist_videos WHERE playlist_id = ? AND video_id = ?").get(playlist.id, videoId);
