@@ -64,6 +64,7 @@ export const fr: Locale = {
     "navShorts": "Shorts",
     "navLive": "En direct",
     "navWatchlist": "À regarder",
+    "savedForLater": "Enregistré pour plus tard",
     "navFollowedPlaylists": "Playlists suivies",
     "navDownloads": "Téléchargements",
     "navLiked": "J'aime",

@@ -39,6 +39,7 @@ export const ja: Locale = {
     "navShorts": "ショートパンツ",
     "navLive": "ライブ",
     "navWatchlist": "スケジュール",
+    "savedForLater": "後で見る",
     "navFollowedPlaylists": "フォローされたプレイリスト",
     "navDownloads": "ダウンロード",
     "navLiked": "ログイン",

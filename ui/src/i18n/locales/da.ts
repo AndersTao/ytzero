@@ -561,6 +561,7 @@ export const da: Locale = {
     "navShorts": "Shorts",
     "navLive": "Live",
     "navWatchlist": "Planlagt",
+    "savedForLater": "Gemt til senere",
     "navFollowedPlaylists": "Fulgte playlister",
     "navDownloads": "Downloads",
     "navLiked": "Likede",

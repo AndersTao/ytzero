@@ -349,6 +349,21 @@ YouTube" action for that video, remembered for the rest of the tab's session,
 and removes the marker from the address bar. The action opens the source video
 at the current position with `#ytNoRedirect`, so the extension lets it through.
 
+## Save for later
+
+The extension's right-click item "Save for later in YT Zero" (on a video link,
+or on a watch page) sends `POST /api/saved-for-later` with
+`{"video_id": "<11-character id>"}` to the default instance, carrying the
+instance's sign-in cookie. The server imports the video if needed and adds it
+to the profile's "Saved for later" playlist, created on first use with a name
+in the profile's language and remembered by its portable id. Saving a video
+again moves it to the front. The answer is `{ ok, already, playlist }`;
+`401` means the browser is not signed in to the instance.
+
+`GET /api/saved-for-later` returns that playlist and its unwatched, playable
+videos, newest first. Main shows them as a "Saved for later" row whose heading
+opens the playlist; it reloads when the tab becomes visible again.
+
 ## Implementation brief for the extension agent
 
 For configurable shortcut implementation, use the complete action/ownership and

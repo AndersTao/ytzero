@@ -91,7 +91,8 @@ describe("HTTP route manifest", () => {
     // Settings → Devices: what is signed in with a code, renamed or signed out.
     const deviceSessionRoutes = ["GET /auth/devices", "PUT /auth/devices/:id", "DELETE /auth/devices/:id"];
     for (const route of deviceProfileRoutes) expect(routes).toContain(route);
-    const ourRoutes = [searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, offlineCopyRoute, skipSegmentsRoute, ...providerRoutes, ...deviceProfileRoutes, ...deviceSessionRoutes, ...invidiousRoutes, ...dailymotionRoutes];
+    const savedForLaterRoutes = ["GET /saved-for-later", "POST /saved-for-later"];
+    const ourRoutes = [...savedForLaterRoutes, searchSuggestRoute, suggestionsRoute, playlistOrderRoute, relayRoute, relayHlsRoute, offlineCopyRoute, skipSegmentsRoute, ...providerRoutes, ...deviceProfileRoutes, ...deviceSessionRoutes, ...invidiousRoutes, ...dailymotionRoutes];
     const publicShareManagementRoutes = [
       "GET /public-shares", "PUT /public-shares/policy", "POST /public-shares",
       "PATCH /public-shares/:id", "POST /public-shares/:id/rotate", "DELETE /public-shares/:id",

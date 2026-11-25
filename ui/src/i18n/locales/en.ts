@@ -39,6 +39,7 @@ export const en = {
     navShorts: "Shorts",
     navLive: "Live",
     navWatchlist: "Scheduled",
+    savedForLater: "Saved for later",
     navFollowedPlaylists: "Followed playlists",
     navDownloads: "Downloads",
     navLiked: "Liked",

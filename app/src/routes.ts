@@ -36,6 +36,7 @@ import { registerImportRoutes } from "./routes/importRoutes";
 import { registerHistoryRoutes } from "./routes/historyRoutes";
 import { registerBookmarkRoutes } from "./routes/bookmarkRoutes";
 import { registerUserPlaylistRoutes } from "./routes/userPlaylistRoutes";
+import { registerSavedForLaterRoutes } from "./routes/savedForLaterRoutes";
 import { registerBackupRoutes } from "./routes/backupRoutes";
 import { registerFeedRoutes } from "./routes/feedRoutes";
 import { registerFeedBuilderRoutes } from "./routes/feedBuilderRoutes";
@@ -364,6 +365,7 @@ registerNativePlaybackRoutes(api, currentUserId);
 
 registerHistoryRoutes(api, { currentUserId, attachTags });
 registerBookmarkRoutes(api, { currentUserId, attachTags });
+registerSavedForLaterRoutes(api, { currentUserId, attachTags });
 
 registerChannelRoutes(api, { currentUserId, isAdmin, hasChildLockSession, attachTags, attachWatchedState });
 

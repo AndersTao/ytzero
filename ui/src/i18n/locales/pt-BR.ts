@@ -39,6 +39,7 @@ export const ptBR: Locale = {
     "navShorts": "Calções",
     "navLive": "Vivo",
     "navWatchlist": "Agendado",
+    "savedForLater": "Salvo para depois",
     "navFollowedPlaylists": "Listas de reprodução seguidas",
     "navDownloads": "Transferências",
     "navLiked": "Gostou",

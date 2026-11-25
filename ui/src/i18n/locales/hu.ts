@@ -65,6 +65,7 @@ export const hu: Locale = {
     navShorts: "Shorts",
     navLive: "Élő",
     navWatchlist: "Ütemezve",
+    savedForLater: "Későbbre mentve",
     navFollowedPlaylists: "Követett lejátszási listák",
     navDownloads: "Letöltések",
     navLiked: "Kedvelések",
