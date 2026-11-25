@@ -39,6 +39,7 @@ export const ru: Locale = {
     "navShorts": "Шорты",
     "navLive": "Трансляции",
     "navWatchlist": "Запланировано",
+    "savedForLater": "Отложенное",
     "navFollowedPlaylists": "Отслеживаемые плейлисты",
     "navDownloads": "Загрузки",
     "navLiked": "Понравившиеся",

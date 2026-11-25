@@ -39,6 +39,7 @@ export const de: Locale = {
     navShorts: "Shorts",
     navLive: "Live",
     navWatchlist: "Geplant",
+    savedForLater: "Für später gespeichert",
     navFollowedPlaylists: "Gefolgte Playlists",
     navDownloads: "Downloads",
     navLiked: "Favoriten",

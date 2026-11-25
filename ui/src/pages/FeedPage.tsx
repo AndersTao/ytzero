@@ -13,6 +13,8 @@ import ChildDownloadRequestBanner from "../components/ChildDownloadRequestBanner
 import EmptyArt from "../components/illustrations/EmptyArt";
 import TagFilterBar from "../components/TagFilterBar";
 import VideoCard from "../components/VideoCard";
+import { SavedForLaterShelf } from "../components/SavedForLaterShelf";
+import { useHScroll } from "../useHScroll";
 import { keepsCard, videoAfterFeedback, WATCHED_FEEDBACK, type CardFeedback } from "../videoCardKeep";
 import { VideoGridSkeleton } from "../components/LoadingState";
 import { GRID_SIZES, persistGridSize, readGridSize, type GridSize } from "../gridSize";
@@ -101,35 +103,6 @@ function ChannelAvatarRow({ selectedTags }: { selectedTags: number[] }) {
 
 const BUCKET_ORDER: Bucket[] = ["today", "tonight", "tomorrow", "tomorrow_evening", "weekend"];
 
-function useHScroll() {
-  const [shadowLeft, setShadowLeft] = useState(false);
-  const [shadowRight, setShadowRight] = useState(false);
-  const cleanupRef = useRef<(() => void) | null>(null);
-
-  const ref = useCallback((el: HTMLDivElement | null) => {
-    cleanupRef.current?.();
-    cleanupRef.current = null;
-    if (!el) return;
-    const update = () => {
-      setShadowLeft(el.scrollLeft > 4);
-      setShadowRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
-    };
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    const mo = new MutationObserver(update);
-    mo.observe(el, { childList: true, subtree: false });
-    cleanupRef.current = () => {
-      el.removeEventListener("scroll", update);
-      ro.disconnect();
-      mo.disconnect();
-    };
-  }, []);
-
-  return { ref, shadowLeft, shadowRight };
-}
-
 export default function FeedPage({
   onPlay,
   showToast,
@@ -199,6 +172,7 @@ export default function FeedPage({
   }), [onPlay, selectedTags, showAll, feedSort]);
   const hScrollWrapRef = useRef<HTMLDivElement>(null);
   const [hCardWidth, setHCardWidth] = useState(220);
+  const [savedForLaterCount, setSavedForLaterCount] = useState(0);
   const [hCardMin, setHCardMin] = useState(248);
 
   useEffect(() => {
@@ -458,7 +432,7 @@ export default function FeedPage({
   const feedVideos = videos.filter((video) => !inProgressIds.has(video.video_id));
   const showQueuedSection = dueQueuedVideos.length > 0 && selectedTags.length === 0;
   const hasFilterOnlyTags = tags.some((tag) => tag.filter_only === 1);
-  const showFeedPreludeDivider = resumable.length > 0 || showQueuedSection;
+  const showFeedPreludeDivider = resumable.length > 0 || showQueuedSection || savedForLaterCount > 0;
   const inProgressQueue: PlaybackQueueContext = { version: 1, kind: "in-progress" };
   const dueQueuedQueue: PlaybackQueueContext = { version: 1, kind: "watchlist", sort: "schedule", dueOnly: true };
 
@@ -594,6 +568,8 @@ export default function FeedPage({
           )}
         </div>
       </RevealRegion>
+
+      <SavedForLaterShelf hidden={selectedTags.length > 0} cardWidth={hCardWidth} gridSize={gridSize} onPlay={onPlay} onCountChange={setSavedForLaterCount} />
 
       <RevealRegion open={showFeedPreludeDivider}><Divider /></RevealRegion>
 
