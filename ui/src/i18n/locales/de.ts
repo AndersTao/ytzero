@@ -639,6 +639,7 @@ export const de: Locale = {
     refreshChannelPosts: "Posts aktualisieren",
     channelPostsRefreshed: "Posts aktualisiert",
     openOnYouTube: "Auf YouTube öffnen",
+    backToYouTube: "Zurück zu YouTube",
     openHere: "Hier öffnen",
     channelPostVideo: "Video",
     channelPostPlaylist: "Playlist",

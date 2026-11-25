@@ -718,6 +718,7 @@ export const ptBR: Locale = {
     "refreshChannelPosts": "Actualizar as mensagens",
     "channelPostsRefreshed": "Mensagens actualizadas",
     "openOnYouTube": "Abrir no YouTube",
+    "backToYouTube": "Voltar ao YouTube",
     "openHere": "Abrir aqui",
     "channelPostVideo": "Vídeo",
     "channelPostPlaylist": "Lista de Reprodução",

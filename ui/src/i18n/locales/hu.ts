@@ -649,6 +649,7 @@ export const hu: Locale = {
     refreshChannelPosts: "Bejegyzések frissítése",
     channelPostsRefreshed: "Bejegyzések frissítve",
     openOnYouTube: "Megnyitás a YouTube-on",
+    backToYouTube: "Vissza a YouTube-ra",
     openHere: "Megnyitás itt",
     channelPostVideo: "Videó",
     channelPostPlaylist: "Lejátszási lista",

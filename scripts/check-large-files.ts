@@ -41,7 +41,7 @@ const lineLimits: Record<string, number> = {
   "ui/src/pages/SettingsPage.tsx": 1354,
   "ui/src/pages/useSettingsPageController.tsx": 1457,
   "ui/src/components/settings/SettingsDisplayView.tsx": 656,
-  "ui/src/pages/WatchPage.tsx": 1105,
+  "ui/src/pages/WatchPage.tsx": 1107,
   "ui/src/pages/useWatchPageController.tsx": 1856,
   "ui/src/pages/WatchPage.css": 1148,
   "ui/src/components/LocalPlayer.css": 343,

@@ -1254,6 +1254,7 @@ export const da: Locale = {
     "refreshChannelPosts": "Opdater opslag",
     "channelPostsRefreshed": "Opslag opdateret",
     "openOnYouTube": "Åbn på YouTube",
+    "backToYouTube": "Tilbage til YouTube",
     "openHere": "Åbn her",
     "channelPostVideo": "Video",
     "channelPostPlaylist": "Playliste",

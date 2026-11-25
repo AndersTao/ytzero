@@ -639,6 +639,7 @@ export const en = {
     refreshChannelPosts: "Refresh posts",
     channelPostsRefreshed: "Posts refreshed",
     openOnYouTube: "Open on YouTube",
+    backToYouTube: "Back to YouTube",
     openHere: "Open here",
     channelPostVideo: "Video",
     channelPostPlaylist: "Playlist",

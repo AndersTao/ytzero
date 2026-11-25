@@ -718,6 +718,7 @@ export const ru: Locale = {
     "refreshChannelPosts": "Обновить посты",
     "channelPostsRefreshed": "Обновленные посты",
     "openOnYouTube": "Открыть на YouTube",
+    "backToYouTube": "Вернуться на YouTube",
     "openHere": "Открыть здесь",
     "channelPostVideo": "Видео",
     "channelPostPlaylist": "Плейлист",

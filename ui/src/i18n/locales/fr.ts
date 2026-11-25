@@ -743,6 +743,7 @@ export const fr: Locale = {
     "refreshChannelPosts": "Actualiser les publications",
     "channelPostsRefreshed": "Publications actualisées",
     "openOnYouTube": "Ouvrir sur YouTube",
+    "backToYouTube": "Retour sur YouTube",
     "openHere": "Ouvrir ici",
     "channelPostVideo": "Vidéo",
     "channelPostPlaylist": "Playlist",

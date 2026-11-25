@@ -50,6 +50,7 @@ import { img, videoThumbnail } from "../img";
 import { Alert, Button, ButtonAnchor, Checkbox, IconButton, LocalToast, Menu, MenuItem, MenuSeparator, MenuStatus, Popover, ScrollArea, Switch } from "../components/ui";
 import { WatchPanel } from "../components/WatchPanel";
 import VideoCreators from "../components/VideoCreators";
+import { WatchBackToYouTube } from "../components/watch/WatchBackToYouTube";
 import { SessionPlayQueueAction } from "../components/SessionPlayQueueAction";
 import Tooltip from "../components/Tooltip";
 import { markYouTubeUrl } from "../youtubeUrl";
@@ -602,6 +603,7 @@ export default function WatchPage() {
             }]} />
           </div>
           <div className="watch-actions">
+            <WatchBackToYouTube videoId={video.video_id} currentPlaybackSeconds={currentPlaybackSeconds} />
             <Button
               ref={likeButtonRef}
               className={`like-btn${video.liked === 1 ? " like-active" : ""}`}

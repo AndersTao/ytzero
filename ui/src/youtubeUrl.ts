@@ -37,3 +37,49 @@ export function markYouTubeUrl(value: string): string {
     return value;
   }
 }
+
+/*
+ * The browser extension adds this fragment when it sends a video here from
+ * YouTube (an automatic redirect or its YT Zero button). The watch page then
+ * offers a way back, for that video only, for the rest of the tab's session.
+ */
+export const YT_REDIRECTED_MARKER = "ytRedirected";
+const REDIRECTED_VIDEOS_KEY = "ytzero.redirectedFromYouTube";
+const REDIRECTED_VIDEOS_LIMIT = 50;
+
+type SessionStore = Pick<Storage, "getItem" | "setItem">;
+
+function tabSession(): SessionStore | null {
+  try { return window.sessionStorage; } catch { return null; }
+}
+
+export function hasYouTubeRedirectMarker(hash: string): boolean {
+  return hash.replace(/^#/, "").split("&").includes(YT_REDIRECTED_MARKER);
+}
+
+/** The fragment without the redirect marker, "#" included when anything is left. */
+export function withoutYouTubeRedirectMarker(hash: string): string {
+  const rest = hash.replace(/^#/, "").split("&").filter((part) => part && part !== YT_REDIRECTED_MARKER);
+  return rest.length ? `#${rest.join("&")}` : "";
+}
+
+/** Whether this video came here from YouTube in this tab; records it when the address says so. */
+export function noteYouTubeRedirect(hash: string, videoId: string | null | undefined, store: SessionStore | null = tabSession()): boolean {
+  if (!videoId) return false;
+  let ids: string[] = [];
+  try {
+    const stored: unknown = JSON.parse(store?.getItem(REDIRECTED_VIDEOS_KEY) ?? "[]");
+    if (Array.isArray(stored)) ids = stored.filter((value): value is string => typeof value === "string");
+  } catch {}
+  if (!hasYouTubeRedirectMarker(hash)) return ids.includes(videoId);
+  if (!ids.includes(videoId)) {
+    try { store?.setItem(REDIRECTED_VIDEOS_KEY, JSON.stringify([...ids, videoId].slice(-REDIRECTED_VIDEOS_LIMIT))); } catch {}
+  }
+  return true;
+}
+
+/** The video on YouTube at the position reached, marked so the extension lets it through. */
+export function youTubeReturnUrl(videoId: string, seconds: number): string {
+  const at = Number.isFinite(seconds) && seconds >= 1 ? Math.floor(seconds) : 0;
+  return markYouTubeUrl(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}${at ? `&t=${at}s` : ""}`);
+}

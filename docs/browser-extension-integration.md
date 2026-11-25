@@ -342,6 +342,13 @@ one-navigation escape hatch and must not apply its automatic video redirect to
 that URL. An explicit redirect chosen later from the extension popup may ignore
 the marker because it is a new user action.
 
+In the other direction, when the extension sends a source-site video to a YT
+Zero watch page (an automatic redirect or its own handoff button), it appends
+the exact `#ytRedirected` fragment. The watch page then shows a "Back to
+YouTube" action for that video, remembered for the rest of the tab's session,
+and removes the marker from the address bar. The action opens the source video
+at the current position with `#ytNoRedirect`, so the extension lets it through.
+
 ## Implementation brief for the extension agent
 
 For configurable shortcut implementation, use the complete action/ownership and
