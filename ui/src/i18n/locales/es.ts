@@ -722,6 +722,7 @@ export const es: Locale = {
     refreshChannelPosts: "Actualizar publicaciones",
     channelPostsRefreshed: "Publicaciones actualizadas",
     openOnYouTube: "Abrir en YouTube",
+    backToYouTube: "Volver a YouTube",
     openHere: "Abrir aquí",
     channelPostVideo: "Vídeo",
     channelPostPlaylist: "Lista",

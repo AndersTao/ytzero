@@ -718,6 +718,7 @@ export const ja: Locale = {
     "refreshChannelPosts": "投稿をリフレッシュ",
     "channelPostsRefreshed": "更新された投稿",
     "openOnYouTube": "YouTubeで開く",
+    "backToYouTube": "YouTubeに戻る",
     "openHere": "詳しくはこちら",
     "channelPostVideo": "ビデオ",
     "channelPostPlaylist": "プレイリスト",
