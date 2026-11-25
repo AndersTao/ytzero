@@ -12,7 +12,7 @@ describe("the page a sign-in returns to", () => {
   });
 
   test("falls back to Main for anything else", () => {
-    for (const bad of [undefined, "", "tv/pair", "//evil.example/x", "/\\evil.example", "https://evil.example/", "/api/auth/logout", "/a\nb", `/${"x".repeat(3000)}`]) {
+    for (const bad of [undefined, "", "tv/pair", "//evil.example/x", "/\\evil.example", "https://evil.example/", "/api/auth/logout", "/.//evil.example/x", "/a/..//evil.example", "/%2e//evil.example", "/./api/auth/logout", "/a\nb", `/${"x".repeat(3000)}`]) {
       expect(safeReturnPath(bad)).toBe("/");
     }
   });

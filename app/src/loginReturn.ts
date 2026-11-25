@@ -14,8 +14,11 @@ export function safeReturnPath(value: unknown): string {
   if (/[\u0000-\u001f\u007f]/.test(value)) return "/";
   try {
     const url = new URL(value, BASE);
-    if (url.origin !== BASE || url.pathname.startsWith("/api/")) return "/";
-    return `${url.pathname}${url.search}${url.hash}`;
+    // Check what the parser made of it too: dot segments such as "/.//host"
+    // normalize to "//host", which a browser would read as another server.
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    if (url.origin !== BASE || !/^\/(?![/\\])/.test(path) || url.pathname.startsWith("/api/")) return "/";
+    return path;
   } catch {
     return "/";
   }
