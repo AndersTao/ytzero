@@ -52,6 +52,10 @@ final class PlayerModel {
     private var skipObserver: Any?
     private var skipReport: ((APIModels.SkipSegment, Double) -> Void)?
     private var noticeToken = 0
+    /// A skipped part ran to the end of the video, so it ended there.
+    private var skippedToEnd = false
+    /// Tells `waitForEnd` the video is over: played to the end, or skipped there.
+    private var endOfVideo: AsyncStream<Void>.Continuation?
 
     // MARK: Lifecycle
 
@@ -175,6 +179,12 @@ final class PlayerModel {
         wantsToPlay = false
         stopSkipping()
         var watched = video
+        // Closed at the very end, or stuck there after a jump: seen, as
+        // playing it out would have marked it.
+        if !finished, let length = videoLength, position >= length - 2 {
+            finished = true
+            try? await client.markWatched(video.id)
+        }
         if !finished, duration > 0, position >= 1 {
             try? await client.saveProgress(video.id, position: position, duration: duration)
             watched.watchPosition = position
@@ -341,10 +351,24 @@ final class PlayerModel {
         }
     }
 
-    /// The end of whichever item plays: `recover` may have swapped it.
+    /// The end of whichever item plays (`recover` may have swapped it), or a
+    /// skipped part that runs to the end, such as an outro.
     private func waitForEnd(video: Video, client: APIClient) async {
-        for await note in NotificationCenter.default.notifications(named: AVPlayerItem.didPlayToEndTimeNotification) {
-            guard let item = note.object as? AVPlayerItem, item === player?.currentItem else { continue }
+        let (ends, end) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        if skippedToEnd { end.yield() }
+        endOfVideo = end
+        let observer = NotificationCenter.default.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: nil, queue: .main) { [weak self] note in
+            let ended = note.object.map { ObjectIdentifier($0 as AnyObject) }
+            MainActor.assumeIsolated {
+                guard let self, let ended, let current = self.player?.currentItem, ObjectIdentifier(current) == ended else { return }
+                self.endOfVideo?.yield()
+            }
+        }
+        defer {
+            NotificationCenter.default.removeObserver(observer)
+            endOfVideo = nil
+        }
+        for await _ in ends {
             finished = true
             try? await client.markWatched(video.id)
             return
@@ -430,9 +454,27 @@ final class PlayerModel {
     private func skipIfInSegment(at time: Double) {
         guard wantsToPlay, let segment = skips.first(where: { time >= $0.start && time < $0.end - 0.3 }) else { return }
         let skipped = segment.end - time
+        if countedSkips.insert(segment.uuid).inserted { skipReport?(segment, skipped) }
+        // A part that runs to the end, an outro as a rule, ends the video as
+        // playing it out would. Jumping there instead lands a second short of
+        // the end, still inside the part, and an iPad has been seen to stay
+        // stuck there, with the video never ending or counting as watched.
+        if let length = videoLength, segment.end >= length - 1.5 {
+            player?.pause()
+            wantsToPlay = false
+            isPlaying = false
+            skippedToEnd = true
+            endOfVideo?.yield()
+            return
+        }
         seek(to: segment.end)
         showSkipNotice(segment.category)
-        if countedSkips.insert(segment.uuid).inserted { skipReport?(segment, skipped) }
+    }
+
+    /// How long the video is, once known.
+    private var videoLength: Double? {
+        if let seconds = player?.currentItem?.duration.seconds, seconds.isFinite, seconds > 0 { return seconds }
+        return duration > 0 ? duration : nil
     }
 
     private func showSkipNotice(_ category: String) {
