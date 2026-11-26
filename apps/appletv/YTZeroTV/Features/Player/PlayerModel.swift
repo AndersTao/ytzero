@@ -160,6 +160,11 @@ final class PlayerModel {
         }
     }
 
+    /// Marked as watched or rejected from the player: closing keeps no position.
+    func dropPosition() {
+        finished = true
+    }
+
     /// Called when the player closes: last position, then let the stream go.
     /// Returns the video as far as it was watched, once the server has it.
     @discardableResult
@@ -531,7 +536,7 @@ final class PlayerModel {
         }
     }
 
-    private func showFlash(_ text: String) {
+    func showFlash(_ text: String) {
         flash = text
         flashToken += 1
         let token = flashToken

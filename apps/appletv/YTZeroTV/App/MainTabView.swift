@@ -1,11 +1,16 @@
 import SwiftUI
 
 /// The places of the app in the system sidebar, as the iPhone and iPad side
-/// menu has them: Main, Recommendations, Shorts, Scheduled, Subscriptions
-/// (still to come), and the profile's own
-/// playlists in a section of their own. The sidebar folds away to a button
-/// at the top left naming the place; Up from the top of a screen opens it,
-/// and Select on a place shows that place and folds it away again.
+/// menu has them: Main, Recommendations, Shorts, Scheduled, Subscriptions,
+/// and the profile's own playlists in a section of their own. The sidebar
+/// folds away to a button at the top left naming the place; Up from the top
+/// of a screen opens it, and Select on a place shows that place and folds it
+/// away again.
+///
+/// Who is watching and Refresh sit at the top of the sidebar (tvOS 27), so
+/// they are there on every screen and Up from a screen's first row goes
+/// straight to the places, as on the LG TV. Before tvOS 27 a sidebar has no
+/// room for them, and each screen keeps them in a header of its own.
 struct MainTabView: View {
     enum Place: Hashable {
         case main
@@ -16,11 +21,20 @@ struct MainTabView: View {
         case playlist(Int)
     }
 
+    /// Whether the sidebar holds Refresh and the profile picture.
+    static var sidebarHasHeader: Bool {
+        if #available(tvOS 27, *) { true } else { false }
+    }
+
     @Environment(AppSession.self) private var session
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: Place = .main
     @State private var playlists: [APIModels.UserPlaylist] = []
     @State private var home = HomeModel()
+    @State private var profiles = ProfilesModel()
+    @State private var showingProfiles = false
+    /// Raised by the sidebar's Refresh: the place on screen reloads.
+    @State private var refreshSignals: [Place: Int] = [:]
     /// A video the Top Shelf asked to play.
     @State private var playRequest: String?
 
@@ -43,6 +57,8 @@ struct MainTabView: View {
                     }
             }
         }
+        // Who is watching, for the profile picture: names and pictures come from the server.
+        .task { await profiles.load(session: session) }
         // Select or Play on the Top Shelf: Main plays the video, also when
         // the app was not running and is still loading.
         .onOpenURL { url in
@@ -50,40 +66,106 @@ struct MainTabView: View {
             selection = .main
             playRequest = id
         }
+        // "Who is watching?" on the whole screen, as the Apple TV's own apps ask it.
+        .fullScreenCover(isPresented: $showingProfiles) {
+            ProfilePickerView(model: profiles)
+                .environment(session)
+        }
     }
 
     private var tabs: some View {
         TabView(selection: $selection) {
             Tab("Main", systemImage: "house", value: Place.main) {
-                HomeView(model: home, playRequest: $playRequest)
+                HomeView(model: home, playRequest: $playRequest, refreshSignal: signal(.main), header: screenHeader(for: .main))
             }
             Tab("Recommendations", systemImage: "sparkles", value: Place.recommendations) {
-                VideoListView(kind: .recommendations, systemImage: "sparkles")
+                VideoListView(kind: .recommendations, systemImage: "sparkles", refreshSignal: signal(.recommendations), header: screenHeader(for: .recommendations))
             }
             Tab("Shorts", systemImage: "play.rectangle.on.rectangle", value: Place.shorts) {
-                VideoListView(kind: .shorts, systemImage: "play.rectangle.on.rectangle")
+                VideoListView(kind: .shorts, systemImage: "play.rectangle.on.rectangle", refreshSignal: signal(.shorts), header: screenHeader(for: .shorts))
             }
             Tab("Scheduled", systemImage: "clock", value: Place.scheduled) {
-                VideoListView(kind: .scheduled, systemImage: "clock")
+                VideoListView(kind: .scheduled, systemImage: "clock", refreshSignal: signal(.scheduled), header: screenHeader(for: .scheduled))
             }
             Tab("Subscriptions", systemImage: "person.2", value: Place.subscriptions) {
-                ComingSoonView(title: "Subscriptions", systemImage: "person.2")
+                SubscriptionsView(refreshSignal: signal(.subscriptions), header: screenHeader(for: .subscriptions))
             }
             if !playlists.isEmpty {
                 TabSection("My playlists") {
                     ForEach(playlists) { playlist in
-                        // The name as written on the web, not looked up as a key.
-                        Tab(playlist.name, systemImage: "music.note.list", value: Place.playlist(playlist.id)) {
-                            PlaylistView(playlist: playlist)
+                        Tab(value: Place.playlist(playlist.id)) {
+                            PlaylistView(playlist: playlist, refreshSignal: signal(.playlist(playlist.id)))
+                        } label: {
+                            // The name as written on the web, not looked up as
+                            // a key, and how many videos it holds, as the LG TV shows.
+                            Label {
+                                Text(verbatim: "\(playlist.name)  \(playlist.videoCount)")
+                            } icon: {
+                                Image(systemName: "music.note.list")
+                            }
                         }
                     }
                 }
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .sidebarHeader { sidebarHeader }
         .onChange(of: scenePhase) { _, phase in
             // A playlist made on the web meanwhile shows up when the app is back.
             if phase == .active { Task { await loadPlaylists() } }
+        }
+    }
+
+    /// Who is watching and Refresh, at the top of the sidebar.
+    private var sidebarHeader: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Button {
+                showingProfiles = true
+            } label: {
+                HStack(spacing: 20) {
+                    profileBadge(size: 56)
+                    Text(verbatim: session.activeProfile?.name ?? "")
+                        .lineLimit(1)
+                }
+            }
+            .accessibilityHint(Text("Switch profile"))
+            .accessibilityIdentifier("profile-button")
+            Button {
+                refresh(selection)
+            } label: {
+                Label("Refresh", systemImage: "arrow.clockwise")
+            }
+            .accessibilityIdentifier("refresh-button")
+        }
+        .padding(.bottom, 12)
+    }
+
+    /// The header a screen shows itself before tvOS 27; nil when the sidebar has it.
+    private func screenHeader(for place: Place) -> ScreenHeader? {
+        guard !Self.sidebarHasHeader else { return nil }
+        return ScreenHeader(
+            refresh: { refresh(place) },
+            showProfiles: place == .main ? { showingProfiles = true } : nil
+        )
+    }
+
+    private func signal(_ place: Place) -> Int {
+        refreshSignals[place, default: 0]
+    }
+
+    private func refresh(_ place: Place) {
+        refreshSignals[place, default: 0] += 1
+        if case .playlist = place { Task { await loadPlaylists() } }
+    }
+
+    @ViewBuilder
+    private func profileBadge(size: CGFloat) -> some View {
+        if let profile = session.activeProfile {
+            ProfileAvatar(name: profile.name, avatar: profile.avatar, color: profile.avatarColor, client: session.client, size: size)
+        } else {
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: size))
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -97,16 +179,21 @@ struct MainTabView: View {
     }
 }
 
-/// A place the sidebar has whose screen is still to be made.
-struct ComingSoonView: View {
-    let title: LocalizedStringKey
-    let systemImage: String
+/// What a screen's own header does, before tvOS 27 put it in the sidebar:
+/// Refresh, and on Main the profile picture.
+struct ScreenHeader {
+    let refresh: () -> Void
+    let showProfiles: (() -> Void)?
+}
 
-    var body: some View {
-        ContentUnavailableView {
-            Label(title, systemImage: systemImage)
-        } description: {
-            Text("Coming soon")
+private extension View {
+    /// Content at the top of the sidebar, where tvOS has room for it (27 and later).
+    @ViewBuilder
+    func sidebarHeader<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        if #available(tvOS 27, *) {
+            tabViewSidebarHeader(content: content)
+        } else {
+            self
         }
     }
 }

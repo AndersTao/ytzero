@@ -4,6 +4,8 @@ import SwiftUI
 /// as the web client lists them. Select plays full screen.
 struct PlaylistView: View {
     let playlist: APIModels.UserPlaylist
+    /// Raised by the sidebar's Refresh.
+    var refreshSignal = 0
 
     @Environment(AppSession.self) private var session
     @State private var videos: [Video] = []
@@ -48,6 +50,7 @@ struct PlaylistView: View {
         }
         .defaultFocus($focusedVideo, videos.first?.id)
         .task(id: playlist.id) { await load() }
+        .onChange(of: refreshSignal) { Task { await load() } }
         .fullScreenCover(item: $playing) { video in
             PlayerView(video: video) {} onClosed: { _ in
                 // The progress bars follow what was just watched.

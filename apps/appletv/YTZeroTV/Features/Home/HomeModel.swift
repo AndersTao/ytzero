@@ -1,10 +1,16 @@
 import Foundation
 import Observation
 
-/// The two shelves on the home screen and what can be done to their videos.
+/// The shelves on the home screen and what can be done to their videos:
+/// Continue watching, Saved for later (videos saved from the browser
+/// extension's right-click menu) and Main.
 @Observable
 final class HomeModel {
     private(set) var continueWatching: [Video] = []
+    /// Newest saved first, unwatched only; empty on a server without the list.
+    /// A video is on one shelf only, Continue watching first: the cards'
+    /// focus is keyed by the video, and one id twice confuses the remote.
+    private(set) var savedForLater: [Video] = []
     private(set) var main: [Video] = []
     private(set) var isLoading = false
     private(set) var isRefreshing = false
@@ -32,8 +38,12 @@ final class HomeModel {
         do {
             let shelf = try await client.inProgress()
             let firstPage = try await client.feed(page: 0)
+            // Optional: an older server has no such list.
+            let saved = (try? await client.savedForLater()) ?? []
             continueWatching = shelf.filter { $0.isPlayable && !$0.isShort && !removed.contains($0.id) }
-            let onShelf = Set(continueWatching.map(\.id))
+            let continuing = Set(continueWatching.map(\.id))
+            savedForLater = saved.filter { $0.isPlayable && !continuing.contains($0.id) && !removed.contains($0.id) }
+            let onShelf = continuing.union(savedForLater.map(\.id))
             main = firstPage.filter { $0.isPlayable && !onShelf.contains($0.id) && !removed.contains($0.id) }
             page = 1
             hasMore = firstPage.count == Self.pageSize
@@ -59,6 +69,7 @@ final class HomeModel {
             continueWatching = videos.filter { $0.isPlayable && !$0.isShort && !removed.contains($0.id) }
             // As in the web client, a video on the shelf is not repeated below.
             let shelf = Set(continueWatching.map(\.id))
+            savedForLater.removeAll { shelf.contains($0.id) }
             main.removeAll { shelf.contains($0.id) }
         } catch {
             handle(error)
@@ -73,7 +84,7 @@ final class HomeModel {
             let batch = try await client.feed(page: page)
             hasMore = batch.count == Self.pageSize
             page += 1
-            let known = Set(main.map(\.id)).union(continueWatching.map(\.id))
+            let known = Set(main.map(\.id)).union(continueWatching.map(\.id)).union(savedForLater.map(\.id))
             main += batch.filter { $0.isPlayable && !known.contains($0.id) && !removed.contains($0.id) }
         } catch {
             handle(error)
@@ -115,6 +126,7 @@ final class HomeModel {
         main.removeAll { $0.id == video.id }
         continueWatching.removeAll { $0.id == video.id }
         continueWatching.insert(video, at: 0)
+        savedForLater.removeAll { $0.id == video.id }
     }
 
     /// The player finished the video: it leaves both shelves.
@@ -135,6 +147,7 @@ final class HomeModel {
     private func remove(_ id: String) {
         removed.insert(id)
         continueWatching.removeAll { $0.id == id }
+        savedForLater.removeAll { $0.id == id }
         main.removeAll { $0.id == id }
     }
 

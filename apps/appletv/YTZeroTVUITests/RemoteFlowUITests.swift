@@ -20,17 +20,25 @@ final class RemoteFlowUITests: XCTestCase {
 
         app.waitForVideoFocus()
         snapshot("01-home")
-        // Up from the first video reaches the header (Refresh / profile picture).
+        // Up from the first video reaches the sidebar (tvOS 27, where Refresh
+        // and the profile picture are), or before that the header.
         remote.press(.up)
         sleep(1)
-        let refresh = app.buttons["Opdater"]
-        let settings = app.buttons["profile-button"]
-        XCTAssertTrue(refresh.hasFocus || settings.hasFocus, "Up from the first video should reach the header")
-        snapshot("01b-header")
-        remote.press(.down)
-        sleep(1)
-        remote.press(.down)
-        sleep(1)
+        let focused = { app.descendants(matching: .any).element(matching: NSPredicate(format: "hasFocus == true")) }
+        if #available(tvOS 27, *) {
+            XCTAssertEqual(focused().elementType, .cell, "Up from the first video should reach the sidebar")
+            remote.press(.right)
+            sleep(2)
+        } else {
+            let refresh = app.buttons["Opdater"]
+            let settings = app.buttons["profile-button"]
+            XCTAssertTrue(refresh.hasFocus || settings.hasFocus, "Up from the first video should reach the header")
+            snapshot("01b-header")
+            remote.press(.down)
+            sleep(1)
+            remote.press(.down)
+            sleep(1)
+        }
         snapshot("02-first-card-focused")
         remote.press(.select, forDuration: 1.5)
         sleep(2)
@@ -56,6 +64,9 @@ final class RemoteFlowUITests: XCTestCase {
     /// no card: Down from either of them, also while a refresh is running,
     /// has to land on a video rather than stay in the header.
     func testDownLeavesTheHeader() throws {
+        if #available(tvOS 27, *) {
+            throw XCTSkip("Refresh and the profile picture are in the sidebar from tvOS 27.")
+        }
         let environment = ProcessInfo.processInfo.environment
         guard let server = environment["YTZERO_UITEST_SERVER"], let token = environment["YTZERO_UITEST_TOKEN"] else {
             throw XCTSkip("Set YTZERO_UITEST_SERVER and YTZERO_UITEST_TOKEN to run against a server.")
@@ -117,30 +128,35 @@ final class RemoteFlowUITests: XCTestCase {
         snapshot("sidebar-01-folded")
 
         remote.press(.up); sleep(1)
-        XCTAssertTrue(app.buttons["Opdater"].hasFocus, "Up from the first video should reach Refresh")
-        remote.press(.up); sleep(2)
-        XCTAssertEqual(place(), "Main", "Up from the header should open the sidebar on Main")
+        if #unavailable(tvOS 27) {
+            XCTAssertTrue(app.buttons["Opdater"].hasFocus, "Up from the first video should reach Refresh")
+            remote.press(.up); sleep(1)
+        }
+        sleep(1)
+        XCTAssertEqual(place(), "Main", "Up should open the sidebar on Main")
         snapshot("sidebar-02-open")
 
         // Down to the first playlist; Select shows its videos and folds the sidebar.
-        for _ in 0..<8 where place() != "Weekend" {
+        // A playlist's row also shows how many videos it holds.
+        for _ in 0..<8 where !place().hasPrefix("Weekend") {
             remote.press(.down); sleep(1)
         }
-        XCTAssertEqual(place(), "Weekend", "Down should reach the first playlist")
+        XCTAssertTrue(place().hasPrefix("Weekend"), "Down should reach the first playlist")
         remote.press(.select)
         XCTAssertTrue(app.waitForVideoFocus(), "a video of the playlist should have the focus")
         snapshot("sidebar-03-playlist")
 
-        // Up from the playlist's top row opens the sidebar again; a place
-        // still to come says so.
+        // Up from the playlist's top row opens the sidebar again;
+        // Subscriptions lists the followed channels.
         remote.press(.up); sleep(2)
         for _ in 0..<8 where place() != "Abonnementer" {
             remote.press(.up); sleep(1)
         }
         XCTAssertEqual(place(), "Abonnementer", "Up should reach Subscriptions")
         remote.press(.select); sleep(2)
-        XCTAssertTrue(app.staticTexts["Kommer snart"].waitForExistence(timeout: 5), "Subscriptions should say it is coming soon")
-        snapshot("sidebar-04-coming-soon")
+        XCTAssertTrue(app.staticTexts["Dagskanal"].waitForExistence(timeout: 10), "Subscriptions should list the followed channel")
+        XCTAssertFalse(app.staticTexts["Kommer snart"].exists)
+        snapshot("sidebar-04-subscriptions")
     }
 
     /// Shorts and Scheduled from the sidebar, under headings as Main is
@@ -225,8 +241,10 @@ extension XCUIApplication {
         let focused = { self.descendants(matching: .any).element(matching: NSPredicate(format: "hasFocus == true")) }
         for _ in 0..<timeout {
             let element = focused()
-            // A card, below the header; a sidebar row is a cell.
-            if element.exists && element.elementType == .button && element.frame.minY > 250 {
+            // A card: right of the sidebar's buttons (Refresh and the profile
+            // picture there from tvOS 27) and below a screen's own header
+            // before that; a sidebar row is a cell.
+            if element.exists && element.elementType == .button && element.frame.minX > 100 && element.frame.minY > 150 {
                 return true
             }
             sleep(1)

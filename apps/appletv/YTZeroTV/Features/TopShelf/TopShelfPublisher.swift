@@ -1,8 +1,8 @@
 import TVServices
 import UIKit
 
-/// Keeps the Top Shelf in step with the home screen: Continue watching and
-/// the newest of Main, each video with its picture saved as a file next to
+/// Keeps the Top Shelf in step with the home screen: Continue watching,
+/// Saved for later and the newest of Main, each video with its picture saved as a file next to
 /// the snapshot, since the Top Shelf cannot fetch it through the server
 /// itself. Pictures already saved are kept; those no longer shown are removed.
 enum TopShelfPublisher {
@@ -11,11 +11,15 @@ enum TopShelfPublisher {
     /// Wide enough for a Top Shelf picture at 2x.
     private static let pictureWidth: CGFloat = 800
 
-    static func publish(continueWatching: [Video], main: [Video], client: APIClient) async {
+    static func publish(continueWatching: [Video], savedForLater: [Video] = [], main: [Video], client: APIClient) async {
         guard let directory = TopShelfSnapshot.directory else { return }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var sections: [TopShelfSnapshot.Section] = []
-        for (title, videos) in [(String(localized: "Continue watching"), continueWatching), (String(localized: "Main"), main)] {
+        for (title, videos) in [
+            (String(localized: "Continue watching"), continueWatching),
+            (String(localized: "Saved for later"), savedForLater),
+            (String(localized: "Main"), main),
+        ] {
             var items: [TopShelfSnapshot.Item] = []
             for video in videos.prefix(perSection) {
                 items.append(TopShelfSnapshot.Item(
