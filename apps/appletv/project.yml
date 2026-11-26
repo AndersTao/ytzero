@@ -113,6 +113,9 @@ targets:
       - path: YTZeroTV/Features/Player/PlayerLayerView.swift
       - path: YTZeroTV/Resources/Localizable.xcstrings
       - path: YTZeroTV/Resources/InfoPlist.xcstrings
+    dependencies:
+      - target: YTZeroSafari
+      - target: YTZeroShare
     scheme:
       testTargets:
         - YTZeroiOSUITests
@@ -123,6 +126,17 @@ targets:
         UIBackgroundModes: [audio]
         # Only the system's HTTPS: no export compliance questions per build.
         ITSAppUsesNonExemptEncryption: false
+        # Where the server address and sessions are shared with the Safari
+        # and Share extensions (see SharedStore).
+        YTZeroAppGroup: $(YTZERO_IOS_APP_GROUP)
+        # ytzero://play?v=… from the Safari extension plays a video.
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes: [ytzero]
+    entitlements:
+      path: YTZeroiOS/YTZeroiOS.entitlements
+      properties:
+        com.apple.security.application-groups: [$(YTZERO_IOS_APP_GROUP)]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(YTZERO_IOS_BUNDLE_ID)
@@ -138,6 +152,89 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: "YT Zero connects to your own YT Zero server on the local network."
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+  # Safari on iPhone and iPad: a popup on a YouTube video that saves it for
+  # later or opens it in the app. Its native handler uses the app's session
+  # through the App Group, so nothing is signed in to in Safari.
+  YTZeroSafari:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: YTZeroSafari
+        excludes: [Web/_locales]
+      # Folder references keep messages.json per language.
+      - path: YTZeroSafari/Web/_locales
+        type: folder
+        buildPhase: resources
+      - path: YTZeroTV/Core/APIClient.swift
+      - path: YTZeroTV/Core/APIError.swift
+      - path: YTZeroTV/Core/APIModels.swift
+      - path: YTZeroTV/Core/Keychain.swift
+      - path: YTZeroTV/Core/SharedStore.swift
+      - path: YTZeroTV/Core/Video.swift
+      - path: YTZeroTV/Core/VideoLink.swift
+      - path: YTZeroTV/Features/Player/PlaybackTime.swift
+    info:
+      path: YTZeroSafari/Info.plist
+      properties:
+        CFBundleDisplayName: YT Zero
+        YTZeroAppGroup: $(YTZERO_IOS_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
+    entitlements:
+      path: YTZeroSafari/YTZeroSafari.entitlements
+      properties:
+        com.apple.security.application-groups: [$(YTZERO_IOS_APP_GROUP)]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(YTZERO_IOS_BUNDLE_ID).safari
+        DEVELOPMENT_TEAM: $(YTZERO_DEVELOPMENT_TEAM)
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+  # "YT Zero" in the share sheet: saves a shared YouTube link for later.
+  YTZeroShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: YTZeroShare
+      - path: YTZeroTV/Core/APIClient.swift
+      - path: YTZeroTV/Core/APIError.swift
+      - path: YTZeroTV/Core/APIModels.swift
+      - path: YTZeroTV/Core/Keychain.swift
+      - path: YTZeroTV/Core/SharedStore.swift
+      - path: YTZeroTV/Core/Video.swift
+      - path: YTZeroTV/Core/VideoLink.swift
+      - path: YTZeroTV/Features/Player/PlaybackTime.swift
+      - path: YTZeroTV/Resources/Localizable.xcstrings
+    info:
+      path: YTZeroShare/Info.plist
+      properties:
+        CFBundleDisplayName: YT Zero
+        YTZeroAppGroup: $(YTZERO_IOS_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
+    entitlements:
+      path: YTZeroShare/YTZeroShare.entitlements
+      properties:
+        com.apple.security.application-groups: [$(YTZERO_IOS_APP_GROUP)]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(YTZERO_IOS_BUNDLE_ID).share
+        DEVELOPMENT_TEAM: $(YTZERO_DEVELOPMENT_TEAM)
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
   YTZeroiOSUITests:

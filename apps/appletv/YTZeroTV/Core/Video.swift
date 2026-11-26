@@ -64,6 +64,27 @@ nonisolated struct Video: Codable, Identifiable, Hashable, Sendable {
         channelThumbnail = (try? container.decodeIfPresent(String.self, forKey: .channelThumbnail)).flatMap { $0.isEmpty ? nil : $0 }
     }
 
+    /// A video the server looked up by its id (`APIClient.videoInfo`), which
+    /// carries no position and is not a short.
+    init(info: APIModels.VideoInfo) {
+        id = info.videoId
+        title = info.title
+        channelTitle = info.channelTitle
+        thumbnail = info.thumbnail
+        watchPosition = nil
+        watchDuration = nil
+        isShort = false
+        isUnavailable = false
+        isPrivate = false
+        liveStatus = info.liveStatus
+        duration = info.duration
+        publishedAt = info.publishedAt.flatMap(Self.parseTimestamp)
+        bucket = nil
+        showFrom = nil
+        views = nil
+        channelThumbnail = nil
+    }
+
     /// Written back as the server sends it, so a video kept for offline
     /// viewing reads the same way when it is loaded again.
     func encode(to encoder: any Encoder) throws {
@@ -100,14 +121,8 @@ nonisolated struct Video: Codable, Identifiable, Hashable, Sendable {
     /// The length on the thumbnail, as "4:05" or "1:02:03"; nil for a stream
     /// that is on now, a short, or a length the server does not know.
     var durationText: String? {
-        guard liveStatus != "live", liveStatus != "upcoming", !isShort, let duration else { return nil }
-        let parts = duration.split(separator: ":").map { Int($0.trimmingCharacters(in: .whitespaces)) }
-        if parts.count >= 2, !parts.contains(nil) {
-            let seconds = parts.reduce(0) { $0 * 60 + ($1 ?? 0) }
-            return seconds > 0 ? PlaybackTime.text(Double(seconds)) : nil
-        }
-        if let seconds = Int(duration), seconds > 0 { return PlaybackTime.text(Double(seconds)) }
-        return nil
+        guard liveStatus != "live", liveStatus != "upcoming", !isShort else { return nil }
+        return durationSeconds.map(PlaybackTime.text)
     }
 
     /// "1 hr. ago", in the app's language.
@@ -145,6 +160,18 @@ nonisolated struct Video: Codable, Identifiable, Hashable, Sendable {
     var progress: Double? {
         guard let watchPosition, let watchDuration, watchDuration > 0, watchPosition > 0 else { return nil }
         return min(1, watchPosition / watchDuration)
+    }
+
+    /// The length in seconds, when the server knows it.
+    var durationSeconds: Double? {
+        guard let duration else { return nil }
+        let parts = duration.split(separator: ":").map { Int($0.trimmingCharacters(in: .whitespaces)) }
+        if parts.count >= 2, !parts.contains(nil) {
+            let seconds = parts.reduce(0) { $0 * 60 + ($1 ?? 0) }
+            return seconds > 0 ? Double(seconds) : nil
+        }
+        if let seconds = Int(duration), seconds > 0 { return Double(seconds) }
+        return nil
     }
 
     /// Where to start: the saved position, unless it is at the very start or end.

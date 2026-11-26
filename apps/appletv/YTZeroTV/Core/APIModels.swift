@@ -7,6 +7,21 @@ nonisolated enum APIModels {
         let videos: [Video]
     }
 
+    /// `/videos/:id/info`: what the server found out about one video.
+    struct VideoInfoResult: Decodable, Sendable {
+        let info: VideoInfo?
+    }
+
+    struct VideoInfo: Decodable, Sendable {
+        let videoId: String
+        let title: String
+        let channelTitle: String
+        let thumbnail: String?
+        let duration: String?
+        let liveStatus: String?
+        let publishedAt: String?
+    }
+
     /// Where the server's copy of a video for a device is.
     enum OfflineCopy: Sendable {
         case preparing(progress: Double?)

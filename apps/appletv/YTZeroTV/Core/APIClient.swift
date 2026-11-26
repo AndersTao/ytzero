@@ -218,6 +218,29 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
     }
 
+    /// Puts a video in the profile's "Saved for later" playlist, the row on
+    /// Main, as the browser extension's Save for later does. The server
+    /// fetches a video it does not know yet. True when it was there already.
+    @discardableResult
+    func saveForLater(_ id: String) async throws -> Bool {
+        struct Body: Encodable, Sendable { let video_id: String }
+        struct Result: Decodable, Sendable { let already: Bool? }
+        let (data, response) = try await send(request("/saved-for-later", method: "POST", body: Body(video_id: id)))
+        return try decode(Result.self, from: data, status: response.statusCode).already ?? false
+    }
+
+    /// Any video by its id, also one the library does not have yet: the server
+    /// looks it up and adds it, so it can be played. Without a position.
+    func videoInfo(_ id: String) async throws -> Video {
+        var lookup = try request("/videos/\(id)/info")
+        lookup.timeoutInterval = 60
+        let (data, response) = try await send(lookup)
+        guard let info = try decode(APIModels.VideoInfoResult.self, from: data, status: response.statusCode).info else {
+            throw APIError.server(status: response.statusCode, message: nil)
+        }
+        return Video(info: info)
+    }
+
     /// The profile's own playlists, in the order the web client shows them.
     func playlists() async throws -> [APIModels.UserPlaylist] {
         let (data, response) = try await send(request("/playlists"))

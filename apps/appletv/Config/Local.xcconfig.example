@@ -8,3 +8,6 @@ YTZERO_IOS_BUNDLE_ID = com.example.ytzero.ios
 // Optional: the App Group the Apple TV app and its Top Shelf share.
 // Defaults to group.<YTZERO_BUNDLE_ID>.
 // YTZERO_APP_GROUP = group.com.example.ytzero.appletv
+// Optional: the App Group the iPhone and iPad app shares with its Safari and
+// Share extensions. Defaults to group.<YTZERO_IOS_BUNDLE_ID>.
+// YTZERO_IOS_APP_GROUP = group.com.example.ytzero.ios

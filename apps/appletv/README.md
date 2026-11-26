@@ -64,6 +64,30 @@ hurtige start, 1080p og fortsæt. Kun skærmene er lavet til touch:
 Byg den som Apple TV-appen. Vælg skemaet **YTZeroiOS**, og sæt
 `YTZERO_IOS_BUNDLE_ID` i `Config/Local.xcconfig`.
 
+### Fra Safari og YouTube-appen
+
+Appen har to udvidelser, der bruger appens eget login. Du logger altså ikke
+ind i Safari, og de gemmer som den profil, der ser med i appen.
+
+- **Safari-udvidelsen** (`YTZeroSafari`): Slå den til under *Indstillinger →
+  Apps → Safari → Udvidelser → YT Zero*. På en video på YouTube åbner du den
+  fra sidemenuen i adresselinjen:
+  - **Gem til senere** lægger videoen i "Gemt til senere", rækken på Main.
+  - **Åbn i YT Zero** sætter videoen på pause og åbner den i appen, der hvor
+    du var nået til. Safari spørger først, om siden må åbnes i YT Zero.
+- **Del** (`YTZeroShare`): "YT Zero" i delingsarket fra Safari, YouTube-appen
+  eller andre steder med et YouTube-link gemmer videoen til senere og lukker
+  af sig selv.
+
+Udvidelserne finder serverens adresse og sessionen i en App Group, som appen
+deler med dem (`YTZERO_IOS_APP_GROUP`, som standard
+`group.<YTZERO_IOS_BUNDLE_ID>`). Xcode opretter den, første gang du bygger med
+automatisk signering. Sessionen ligger i Keychain i samme gruppe. En app, der
+var logget ind før udvidelserne kom, flytter den derover ved næste start.
+
+Linket `ytzero://play?v=<id>&t=<sekunder>` åbner appen og afspiller videoen,
+som det gør på Apple TV'et.
+
 ## Profiler
 
 "Hvem ser med?" (på Apple TV hele skærmen, på iPhone og iPad øverst i
@@ -161,6 +185,15 @@ profilen har en playliste ved navn "Weekend" med mindst én video.
 første video i "Fortsæt med at se" og ser, at appen afspiller den. Det kræver,
 at YT Zero ligger i øverste række på simulatorens hjemmeskærm. Den tester
 også linket `ytzero://play?v=…` direkte.
+`ExtensionsUITests` logger ind som et menneske (skriver adressen og godkender
+koden via serveren), deler en video til "YT Zero" fra Safari og ser, at
+serveren har den i "Gemt til senere". Bagefter åbner den
+`ytzero://play?v=…`, og afspilleren skal komme frem.
+`SafariExtensionUITests` slår Safari-udvidelsen til i Indstillinger og bruger
+dens popup: Gem til senere og Åbn i YT Zero. Den kører efter
+`ExtensionsUITests`, der logger appen ind. Begge skal bruge
+`TEST_RUNNER_YTZERO_UITEST_SERVER` med en server, der godkender uden login
+(`YTZERO_AUTH_DISABLE=1`) og kan nå YouTube.
 `ProfilesUITests` (på begge platforme) skifter profil i "Hvem ser med?" og skal
 også have `YTZERO_UITEST_TOKENS`: sessioner for flere profiler, parret sammen
 med den første (kommasepareret, den første en børneprofil). Testen

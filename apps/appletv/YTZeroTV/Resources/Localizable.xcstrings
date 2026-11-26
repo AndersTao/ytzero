@@ -11,6 +11,16 @@
         }
       }
     },
+    "Already saved. It is first in the row again." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allerede gemt. Den står først i rækken igen."
+          }
+        }
+      }
+    },
     "Connect" : {
       "localizations" : {
         "da" : {
@@ -47,6 +57,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Playlisten kunne ikke hentes"
+          }
+        }
+      }
+    },
+    "Could not play the video" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen kunne ikke afspilles"
           }
         }
       }
@@ -99,12 +119,42 @@
         }
       }
     },
+    "Open the YT Zero app and sign in first." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åbn YT Zero-appen, og log ind først."
+          }
+        }
+      }
+    },
     "Saved for later" : {
       "localizations" : {
         "da" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gemt til senere"
+          }
+        }
+      }
+    },
+    "Saved for later." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemt til senere."
+          }
+        }
+      }
+    },
+    "Saving for later…" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemmer til senere…"
           }
         }
       }
@@ -399,6 +449,16 @@
         }
       }
     },
+    "The video cannot be played yet." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videoen kan ikke afspilles endnu."
+          }
+        }
+      }
+    },
     "The video could not be played." : {
       "localizations" : {
         "da" : {
@@ -415,6 +475,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Videoerne kunne ikke hentes."
+          }
+        }
+      }
+    },
+    "This is not a YouTube video." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er ikke en video fra YouTube."
+          }
+        }
+      }
+    },
+    "This profile can only watch videos that are already in YT Zero." : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne profil kan kun se videoer, der allerede er i YT Zero."
           }
         }
       }

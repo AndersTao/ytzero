@@ -4,7 +4,8 @@ import Observation
 /// Which server this device talks to, the profiles signed in on it, and which
 /// of them is watching.
 ///
-/// The address is entered on the device and kept in user defaults. Where the
+/// The address is entered on the device and kept in user defaults (on iPhone
+/// and iPad in the App Group's, for the extensions; see `SharedStore`). Where the
 /// server pins a session to one profile (per-profile login, OIDC in mapped
 /// mode), every profile is paired on its own and the device keeps a session
 /// for each; where a session may switch profile by itself, there is one. The
@@ -46,8 +47,6 @@ final class AppSession {
         var profiles: [Profile]
     }
 
-    private static let addressKey = "serverAddress"
-
     private(set) var serverURL: URL?
     private(set) var profiles: [Profile] = []
     private(set) var token: String?
@@ -86,7 +85,7 @@ final class AppSession {
             return
         }
         #endif
-        if let saved = UserDefaults.standard.string(forKey: Self.addressKey), let url = URL(string: saved) {
+        if let saved = SharedStore.serverAddress, let url = URL(string: saved) {
             serverURL = url
             load()
         }
@@ -105,7 +104,7 @@ final class AppSession {
 
     func useServer(_ url: URL) {
         serverURL = url
-        UserDefaults.standard.set(url.absoluteString, forKey: Self.addressKey)
+        SharedStore.setServerAddress(url.absoluteString)
         load()
     }
 
@@ -183,7 +182,7 @@ final class AppSession {
         profiles = []
         token = nil
         serverURL = nil
-        UserDefaults.standard.removeObject(forKey: Self.addressKey)
+        SharedStore.setServerAddress(nil)
     }
 
     // MARK: Keychain
@@ -202,6 +201,8 @@ final class AppSession {
             profiles = [Profile(token: saved)]
             token = saved
         }
+        // Saved before the extensions shared it: into the App Group.
+        if !Keychain.isShared(account: serverURL.absoluteString) { save() }
     }
 
     private func save() {
