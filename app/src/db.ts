@@ -285,6 +285,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   // Keep completed videos in the chronological feed. Watched state remains
   // independent from inbox/archive state; this only changes feed visibility.
   keep_watched_in_feed: "0",
+  // The "Saved for later" row on Main. Off leaves it to the playlist alone;
+  // saving keeps working either way.
+  main_show_saved_for_later: "1",
   hide_live_from_feed: "0",
   // "More like this" on the watch page. Off keeps a session strictly to what the
   // viewer chose to open, with no suggested next thing.

@@ -728,6 +728,8 @@ export const ptBR: Locale = {
     "feedMaxAgeOff": "Sem limite",
     "keepWatchedInFeed": "Manter vídeos assistidos no feed",
     "keepWatchedInFeedHint": "Mantém os vídeos assistidos nos feeds com a aparência configurada e a barra de progresso completa.",
+    "savedForLaterOnMain": "Salvo para depois em Principal",
+    "savedForLaterOnMainHint": "Mostra os vídeos salvos para depois como uma fileira em Principal. Desativado, eles ficam apenas na playlist Salvo para depois.",
     "watchShowRelated": "Vídeos sugeridos na página de observação",
     "watchShowRelatedHint": "Mostra a lista \"Mais como esta\" ao lado do jogador. Desliga-o para manter uma sessão daquilo que deliberadamente abriste.",
     "watchShowComments": "Comentários na página de observação",

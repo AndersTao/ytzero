@@ -649,6 +649,8 @@ export const en = {
     feedMaxAgeOff: "No limit",
     keepWatchedInFeed: "Keep watched videos in feed",
     keepWatchedInFeedHint: "Keeps watched videos in your feeds with their normal watched appearance and full progress bar.",
+    savedForLaterOnMain: "Saved for later on Main",
+    savedForLaterOnMainHint: "Shows the videos you save for later as a row on Main. Turned off, they are only in the Saved for later playlist.",
     watchShowRelated: "Suggested videos on the watch page",
     watchShowRelatedHint: "Shows the \"More like this\" list next to the player. Turn it off to keep a session to what you deliberately opened.",
     watchShowComments: "Comments on the watch page",

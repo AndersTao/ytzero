@@ -68,4 +68,12 @@ describe("save for later", () => {
     expect(result.secondaryName).toBe("Saved for later");
     expect(result.secondaryIds).toEqual(["savedVid001", "savedVid002"]);
   });
+
+  test("a profile can keep the row off Main and still save", () => {
+    expect(result.offMainPlaylist).toBe(true);
+    expect(result.offMainIds).toEqual([]);
+    expect(result.savedWhileOffStatus).toBe(200);
+    expect(result.offMainSecondaryIds).toEqual(["savedVid001", "savedVid002"]);
+    expect(result.backOnMainIds).toEqual(["savedVid002", "savedVid001"]);
+  });
 });

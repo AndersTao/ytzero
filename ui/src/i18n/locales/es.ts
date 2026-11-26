@@ -732,6 +732,8 @@ export const es: Locale = {
     feedMaxAgeOff: "Sin límite",
     keepWatchedInFeed: "Mantener los vídeos vistos en el feed",
     keepWatchedInFeedHint: "Mantiene los vídeos vistos en tus feeds con su aspecto habitual y la barra de progreso completa.",
+    savedForLaterOnMain: "Guardado para más tarde en Inicio",
+    savedForLaterOnMainHint: "Muestra los vídeos que guardas para más tarde como una fila en Inicio. Si se desactiva, solo están en la lista Guardado para más tarde.",
     watchShowRelated: "Vídeos sugeridos en la página de reproducción",
     watchShowRelatedHint: "Muestra la lista «Más como este» junto al reproductor. Desactívala para limitar la sesión a lo que abras expresamente.",
     watchShowComments: "Comentarios en la página de reproducción",

@@ -305,6 +305,12 @@ archive with no such capability restores with public sharing denied.
   state stay independent. It is recorded by `profile.settings` schema v11.
   Schemas 1–10 remain readable: merge retains the target value when the key is
   absent, while replace uses the disabled application default.
+  `main_show_saved_for_later` is portable per-profile feed presentation
+  configuration. It defaults to enabled and only decides whether Main shows
+  the "Saved for later" row; the playlist, its videos and saving stay the
+  same. It is recorded by `profile.settings` schema v13. Schemas 1–12 remain
+  readable: merge retains the target value when the key is absent, while
+  replace uses the enabled application default.
   `channel_open_sync` is portable per-profile configuration for what opening a
   channel page does on its own: `off` (the historical passive behaviour),
   `recent` (a quick pass over the channel's latest uploads), or `full` (the same

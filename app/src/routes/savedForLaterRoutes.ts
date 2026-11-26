@@ -16,9 +16,11 @@ import { normalizeLanguage, type Language } from "../../../shared/uiLanguages";
  * right-click on YouTube) go to one ordinary playlist per profile, which Main
  * shows as its own row. It stays a normal playlist, so it can be opened,
  * reordered, renamed or emptied like any other. The profile setting holds its
- * portable id, which survives a backup and restore.
+ * portable id, which survives a backup and restore. A profile can leave the
+ * row off Main (`main_show_saved_for_later`) and use the playlist alone.
  */
 export const SAVED_FOR_LATER_SETTING = "saved_for_later_playlist";
+export const SAVED_FOR_LATER_ON_MAIN_SETTING = "main_show_saved_for_later";
 const MAIN_ROW_LIMIT = 60;
 
 const PLAYLIST_NAMES: Record<Language, string> = {
@@ -84,10 +86,13 @@ export function registerSavedForLaterRoutes(
 
   // The row on Main: newest first, leaving out what has been watched,
   // rejected, or can no longer be played. The playlist page still lists everything.
+  // Every client hides an empty row, so a profile that keeps the row off Main
+  // gets the playlist without its videos.
   api.get("/saved-for-later", async (c) => {
     const uid = currentUserId(c);
     const playlist = await existingPlaylist(uid);
     if (!playlist) return c.json({ playlist: null, videos: [] });
+    if (getUserSetting(uid, SAVED_FOR_LATER_ON_MAIN_SETTING) === "0") return c.json({ playlist, videos: [] });
     const rows = await database.prepare(
       `SELECT saved.*, upv.added_at
        FROM (${videoSelect(uid)}) saved

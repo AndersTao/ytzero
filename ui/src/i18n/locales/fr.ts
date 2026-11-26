@@ -753,6 +753,8 @@ export const fr: Locale = {
     "feedMaxAgeOff": "Aucune limite",
     "keepWatchedInFeed": "Conserver les vidéos regardées dans le flux",
     "keepWatchedInFeedHint": "Conserve les vidéos regardées dans vos flux avec leur apparence habituelle et une barre de progression complète.",
+    "savedForLaterOnMain": "Enregistré pour plus tard sur l’accueil",
+    "savedForLaterOnMainHint": "Affiche les vidéos enregistrées pour plus tard dans une rangée de l’accueil. Désactivé, elles ne sont que dans la playlist Enregistré pour plus tard.",
     "watchShowRelated": "Vidéos suggérées sur la page de lecture",
     "watchShowRelatedHint": "Affiche la liste « Plus comme ça » à côté du lecteur. Désactivez-la pour limiter la session à ce que vous avez délibérément ouvert.",
     "watchShowComments": "Commentaires sur la page de lecture",

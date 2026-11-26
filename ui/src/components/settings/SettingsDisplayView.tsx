@@ -65,6 +65,7 @@ export function SettingsDisplayView({ controller, showToast }: { controller: Set
     isPrimary,
     keyboardSeekSeconds,
     keepWatchedInFeed,
+    savedForLaterOnMain,
     language,
     load,
     membersOnlyVisibility,
@@ -114,6 +115,7 @@ export function SettingsDisplayView({ controller, showToast }: { controller: Set
     toggleFeedAutoplay,
     toggleLiveFromFeed,
     toggleKeepWatchedInFeed,
+    toggleSavedForLaterOnMain,
     toggleSb,
     toggleSbCategory,
     toggleTopChannels, toggleChannelPostsTab,
@@ -286,6 +288,10 @@ export function SettingsDisplayView({ controller, showToast }: { controller: Set
 
           <SettingRow label={t("keepWatchedInFeed")} description={t("keepWatchedInFeedHint")}>
             <Switch checked={keepWatchedInFeed} onCheckedChange={toggleKeepWatchedInFeed} />
+          </SettingRow>
+
+          <SettingRow label={t("savedForLaterOnMain")} description={t("savedForLaterOnMainHint")}>
+            <Switch checked={savedForLaterOnMain} onCheckedChange={toggleSavedForLaterOnMain} />
           </SettingRow>
 
           <SettingRow label={t("membersOnlyVisibility")} description={t("membersOnlyVisibilityHint")}>

@@ -659,6 +659,8 @@ export const hu: Locale = {
     feedMaxAgeOff: "Nincs korlát",
     keepWatchedInFeed: "Megnézett videók megtartása a hírfolyamban",
     keepWatchedInFeedHint: "A megnézett videókat a beállított megjelenéssel és teljes folyamatjelzővel a hírfolyamokban tartja.",
+    savedForLaterOnMain: "Későbbre mentve a Kezdőlapon",
+    savedForLaterOnMainHint: "A későbbre mentett videókat sorként mutatja a Kezdőlapon. Kikapcsolva csak a Későbbre mentve lejátszási listában vannak.",
     watchShowRelated: "Ajánlott videók a lejátszó oldalon",
     watchShowRelatedHint: "Megjeleníti a „Hasonlók” listát a lejátszó mellett. Kapcsold ki, ha csak azt szeretnéd nézni, amit tudatosan megnyitottál.",
     watchShowComments: "Hozzászólások a lejátszó oldalon",

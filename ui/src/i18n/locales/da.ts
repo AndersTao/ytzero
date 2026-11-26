@@ -1264,6 +1264,8 @@ export const da: Locale = {
     "feedMaxAgeOff": "Ingen grænse",
     "keepWatchedInFeed": "Behold sete videoer i feedet",
     "keepWatchedInFeedHint": "Beholder sete videoer i dine feeds med det normale udseende for sete videoer og fuld statuslinje.",
+    "savedForLaterOnMain": "Gemt til senere på Forsiden",
+    "savedForLaterOnMainHint": "Viser de videoer, du gemmer til senere, som en række på Forsiden. Slået fra ligger de kun i playlisten Gemt til senere.",
     "watchShowRelated": "Foreslåede videoer på afspilningssiden",
     "watchShowRelatedHint": "Viser listen \"Mere som dette\" ved siden af afspilleren. Slå den fra for at holde dig til det, du bevidst har åbnet.",
     "watchShowComments": "Kommentarer på afspilningssiden",

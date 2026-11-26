@@ -309,6 +309,7 @@ export interface AppSettings {
   /** days | weeks | months | years, or "off" to show videos of any age. */
   feed_max_age_unit: string;
   keep_watched_in_feed: string;
+  main_show_saved_for_later: string;
   hide_live_from_feed: string;
   watch_show_related: string;
   watch_show_comments: WatchCommentsSetting;
