@@ -2,8 +2,8 @@ import SwiftUI
 
 /// One of the profile's playlists, from the side menu: all its videos in the
 /// same grid and cards as Main, without the days, the last added first as the
-/// web client lists them. Tap plays; touch and hold to mark as watched.
-/// Pulling down loads the list again.
+/// web client lists them. Tap plays; touch and hold to mark as watched or
+/// take it out of the playlist. Pulling down loads the list again.
 struct PlaylistScreen: View {
     let playlist: APIModels.UserPlaylist
 
@@ -58,6 +58,22 @@ struct PlaylistScreen: View {
                     try? await client.markWatched(video.id)
                     await load()
                 }
+            }
+            Button("Remove from playlist", systemImage: "minus.circle", role: .destructive) {
+                remove(video)
+            }
+        }
+    }
+
+    /// Gone from the grid at once; if the server says no, the list comes back as it is.
+    private func remove(_ video: Video) {
+        guard let client = session.client else { return }
+        withAnimation { videos.removeAll { $0.id == video.id } }
+        Task {
+            do {
+                try await client.removeFromPlaylist(playlist.id, videoID: video.id)
+            } catch {
+                await load()
             }
         }
     }

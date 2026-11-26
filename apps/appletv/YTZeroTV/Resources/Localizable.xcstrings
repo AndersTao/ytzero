@@ -1012,6 +1012,16 @@
         }
       }
     },
+    "Remove from playlist" : {
+      "localizations" : {
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern fra playlisten"
+          }
+        }
+      }
+    },
     "No new Shorts" : {
       "localizations" : {
         "da" : {
