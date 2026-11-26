@@ -24,6 +24,7 @@
 		380F4D121245BA9CE4CD61FB /* ScheduledRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75AAD34603F0D0E2D9F92D64 /* ScheduledRow.swift */; };
 		3D89FAF4D44FACF07B1F19C9 /* YTZeroTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E8A982F7084ECA86DF6DD54 /* YTZeroTVApp.swift */; };
 		40F209868C7E2EA3A9296E13 /* VideoListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E3D9052AF50C71FEB0DD07 /* VideoListModel.swift */; };
+		433A15DC86652CD2220AF580 /* PlaylistEditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D562DB9F3986033EC5482B8 /* PlaylistEditUITests.swift */; };
 		43A6869FE354D290B8A2DC7E /* DurationBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB986D195D743CCDE0D3BFC /* DurationBadge.swift */; };
 		4550D3D210F2A7785BF2CC56 /* HomeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB7450A1FF6D426B0D1AAFD /* HomeModel.swift */; };
 		46D426C5DDDE06D6050D3A88 /* PlayerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17275C609051ADB5288EBCD6 /* PlayerModel.swift */; };
@@ -154,6 +155,7 @@
 		17275C609051ADB5288EBCD6 /* PlayerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerModel.swift; sourceTree = "<group>"; };
 		173D88D5A7D76DBE61CB31F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1A86F19622DAACA636623E97 /* YTZeroiOSUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = YTZeroiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1D562DB9F3986033EC5482B8 /* PlaylistEditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistEditUITests.swift; sourceTree = "<group>"; };
 		2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesUITests.swift; sourceTree = "<group>"; };
 		30E18D91AD2316F9F1B7AD24 /* ServerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSetupView.swift; sourceTree = "<group>"; };
 		318C97BBC14FF6A3A1AD246F /* SideMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenu.swift; sourceTree = "<group>"; };
@@ -552,6 +554,7 @@
 				D8F55FE53888837EBA37EACB /* OfflineUITests.swift */,
 				B183BF2B69238EB57588C43D /* PairingUITests.swift */,
 				6ABDEB5980A218417D5E5951 /* PlaybackUITests.swift */,
+				1D562DB9F3986033EC5482B8 /* PlaylistEditUITests.swift */,
 				2E16BDC0F6D01E603B4B6D77 /* ProfilesUITests.swift */,
 				CEA8FEFF44AC9FB304D176FA /* PullToRefreshUITests.swift */,
 				E6546CFCF0898C04253FEB23 /* RecoveryUITests.swift */,
@@ -858,6 +861,7 @@
 				494C2F7CFD8A9CA7E056A2B4 /* OfflineUITests.swift in Sources */,
 				D085C4BFCC1FF2375BAC843C /* PairingUITests.swift in Sources */,
 				78380E9E6D8794AE1E135539 /* PlaybackUITests.swift in Sources */,
+				433A15DC86652CD2220AF580 /* PlaylistEditUITests.swift in Sources */,
 				EA0EB7C783FF66CBA9A92029 /* ProfilesUITests.swift in Sources */,
 				1460A8A2DEFD8C672C4F86CF /* PullToRefreshUITests.swift in Sources */,
 				E9FBB0A6FA4102F366E20946 /* RecoveryUITests.swift in Sources */,

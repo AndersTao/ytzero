@@ -230,6 +230,12 @@ nonisolated struct APIClient: Sendable {
         return try decode(APIModels.VideoList.self, from: data, status: response.statusCode).videos
     }
 
+    /// Takes a video out of one of the profile's playlists; the video itself stays.
+    func removeFromPlaylist(_ playlistID: Int, videoID: String) async throws {
+        let (data, response) = try await send(request("/playlists/\(playlistID)/videos/\(videoID)", method: "DELETE"))
+        try expectSuccess(data, response)
+    }
+
     /// The Shorts feed: the same inbox as Main, Shorts only, newest first.
     func shorts(page: Int) async throws -> [Video] {
         let (data, response) = try await send(request("/feed", query: [
