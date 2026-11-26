@@ -1,0 +1,15 @@
+{
+  "extensionName": { "message": "YT Zero" },
+  "extensionDescription": { "message": "Save YouTube videos for later in YT Zero, or watch them in the YT Zero app." },
+  "saveForLater": { "message": "Save for later" },
+  "openInApp": { "message": "Open in YT Zero" },
+  "saving": { "message": "Saving…" },
+  "saved": { "message": "Saved for later." },
+  "alreadySaved": { "message": "Already saved. It is first in the row again." },
+  "notAVideo": { "message": "Open a YouTube video to save it or watch it in YT Zero." },
+  "signedOut": { "message": "Open the YT Zero app and sign in first." },
+  "openApp": { "message": "Open YT Zero" },
+  "restricted": { "message": "This profile can only watch videos that are already in YT Zero." },
+  "failed": { "message": "Could not save the video: $DETAIL$", "placeholders": { "detail": { "content": "$1" } } },
+  "unreachable": { "message": "Could not reach the YT Zero app. Try again." }
+}

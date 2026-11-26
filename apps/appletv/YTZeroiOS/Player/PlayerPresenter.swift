@@ -29,6 +29,23 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
     private var inPictureInPicture = false
     private var restoring = false
 
+    /// The one playing now, from whichever screen, so an opened link can
+    /// close it before playing another.
+    private static weak var current: PlayerPresenter?
+
+    /// Closes the video playing now, also in picture in picture.
+    static func closeCurrent() {
+        guard let current, current.isPresenting else { return }
+        current.close(dismissing: true)
+    }
+
+    /// Whether a player's screen is still up, maybe on its way out: one that
+    /// closed while the app was in the background goes once it is back, and
+    /// another cannot be shown over it until then.
+    static var isPlayerOnScreen: Bool {
+        topViewController() is PlayerController
+    }
+
     func present(video: Video, client: APIClient, onFinished: @escaping () -> Void, onClose: @escaping (Video) -> Void) {
         guard !isPresenting, let presenter = Self.topViewController() else { return }
         let model = PlayerModel()
@@ -54,6 +71,7 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
         self.onFinished = onFinished
         self.onClose = onClose
         isPresenting = true
+        Self.current = self
         presenter.present(controller, animated: true)
 
         // The model may swap players (full quality, then the plain relay

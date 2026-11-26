@@ -1,0 +1,15 @@
+{
+  "extensionName": { "message": "YT Zero" },
+  "extensionDescription": { "message": "Gem YouTube-videoer til senere i YT Zero, eller se dem i YT Zero-appen." },
+  "saveForLater": { "message": "Gem til senere" },
+  "openInApp": { "message": "Åbn i YT Zero" },
+  "saving": { "message": "Gemmer…" },
+  "saved": { "message": "Gemt til senere." },
+  "alreadySaved": { "message": "Allerede gemt. Den står først i rækken igen." },
+  "notAVideo": { "message": "Åbn en video på YouTube for at gemme den eller se den i YT Zero." },
+  "signedOut": { "message": "Åbn YT Zero-appen, og log ind først." },
+  "openApp": { "message": "Åbn YT Zero" },
+  "restricted": { "message": "Denne profil kan kun se videoer, der allerede er i YT Zero." },
+  "failed": { "message": "Videoen kunne ikke gemmes: $DETAIL$", "placeholders": { "detail": { "content": "$1" } } },
+  "unreachable": { "message": "YT Zero-appen svarede ikke. Prøv igen." }
+}

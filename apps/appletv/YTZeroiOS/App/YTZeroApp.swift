@@ -5,6 +5,7 @@ import SwiftUI
 struct YTZeroApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var session = AppSession()
+    @State private var links = OpenedLinks()
 
     init() {
         // Playback, not ambient: sound with the ring switch off, and it keeps
@@ -16,7 +17,12 @@ struct YTZeroApp: App {
         WindowGroup {
             RootView()
                 .environment(session)
+                .environment(links)
                 .tint(.white)
+                // "Open in YT Zero" from the Safari extension.
+                .onOpenURL { url in
+                    if let link = VideoLink(appURL: url) { links.pending = link }
+                }
         }
     }
 }
@@ -34,6 +40,7 @@ struct RootView: View {
         case .ready:
             // A new library for each profile: nothing of the one before stays.
             SideMenuContainer()
+                .modifier(PlaysOpenedLinks())
                 .id(session.generation)
         }
     }
