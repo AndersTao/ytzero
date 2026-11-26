@@ -190,6 +190,7 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
   const [feedMaxAgeValue, setFeedMaxAgeValue] = useState("6");
   const [feedMaxAgeUnit, setFeedMaxAgeUnit] = useState<FeedMaxAgeUnit>("months");
   const [keepWatchedInFeed, setKeepWatchedInFeed] = useState(false);
+  const [savedForLaterOnMain, setSavedForLaterOnMain] = useState(true);
   const [feedAutoplayEnabled, setFeedAutoplayEnabled] = useState(false);
   const [feedAutoplayBehavior, setFeedAutoplayBehavior] = useState<"autoplay" | "prompt">("autoplay");
   const [feedAutoplayDirection, setFeedAutoplayDirection] = useState<"oldest" | "newest">("newest");
@@ -471,6 +472,7 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
       setFeedMaxAgeValue(r.settings.feed_max_age_value || "6");
       setFeedMaxAgeUnit(isFeedMaxAgeUnit(r.settings.feed_max_age_unit) ? r.settings.feed_max_age_unit : "off");
       setKeepWatchedInFeed(r.settings.keep_watched_in_feed === "1");
+      setSavedForLaterOnMain(r.settings.main_show_saved_for_later !== "0");
       setFeedAutoplayEnabled(r.settings.feed_autoplay_enabled === "1");
       setFeedAutoplayBehavior(r.settings.feed_autoplay_behavior === "prompt" ? "prompt" : "autoplay");
       setFeedAutoplayDirection(r.settings.feed_autoplay_direction === "newest" ? "newest" : "oldest");
@@ -737,6 +739,19 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
       showToast(t("displaySettingsSaved"));
     } catch (error) {
       setKeepWatchedInFeed(previous);
+      showToast(error instanceof Error ? error.message : t("error"));
+    }
+  };
+
+  const toggleSavedForLaterOnMain = async () => {
+    const previous = savedForLaterOnMain;
+    const next = !previous;
+    setSavedForLaterOnMain(next);
+    try {
+      await api.updateSettings({ main_show_saved_for_later: next ? "1" : "0" });
+      showToast(t("displaySettingsSaved"));
+    } catch (error) {
+      setSavedForLaterOnMain(previous);
       showToast(error instanceof Error ? error.message : t("error"));
     }
   };
@@ -1305,6 +1320,7 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
     isPrimary,
     keyboardSeekSeconds,
     keepWatchedInFeed,
+    savedForLaterOnMain,
     language,
     load,
     loadFollowedPlaylists,
@@ -1432,6 +1448,7 @@ export function useSettingsPageController({ showToast }: { showToast: (message: 
     toggleFeedAutoplay,
     toggleLiveFromFeed,
     toggleKeepWatchedInFeed,
+    toggleSavedForLaterOnMain,
     togglePlugin,
     toggleSb,
     toggleSbCategory,

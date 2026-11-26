@@ -649,6 +649,8 @@ export const pl: Locale = {
     feedMaxAgeOff: "Bez limitu",
     keepWatchedInFeed: "Pozostaw obejrzane filmy na feedzie",
     keepWatchedInFeedHint: "Pozostawia obejrzane filmy na feedach z ustawionym wyglądem obejrzenia i pełnym paskiem postępu.",
+    savedForLaterOnMain: "Zapisane na później na stronie głównej",
+    savedForLaterOnMainHint: "Pokazuje filmy zapisane na później jako rząd na stronie głównej. Po wyłączeniu są tylko na playliście Zapisane na później.",
     watchShowRelated: "Proponowane filmy na stronie filmu",
     watchShowRelatedHint: "Pokazuje propozycje podobnych filmów obok odtwarzacza.",
     watchShowComments: "Komentarze na stronie filmu",

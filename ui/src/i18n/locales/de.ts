@@ -649,6 +649,8 @@ export const de: Locale = {
     feedMaxAgeOff: "Kein Limit",
     keepWatchedInFeed: "Angesehene Videos im Feed behalten",
     keepWatchedInFeedHint: "Behält angesehene Videos mit der festgelegten Darstellung und einem vollen Fortschrittsbalken in den Feeds.",
+    savedForLaterOnMain: "Für später gespeichert unter Start",
+    savedForLaterOnMainHint: "Zeigt die für später gespeicherten Videos als Reihe unter Start. Ausgeschaltet sind sie nur in der Playlist „Für später gespeichert“.",
     watchShowRelated: "Vorgeschlagene Videos auf der Videoseite",
     watchShowRelatedHint: "Zeigt die Liste „Mehr in dieser Art“ neben dem Player. Deaktiviere sie, damit eine Sitzung auf das beschränkt bleibt, was du bewusst öffnest.",
     watchShowComments: "Kommentare auf der Videoseite",

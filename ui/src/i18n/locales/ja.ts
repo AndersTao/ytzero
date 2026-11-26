@@ -728,6 +728,8 @@ export const ja: Locale = {
     "feedMaxAgeOff": "制限なし",
     "keepWatchedInFeed": "視聴済み動画をフィードに残す",
     "keepWatchedInFeedHint": "視聴済み動画を設定した表示と完全な進行状況バーでフィードに残します。",
+    "savedForLaterOnMain": "メインページに「後で見る」を表示",
+    "savedForLaterOnMainHint": "後で見るに保存した動画をメインページに行として表示します。オフにすると「後で見る」プレイリストにのみ表示されます。",
     "watchShowRelated": "時計ページで動画をお勧め",
     "watchShowRelatedHint": "プレイヤーの横にある「いいね!」リストを表示します。 あなたが意図的に開いたものにセッションを維持するためにそれをオフにします。",
     "watchShowComments": "時計のページへのコメント",

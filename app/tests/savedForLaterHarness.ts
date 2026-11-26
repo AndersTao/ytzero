@@ -36,6 +36,12 @@ const [racedA, racedB] = await Promise.all([
   request(secondary.id, "/saved-for-later", "POST", { video_id: "savedVid002" }).then(json),
 ]);
 const secondaryList = await json(await request(secondary.id, "/saved-for-later"));
+await request(1, "/settings", "PUT", { main_show_saved_for_later: "0" });
+const offMain = await json(await request(1, "/saved-for-later"));
+const savedWhileOff = await json(await request(1, "/saved-for-later", "POST", { video_id: "savedVid002" }));
+const offMainSecondary = await json(await request(secondary.id, "/saved-for-later"));
+await request(1, "/settings", "PUT", { main_show_saved_for_later: "1" });
+const backOnMain = await json(await request(1, "/saved-for-later"));
 const count = (sql: string, ...args: unknown[]) => (db.prepare(sql).get(...args) as { n: number }).n;
 
 console.log("RESULT " + JSON.stringify({
@@ -55,6 +61,11 @@ console.log("RESULT " + JSON.stringify({
   secondaryPlaylists: count("SELECT COUNT(*) AS n FROM user_playlists WHERE user_id = ?", secondary.id),
   secondaryName: secondaryList.body.playlist?.name,
   secondaryIds: secondaryList.body.videos.map((video: any) => video.video_id).sort(),
+  offMainPlaylist: offMain.body.playlist?.id === first.body.playlist?.id,
+  offMainIds: offMain.body.videos.map((video: any) => video.video_id),
+  savedWhileOffStatus: savedWhileOff.status,
+  offMainSecondaryIds: offMainSecondary.body.videos.map((video: any) => video.video_id).sort(),
+  backOnMainIds: backOnMain.body.videos.map((video: any) => video.video_id),
 }));
 
 db.close();
