@@ -14,6 +14,9 @@ final class PlayerModel {
 
     static let seekForward: Double = 30
     static let seekBack: Double = 15
+    /// Closed this far in, a video counts as watched: what is left is end
+    /// credits or an outro SponsorBlock does not know.
+    nonisolated static let watchedFraction = 0.95
 
     private(set) var phase: Phase = .preparing
     private(set) var player: AVPlayer?
@@ -169,6 +172,12 @@ final class PlayerModel {
         finished = true
     }
 
+    /// Whether closing at `position` of a video `length` seconds long counts as watched.
+    nonisolated static func countsAsWatched(position: Double, length: Double) -> Bool {
+        guard length > 0 else { return false }
+        return position >= length - 2 || (length > 30 && position >= length * watchedFraction)
+    }
+
     /// Called when the player closes: last position, then let the stream go.
     /// Returns the video as far as it was watched, once the server has it.
     @discardableResult
@@ -179,9 +188,10 @@ final class PlayerModel {
         wantsToPlay = false
         stopSkipping()
         var watched = video
-        // Closed at the very end, or stuck there after a jump: seen, as
-        // playing it out would have marked it.
-        if !finished, let length = videoLength, position >= length - 2 {
+        // Closed at the very end, stuck there after a jump, or in the last
+        // 5 % of anything longer than half a minute: seen, as playing it out
+        // would have marked it.
+        if !finished, let length = videoLength, Self.countsAsWatched(position: position, length: length) {
             finished = true
             try? await client.markWatched(video.id)
         }

@@ -74,7 +74,13 @@ struct PlayerView: View {
         .onDisappear {
             guard let client = session.client else { return }
             let model = model
-            Task { onClosed(await model.stop(video: video, client: client)) }
+            let finishedBefore = model.finished
+            Task {
+                let watched = await model.stop(video: video, client: client)
+                // Closed near the end counts as watched: it leaves the lists too.
+                if !finishedBefore, model.finished { onFinished() }
+                onClosed(watched)
+            }
         }
     }
 

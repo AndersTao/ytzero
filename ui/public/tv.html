@@ -1948,9 +1948,17 @@
 
     function closePlayer() {
       if (!current) return;
+      // Closed in the last 5 % of anything longer than half a minute (end
+      // credits, an outro SponsorBlock does not know): watched, as the Apple
+      // apps count it.
+      var p = position(), d = duration(), done = null;
+      if (!removed[current.video_id] && finished !== current.video_id && d > 30 && p >= d * 0.95) {
+        finished = current.video_id;
+        done = post("/videos/" + encodeURIComponent(current.video_id) + "/complete").catch(function () {});
+      }
       // A video just marked watched, rejected or played to the end must not get
       // a fresh position, or it would land on the Continue shelf again.
-      var saved = !removed[current.video_id] && finished !== current.video_id ? saveProgress(true) : Promise.resolve();
+      var saved = done || (!removed[current.video_id] && finished !== current.video_id ? saveProgress(true) : Promise.resolve());
       clearInterval(tickTimer);
       clearInterval(skipTimer);
       skips = [];

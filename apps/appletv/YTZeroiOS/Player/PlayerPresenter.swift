@@ -172,8 +172,12 @@ final class PlayerPresenter: NSObject, AVPictureInPictureControllerDelegate {
         // sooner, the server answered with the old one.
         if let model, let video, let client {
             let onClose = onClose
+            let onFinished = onFinished
+            let finishedBefore = model.finished
             Task {
                 let watched = await model.stop(video: video, client: client)
+                // Closed near the end counts as watched: it leaves the lists too.
+                if !finishedBefore, model.finished { onFinished?() }
                 // Kept on this device: the position is kept there too, and
                 // handed to the server once it can be reached.
                 OfflineStore.shared.played(watched, finished: model.finished, client: client)
